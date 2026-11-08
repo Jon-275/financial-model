@@ -1,0 +1,161 @@
+"""Hand-calculated tax and funding cases independent of workbook caches."""
+
+from dataclasses import replace
+import unittest
+
+from risk_engine.funding import FundingInputs, solve_funding
+from risk_engine.tax import TaxInputs, TaxTables
+
+
+def joint_2027(primary_age=60, spouse_age=60):
+    cells = {
+        "B219": 1, "B231": 33200, "B233": 1700, "B235": 144700,
+        "B237": 1031900, "B239": 252500, "B240": 192300,
+        "B241": 11800, "B243": 316, "B244": 158, "B190": 3000,
+        "B135": 32000, "B136": 44000, "B137": 0.5, "B138": 0.85,
+        "B74": 0.038, "B75": 250000, "B82": 0.5, "B83": 0.26, "B84": 0.28,
+        "B44": 0.01, "B45": 1000000, "B192": 504411, "B194": 2500, "B195": 6,
+        "B46": 0.013, "B50": 0.062, "B52": 0.0145, "B53": 0.009, "B54": 250000,
+    }
+    schedules = (
+        (6, (0, 25600, 104050, 218250, 416650, 529100, 793650),
+         (0.10, 0.02, 0.10, 0.02, 0.08, 0.03, 0.02)),
+        (17, (0, 102100, 633600), (0, 0.15, 0.05)),
+        (30, (0, 22912, 54314, 85722, 118996, 150394, 768218, 921854, 1536426),
+         (0.01, 0.01, 0.02, 0.02, 0.02, 0.013, 0.01, 0.01, 0.01)),
+    )
+    for first, floors, slopes in schedules:
+        for row, (floor, slope) in enumerate(zip(floors, slopes), first):
+            cells[f"E{row}"] = floor
+            cells[f"D{row}"] = slope
+    bands = (
+        (1, 1.33, .0215, .0215), (1.33, 1.5, .0323, .0430), (1.5, 2, .0430, .0678),
+        (2, 2.5, .0678, .0866), (2.5, 3, .0866, .1022), (3, 4, .1022, .1022),
+    )
+    for row, band in enumerate(bands, 221):
+        cells.update({f"{column}{row}": value for column, value in zip("ABCD", band)})
+    return TaxTables.from_cells(cells).for_year(2027, 0.0, 1.0, False, primary_age, spouse_age)
+
+
+class CandidateTaxTests(unittest.TestCase):
+    def test_wage_cap_per_earner(self):
+        payroll, sdi = joint_2027().payroll_taxes(270000, 30000)
+        self.assertAlmostEqual(payroll, 18582.60)
+        self.assertAlmostEqual(sdi, 3900)
+
+    def test_social_security_hsa_and_separate_capital_losses(self):
+        year = joint_2027(primary_age=65)
+        tax = year.evaluate(TaxInputs(
+            35000, qualified_dividends=1000, tax_exempt_interest=2000,
+            social_security=20000, hsa_contribution=2000, opening_ca_loss=4000,
+        ), 0, 0, -6000)
+        self.assertEqual(year.federal_deduction, 34900)
+        self.assertEqual(tax.provisional_income, 45000)
+        self.assertEqual(tax.taxable_ss, 6850)
+        self.assertEqual(tax.agi, 39850)
+        self.assertEqual(tax.aca_magi, 55000)
+        self.assertEqual(tax.california_agi, 35000)
+        self.assertEqual(tax.federal_loss, 3000)
+        self.assertEqual(tax.ca_loss, 7000)
+        self.assertEqual(tax.california_exemption_credit, 474)
+        phaseout = year.evaluate(TaxInputs(521561 + 2500), 0, 0, 0)
+        self.assertEqual(phaseout.california_exemption_credit, 456)
+
+    def test_loss_below_deduction_remains_available(self):
+        tax = joint_2027().evaluate(TaxInputs(10000), 0, 0, -6000)
+        self.assertEqual(tax.total_tax, 0)
+        self.assertEqual(tax.federal_loss, 6000)
+        self.assertEqual(tax.ca_loss, 6000)
+
+    def test_gains_are_capped_at_all_ordinary_tax(self):
+        tax = joint_2027().evaluate(TaxInputs(136200), 0, 0, 500)
+        self.assertAlmostEqual(tax.federal_ordinary, 11848)
+        self.assertAlmostEqual(tax.federal_gains, 60)
+
+    def test_amt_retains_preferential_rates_and_niit_uses_net_investment(self):
+        tax = joint_2027().evaluate(TaxInputs(350000), 0, 0, 850000)
+        self.assertAlmostEqual(tax.federal_ordinary, 60750)
+        self.assertAlmostEqual(tax.federal_gains, 154160)
+        self.assertAlmostEqual(tax.amt_tentative, 230128)
+        self.assertAlmostEqual(tax.amt, 15218)
+        self.assertAlmostEqual(tax.niit, 32300)
+
+
+class FundingSearchTests(unittest.TestCase):
+    def setUp(self):
+        self.year = joint_2027()
+        self.cash = FundingInputs(
+            cash_income=0, required_spending=0, hsa_paid=0, opening_tax_payable=0,
+            taxable_available=0, traditional_available=0, roth_available=0, mandatory=0,
+            headroom=0, opening_traditional=0, basis_ratio=0, requested_conversion=0,
+            order=1, conversion_allowed=False,
+        )
+
+    def test_mandatory_draw_can_cover_the_year_without_extra_sales(self):
+        result = solve_funding(self.year, TaxInputs(0), replace(
+            self.cash, required_spending=5, mandatory=10, traditional_available=100, opening_traditional=100,
+        ))
+        self.assertEqual(result.requested_draw, 0)
+        self.assertEqual(result.traditional_draw, 10)
+        self.assertEqual(result.margin, 5)
+
+    def test_preferred_draw_pays_its_own_tax(self):
+        result = solve_funding(self.year, TaxInputs(33200), replace(
+            self.cash, required_spending=36, taxable_available=50, traditional_available=70,
+            roth_available=20, mandatory=10, headroom=20, opening_traditional=70, basis_ratio=1, order=2,
+        ))
+        self.assertAlmostEqual(result.requested_draw, 39)
+        self.assertAlmostEqual(result.traditional_draw, 30)
+        self.assertAlmostEqual(result.taxable_draw, 9)
+        self.assertAlmostEqual(result.tax.total_tax, 3)
+
+    def test_aca_can_fund_at_interior_draw_even_if_capacity_fails(self):
+        cash = replace(self.cash, required_spending=365, taxable_available=350,
+                       aca_actual=100, aca_benchmark=150, aca_fpl=100)
+        result = solve_funding(self.year, TaxInputs(90), cash)
+        self.assertEqual(result.status, "Funded")
+        self.assertAlmostEqual(result.requested_draw, 265)
+        self.assertEqual(result.premium_credit, 100)
+        shortfall = solve_funding(self.year, TaxInputs(90), replace(cash, required_spending=470))
+        self.assertEqual(shortfall.status, "Unfunded")
+        self.assertAlmostEqual(shortfall.requested_draw, 310)
+        self.assertAlmostEqual(shortfall.margin, -60)
+
+    def test_search_preserves_better_credit_before_133_percent_jump(self):
+        result = solve_funding(self.year, TaxInputs(10000), replace(
+            self.cash, required_spending=13000, taxable_available=40000,
+            aca_actual=10000, aca_benchmark=10000, aca_fpl=10000,
+        ))
+        self.assertAlmostEqual(result.requested_draw, 3215 / 0.9785)
+        self.assertLess(result.tax.aca_magi, 13300)
+
+    def test_loss_sale_can_enter_aca_eligibility_at_400_percent(self):
+        result = solve_funding(self.year, TaxInputs(405), replace(
+            self.cash, required_spending=105, taxable_available=30, basis_ratio=2,
+            aca_actual=100, aca_benchmark=150, aca_fpl=100,
+        ))
+        self.assertEqual(result.status, "Funded")
+        self.assertAlmostEqual(result.requested_draw, 5)
+        self.assertAlmostEqual(result.realized_gain, -5)
+        self.assertAlmostEqual(result.tax.aca_magi, 400)
+        self.assertEqual(result.premium_credit, 100)
+
+    def test_credit_includes_100_percent_endpoint(self):
+        result = solve_funding(self.year, TaxInputs(104), replace(
+            self.cash, required_spending=104, taxable_available=50, basis_ratio=2,
+            aca_actual=100, aca_benchmark=150, aca_fpl=100,
+        ))
+        self.assertEqual(result.status, "Funded")
+        self.assertAlmostEqual(result.requested_draw, 4)
+        self.assertEqual(result.tax.aca_magi, 100)
+        self.assertEqual(result.premium_credit, 100)
+
+    def test_projection_can_skip_unaffordable_conversion_comparison_cannot(self):
+        cash = replace(self.cash, opening_traditional=10000, requested_conversion=5000, conversion_allowed=True)
+        projection = solve_funding(self.year, TaxInputs(33000), cash)
+        comparison = solve_funding(self.year, TaxInputs(33000), cash, exact=True)
+        self.assertEqual(projection.conversion, 0)
+        self.assertEqual(projection.status, "Funded")
+        self.assertEqual(comparison.conversion, 5000)
+        self.assertEqual(comparison.status, "Unfunded")
+        self.assertAlmostEqual(comparison.margin, -480)

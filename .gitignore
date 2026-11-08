@@ -1,0 +1,11 @@
+.DS_Store
+~$*
+*.tmp
+/scratch/
+/private/
+/workbook/*
+!/workbook/retirement-model.xlsx
+
+__pycache__/
+*.py[cod]
+.venv/
