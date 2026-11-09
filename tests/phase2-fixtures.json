@@ -3474,6 +3474,52 @@
       ]
     },
     {
+      "name": "subcent_shortfall_keeps_funded_headline",
+      "overrides": {
+        "Inputs": {
+          "D37": 0.009
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!BR6",
+          "equals": 0.009,
+          "tolerance": 0
+        },
+        {
+          "cell": "Summary!B3",
+          "equals": "YES"
+        },
+        {
+          "cell": "Summary!B4",
+          "equals": "None"
+        }
+      ]
+    },
+    {
+      "name": "exact_cent_shortfall_reaches_dashboard",
+      "overrides": {
+        "Inputs": {
+          "D37": 0.01
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!BR6",
+          "equals": 0.01,
+          "tolerance": 0
+        },
+        {
+          "cell": "Summary!B3",
+          "equals": "NO"
+        },
+        {
+          "cell": "Summary!B4",
+          "equals": 2027
+        }
+      ]
+    },
+    {
       "name": "wage_growth_includes_inflation_and_stops_at_retirement",
       "overrides": {
         "Inputs": {

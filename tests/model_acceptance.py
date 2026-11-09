@@ -11,6 +11,10 @@ from zipfile import ZipFile
 from xlsx_read import Workbook, col_letter, q, sheet_parts
 
 
+# Match the workbook's funding decision independently of comparison tolerance.
+SHORTFALL_THRESHOLD = 0.01
+
+
 REQUIRED_CASH_HEADERS = {
     "cash income", "required spending", "hsa paid", "opening tax payable", "current tax", "tax paid",
     "ending tax payable", "spending paid", "unpaid spending", "roth contribution", "taxable deposit",
@@ -237,7 +241,7 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
             raise AssertionError(f"{label} workbook reconciliation flag is {checks[f'{check_col}{row}'].value!r}")
 
         previous_tax_payable = cf("ending tax payable")
-        if first_shortfall is None and shortfall > tolerance:
+        if first_shortfall is None and shortfall >= SHORTFALL_THRESHOLD:
             first_shortfall = p("B")
         max_shortfall = max(max_shortfall, shortfall)
 

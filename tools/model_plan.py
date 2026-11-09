@@ -238,7 +238,7 @@ def reporting():
         'B12':'=IF(AND(Inputs!$B$70>=2,Projection!E6="Working",SUM(Cash_Flow!C6,Projection!J6:L6)>0),(SUM(Projection!J6:M6)+MAX(0,Projection!BB6-Projection!V6))/SUM(Cash_Flow!C6,Projection!J6:L6),"")',
         'A19':'Available bridge assets at retirement','B19':f'=IF({eligible},{target},"")',
         'C19':'Opening brokerage balance plus Roth funds available in the first bridge year. See Roth_Access.',
-        'B25':'=IF(Inputs!$B$70=0,IF(Inputs!$B$71<>"OK",Inputs!$B$71,IF(Inputs!$B$99<>"OK",Inputs!$B$99,IF(Inputs!$B$125<>"OK","Check healthcare inputs",Inputs!$B$129))),IF(COUNTIF(Healthcare!$T$6:$T$130,"Missing*")+COUNTIF(Healthcare!$T$6:$T$130,"Confirm*")>0,"Check healthcare inputs",IF(COUNTIF(Cash_Flow!$L$6:$L$130,"Check funding convergence")>0,"Check funding calculation",IF(MAX(Projection!$BR$5:$BR$130)<0.01,"YES","NO - cash shortfall"))))',
+        'B25':'=IF(Inputs!$B$70=0,IF(Inputs!$B$71<>"OK",Inputs!$B$71,IF(Inputs!$B$99<>"OK",Inputs!$B$99,IF(Inputs!$B$125<>"OK","Check healthcare inputs",Inputs!$B$129))),IF(COUNTIF(Healthcare!$T$6:$T$130,"Missing*")+COUNTIF(Healthcare!$T$6:$T$130,"Confirm*")>0,"Check healthcare inputs",IF(COUNTIF(Cash_Flow!$AM$5:$AM$130,"OK")<>Inputs!$B$70,"Check funding calculation",IF(MAX(Projection!$BR$5:$BR$130)<0.01,"YES","NO - cash shortfall"))))',
         'B26':'=IF(B25="YES","None",IF(B25="NO - cash shortfall",INDEX(Projection!$B$5:$B$130,MATCH(TRUE(),INDEX(IF(ISNUMBER(Projection!$BR$5:$BR$130),Projection!$BR$5:$BR$130>=0.01,FALSE()),0),0)),""))',
         'C25':'Checks required spending and tax in each working and retirement year.',
         'A33':'Opening Roth account type','B33':'=IF(Inputs!$B$70=0,"",IF(Inputs!$B$28=2,"Workplace Roth","Roth IRA"))',
@@ -254,20 +254,48 @@ def reporting():
                 'A118':'The funding calculation evaluates this year’s tax on actual draws. Unpaid tax carries forward and reduces after-tax net worth.',
                 'A120':'Risk summaries require a funded base plan. They apply market paths to actual net portfolio cash flows and keep the base tax and access schedule.'}.items(): put('README',a,x)
 
-def checks():
-    s='Checks'; put(s,'A1','Model checks','title')
-    put(s,'A2','Cash and account balances reconcile to one cent. An unfunded year is a planning result.','note')
-    row(s,4,['Year','Age','Cash balance error','Tax balance error','Roth balance error','Portfolio flow error',
-             'Roth draw over access','Negative account balance','Funding calculation','Reconciliation'],'header')
-    for r in range(5,END+1):
-        p=lambda c:pj(c,r); b=lambda c:pj(c,r-1); c=lambda col:cf(col,r); roth=lambda col:rt(col,r)
-        z='0' if r==5 else f'{p("BO")}-SUM({p("J")},{p("K")},{p("L")},{p("M")},{p("BB")})+SUM({p("V")},{p("W")},{p("Y")},{p("P")})'
-        rr='0' if r==5 else f'{p("BF")}-({b("BF")}+{roth("AP")})*(1+IF({p("E")}="Working",Inputs!$B$21,Inputs!$B$22))'
-        xx=[p('B'),p('C'),f'{c("C")}+SUM({p("V")},{p("W")},{p("Y")})-SUM({c("N")},{c("P")},{c("R")},{c("T")})',
-            f'SUM({c("F")},{c("M")})-SUM({c("N")},{c("O")})',rr,z,
-            f'MAX(0,{p("Y")}-{roth("T")})',f'MIN(0,{p("BC")},{p("BE")},{p("BF")},{p("BG")})',c('L'),
-            f'IF(OR(MAX(C{r}:H{r})>0.01,MIN(C{r}:H{r})<-0.01,I{r}="Check funding convergence"),"Review","OK")']
-        row(s,r,[active(r,x) for x in xx],'money')
+def reconciliation():
+    """Calculate annual reconciliation in the ledger and show its details on Checks."""
+    sheet = 'Checks'
+    put(sheet, 'A1', 'Model checks', 'title')
+    put(sheet, 'A2', 'Cash and account balances reconcile to one cent. An unfunded year is a planning result.', 'note')
+    diagnostics = {
+        'C': 'Cash balance error', 'D': 'Tax balance error', 'E': 'Roth balance error',
+        'F': 'Portfolio flow error', 'G': 'Roth draw over access', 'H': 'Negative account balance',
+        'K': 'ACA credit reconciliation', 'L': 'HSA over eligible costs', 'M': 'Taxable basis reconciliation',
+    }
+    row(sheet, 4, ['Year', 'Age', *(diagnostics[col] for col in 'CDEFGH'),
+                   'Funding calculation', 'Reconciliation', *(diagnostics[col] for col in 'KLM')], 'header')
+    ledger_columns = {col: L(index) for index, col in enumerate(diagnostics, len(CASH_HEADERS) + 1)}
+    for col, label in diagnostics.items():
+        put('Cash_Flow', f'{ledger_columns[col]}4', label, 'header')
+    put('Cash_Flow', 'AM4', 'Reconciliation', 'header')
+    for r in range(5, END + 1):
+        p = lambda col: pj(col, r)
+        prior = lambda col: pj(col, r - 1)
+        cash = lambda col: cf(col, r)
+        roth = lambda col: rt(col, r)
+        rate = f'IF({p("E")}="Working",Inputs!$B$21,Inputs!$B$22)'
+        errors = {
+            'C': f'{cash("C")}+SUM({p("V")},{p("W")},{p("Y")})-SUM({cash("N")},{cash("P")},{cash("R")},{cash("T")})',
+            'D': f'SUM({cash("F")},{cash("M")})-SUM({cash("N")},{cash("O")})',
+            'E': '0' if r == 5 else f'{p("BF")}-({prior("BF")}+{roth("AP")})*(1+{rate})',
+            'F': '0' if r == 5 else f'{p("BO")}-SUM({p("J")},{p("K")},{p("L")},{p("M")},{p("BB")})+SUM({p("V")},{p("W")},{p("Y")},{p("P")})',
+            'G': f'MAX(0,{p("Y")}-{roth("T")})',
+            'H': f'MIN(0,{p("BC")},{p("BE")},{p("BF")},{p("BG")})',
+            'K': f'{cash("AC")}-{hc("R", r)}',
+            'L': f'MAX(0,{p("P")}-{hc("Q", r)})',
+            'M': '0' if r == 5 else f'{p("BD")}-IF({p("BC")}>0,MAX(0,{prior("BD")}-{p("CE")})+{p("CF")},0)',
+        }
+        for col, formula in errors.items():
+            ledger_col = ledger_columns[col]
+            put('Cash_Flow', f'{ledger_col}{r}', active(r, formula), 'cents')
+            put(sheet, f'{col}{r}', active(r, cash(ledger_col)), 'cents')
+        error_range = f'AD{r}:AL{r}'
+        status = f'IF(OR(MAX({error_range})>0.01,MIN({error_range})<-0.01,L{r}="Check funding convergence"),"Review","OK")'
+        put('Cash_Flow', f'AM{r}', active(r, status))
+        for col, formula in {'A': p('B'), 'B': p('C'), 'I': cash('L'), 'J': cash('AM')}.items():
+            put(sheet, f'{col}{r}', active(r, formula), 'money')
 
 def guidance():
     """Explain the first run and put reminders beside the relevant cells."""
@@ -372,7 +400,7 @@ def main():
     src,out=map(Path,sys.argv[1:3]); wb=load_workbook(src,data_only=False)
     if any(s in wb.sheetnames for s in MODULES): raise SystemExit('Use the pre-phase-1 horizon workbook as the build baseline.')
     m=sys.modules[__name__]
-    inputs(wb); cash_ledger(); roth(); funding(wb); projection(wb); reporting(); risk_cleanup.configure(m, wb); checks()
+    inputs(wb); cash_ledger(); roth(); funding(wb); projection(wb); reporting(); risk_cleanup.configure(m, wb); reconciliation()
     tax_policy.configure(m,wb)
     published_tax.configure(m)
     tax_policy.bind_projection(m,lambda r,k:fd(funding_search.columns(tax_policy)[k],group(r)+STEPS-1))
@@ -399,16 +427,6 @@ def main():
     put('README','A128','Payroll tax applies the Social Security cap per earner. Ordinary taxable account sales can realize gains or losses; remaining losses carry forward separately for federal and California tax.')
     put('Income_Targeting','C38','Counts sweep rows that fully fund the requested conversion.','note')
     put('Income_Targeting','C39','Counts requests limited by cash, balances or the withdrawal policy.','note')
-    for col,label in [('K','ACA credit reconciliation'),('L','HSA over eligible costs'),('M','Taxable basis reconciliation')]:
-        put('Checks',col+'4',label,'header')
-    for r in range(5,END+1):
-        values={
-          'K':f'{cf("AC",r)}-{hc("R",r)}',
-          'L':f'MAX(0,{pj("P",r)}-{hc("Q",r)})',
-          'M':'0' if r==5 else f'{pj("BD",r)}-IF({pj("BC",r)}>0,MAX(0,{pj("BD",r-1)}-{pj("CE",r)})+{pj("CF",r)},0)',
-          'J':f'IF(OR(MAX(C{r}:H{r},K{r}:M{r})>0.01,MIN(C{r}:H{r},K{r}:M{r})<-0.01,I{r}="Check funding convergence"),"Review","OK")',
-        }
-        for col,expr in values.items(): put('Checks',f'{col}{r}',active(r,expr),'money')
     guidance()
     dashboard.configure(put)
     workbook_layout.write_scenarios(put, wb)

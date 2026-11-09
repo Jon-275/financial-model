@@ -11,7 +11,7 @@ def configure(put):
         'A2': ('=IF(Inputs!$B$70=0,"Check Inputs","Scenario "&Inputs!$B$7&"  |  retire at age "&TEXT(Inputs!$B$10,"0")&"  |  end at age "&TEXT(Inputs!$B$53,"0"))', None),
         'A3': ('Can the plan cover its costs?', 'header'),
         'B3': ('=IF(OR(B25="YES",B25="NO - cash shortfall"),IF(B25="YES","YES","NO"),"CHECK PLAN")', 'header'),
-        'C3': ('=IF(B25="YES","Pays all modeled spending and tax.",IF(B25="NO - cash shortfall","See the first year below and open Cash_Flow.",B25))', 'note'),
+        'C3': ('=IF(B25="YES","Pays all modeled spending and tax.",IF(B25="NO - cash shortfall","See the first year below and open Cash_Flow.",IF(B25="Check funding calculation","Open Checks to review the calculation.",B25)))', 'note'),
         'A4': ('First year with unpaid costs', 'label'),
         'B4': ('=IF(B26="","",B26)', 'whole'),
         'C4': ('Look up this year on Cash_Flow.', 'note'),

@@ -11,6 +11,10 @@ def validate_dashboard(wb, tolerance):
     status = summary['B25'].value
     has_result = status in ('YES', 'NO - cash shortfall')
     horizon = inputs['B70'].value if has_result else 0
+    checks = wb['Checks']
+    assert all(checks[f'J{row}'].value == 'OK' for row in range(5, 5 + int(horizon))), (
+        'Summary gives a funding answer before every active row reconciles.'
+    )
     retirement = max(2, inputs['B10'].value - inputs['B8'].value + 1) if horizon else 2
     cash_start = max(2, retirement - 2)
     cash_stop = min(horizon, retirement + 10)

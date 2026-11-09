@@ -78,6 +78,8 @@ def main():
                     w=10 if col<=2 and n not in {'Funding_Calc','Targeting_Calc'} else (27 if n=='Checks' and col==9 or n=='Cash_Flow' and col==12 or n=='Healthcare' and col==20 else 19)
                     if n == 'Risk_Settings': w = (35, 16, 67)[col - 1]
                     E.SubElement(cols,x('col'),min=str(col),max=str(col),width=str(w),customWidth='1')
+                    if n == 'Cash_Flow' and 30 <= col <= 39:
+                        cols[-1].set('hidden', '1')
                 E.SubElement(root,x('sheetData'))
             else: part=sp[n]; root=read(src,part)
             data=root.find(x('sheetData')); sr=read(authored,ap[n]); staged={c.get('r'):c for c in sr.iter(x('c'))}
