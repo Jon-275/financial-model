@@ -1,0 +1,3575 @@
+{
+  "common_overrides": {
+    "Inputs": {
+      "B4": 1,
+      "D8": 54,
+      "D9": 52,
+      "D10": 55,
+      "D11": 1,
+      "D12": 0,
+      "D13": 0,
+      "D14": 0,
+      "D25": 0,
+      "D26": 0,
+      "D27": 0,
+      "D28": 1,
+      "D29": 2020,
+      "D30": 0,
+      "D31": 0,
+      "D32": 0,
+      "D33": 0,
+      "D34": 0,
+      "D35": 0,
+      "D36": 0,
+      "D37": 0,
+      "D38": 0,
+      "D39": 0,
+      "D42": 0,
+      "D43": 0,
+      "D44": 0,
+      "D46": 0,
+      "D47": 0,
+      "D48": 1,
+      "D50": 55,
+      "D51": 0,
+      "D52": 0,
+      "D53": 55,
+      "D54": 999,
+      "D58": 999,
+      "D67": 75,
+      "D68": 0,
+      "D86": 1,
+      "D87": 0,
+      "D88": 125,
+      "D89": 1,
+      "D90": 1,
+      "D91": 1,
+      "D92": 0,
+      "D93": 0,
+      "D94": 0,
+      "D95": 126,
+      "D96": 126,
+      "D97": 1,
+      "D98": 1
+    },
+    "Asset_Allocation": {
+      "B6": 0,
+      "B7": 0,
+      "B8": 0,
+      "B9": 0,
+      "B10": 0,
+      "C6": 0,
+      "C7": 0,
+      "C8": 0,
+      "C9": 0,
+      "C10": 0,
+      "D6": 0,
+      "D7": 0,
+      "D8": 0,
+      "D9": 0,
+      "D10": 0,
+      "E6": 0,
+      "E7": 0,
+      "E8": 0,
+      "E9": 0,
+      "E10": 0
+    },
+    "Tax_Tables": {
+      "B6": 0.2,
+      "B7": 0.2,
+      "B8": 0.2,
+      "B9": 0.2,
+      "B10": 0.2,
+      "B11": 0.2,
+      "B12": 0.2,
+      "B17": 0.2,
+      "B18": 0.2,
+      "B19": 0.2,
+      "B30": 0,
+      "B31": 0,
+      "B32": 0,
+      "B33": 0,
+      "B34": 0,
+      "B35": 0,
+      "B36": 0,
+      "B37": 0,
+      "B38": 0,
+      "B23": 0,
+      "B24": 0,
+      "B44": 0,
+      "B46": 0,
+      "B50": 0,
+      "B52": 0,
+      "B53": 0,
+      "B74": 0,
+      "B83": 0,
+      "B84": 0,
+      "B219": 0
+    }
+  },
+  "cases": [
+    {
+      "name": "cash_other_income_while_working",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 10000,
+          "D35": 6000,
+          "D36": 22000,
+          "D52": 30000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "O",
+          "equals": 30000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 8000
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 6000
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 4000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BO",
+          "equals": 10000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "noncash_taxable_income",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 10000,
+          "D35": 6000,
+          "D36": 22000,
+          "D52": 30000,
+          "D86": 0
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "O",
+          "equals": 30000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 8000
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 20000
+        },
+        {
+          "age": 55,
+          "column": "BO",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "working_cash_deficit",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 10000,
+          "D35": 6000,
+          "D36": 9000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 2000
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "working_brokerage_draw_funds_required_cash",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 10000,
+          "D25": 3000,
+          "D35": 6000,
+          "D36": 9000,
+          "D51": 3000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 2000
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BC",
+          "equals": 2000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "ira_savings_limited_by_taxable_wages",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 2000,
+          "D32": 1000,
+          "D35": 5000,
+          "D52": 50000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "J",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 10200
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 39800
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "income_window_includes_boundaries",
+      "overrides": {
+        "Inputs": {
+          "D10": 57,
+          "D52": 30000,
+          "D53": 58,
+          "D87": 56,
+          "D88": 57
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "O",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 0
+        },
+        {
+          "age": 56,
+          "column": "O",
+          "equals": 30000
+        },
+        {
+          "age": 56,
+          "column": "AV",
+          "equals": 6000
+        },
+        {
+          "age": 56,
+          "column": "BB",
+          "equals": 24000
+        },
+        {
+          "age": 57,
+          "column": "O",
+          "equals": 30000
+        },
+        {
+          "age": 57,
+          "column": "AV",
+          "equals": 6000
+        },
+        {
+          "age": 57,
+          "column": "BB",
+          "equals": 24000
+        },
+        {
+          "age": 58,
+          "column": "O",
+          "equals": 0
+        },
+        {
+          "age": 58,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 58,
+          "column": "BB",
+          "equals": 0
+        },
+        {
+          "age": 58,
+          "column": "BC",
+          "equals": 48000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "same_year_grossup_first_and_final_retirement",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 61,
+          "D26": 30000,
+          "D37": 10000,
+          "D53": 62
+        }
+      },
+      "expects": [
+        {
+          "age": 61,
+          "column": "W",
+          "equals": 12500
+        },
+        {
+          "age": 61,
+          "column": "AV",
+          "equals": 2500
+        },
+        {
+          "age": 61,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 61,
+          "column": "BE",
+          "equals": 17500
+        },
+        {
+          "age": 62,
+          "column": "W",
+          "equals": 12500
+        },
+        {
+          "age": 62,
+          "column": "AV",
+          "equals": 2500
+        },
+        {
+          "age": 62,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 62,
+          "column": "BE",
+          "equals": 5000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "grossup_hits_account_limit",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 61,
+          "D26": 12000,
+          "D37": 10000,
+          "D53": 61
+        }
+      },
+      "expects": [
+        {
+          "age": 61,
+          "column": "W",
+          "equals": 12000
+        },
+        {
+          "age": 61,
+          "column": "AV",
+          "equals": 2400
+        },
+        {
+          "age": 61,
+          "column": "Z",
+          "equals": 400
+        },
+        {
+          "age": 61,
+          "column": "BE",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "grossup_crosses_progressive_bracket",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 61,
+          "D26": 30000,
+          "D37": 11000,
+          "D53": 61
+        },
+        "Tax_Tables": {
+          "B6": 0.1,
+          "B7": 0.3,
+          "B8": 0.3,
+          "B9": 0.3,
+          "B10": 0.3,
+          "B11": 0.3,
+          "B12": 0.3,
+          "C7": 10000
+        }
+      },
+      "expects": [
+        {
+          "age": 61,
+          "column": "W",
+          "equals": 12857.142857142859
+        },
+        {
+          "age": 61,
+          "column": "AV",
+          "equals": 1857.1428571428587
+        },
+        {
+          "age": 61,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "realized_gain_grossup",
+      "overrides": {
+        "Inputs": {
+          "D25": 25000,
+          "D51": 12500,
+          "D37": 10000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 11111.111111111111
+        },
+        {
+          "age": 55,
+          "column": "AE",
+          "equals": 5555.555555555556
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 1111.111111111111
+        },
+        {
+          "age": 55,
+          "column": "BD",
+          "equals": 6944.444444444444
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "tax_exempt_income_cash_share",
+      "overrides": {
+        "Inputs": {
+          "D37": 3000,
+          "D46": 10000,
+          "D89": 0.5
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "AG",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 2000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "hsa_covers_eligible_healthcare_once",
+      "overrides": {
+        "Inputs": {
+          "D25": 2000,
+          "D31": 3000,
+          "D42": 4000,
+          "D51": 2000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "BA",
+          "equals": 4000
+        },
+        {
+          "age": 55,
+          "column": "P",
+          "equals": 3000
+        },
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BC",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "BG",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BO",
+          "equals": -4000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "prior_tax_arrears_paid_before_deposit",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 61,
+          "D52": 30000,
+          "D53": 62,
+          "D86": 0,
+          "D87": 61,
+          "D88": 61,
+          "D44": 12000,
+          "D45": 62
+        }
+      },
+      "expects": [
+        {
+          "age": 61,
+          "column": "AV",
+          "equals": 6000
+        },
+        {
+          "age": 61,
+          "column": "Z",
+          "equals": 6000
+        },
+        {
+          "age": 61,
+          "column": "BO",
+          "equals": 0
+        },
+        {
+          "age": 62,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 62,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 62,
+          "column": "BB",
+          "equals": 6000
+        },
+        {
+          "age": 62,
+          "column": "BC",
+          "equals": 6000
+        },
+        {
+          "age": 62,
+          "column": "BO",
+          "equals": 6000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "exact_cash_funding",
+      "overrides": {
+        "Inputs": {
+          "D25": 1000,
+          "D51": 1000,
+          "D37": 1000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BC",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "subdollar_shortfall_is_visible",
+      "overrides": {
+        "Inputs": {
+          "D25": 1000,
+          "D51": 1000,
+          "D37": 1000.5
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0.5
+        },
+        {
+          "age": 55,
+          "column": "BC",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "workplace_roth_is_not_ira_basis",
+      "overrides": {
+        "Inputs": {
+          "D27": 40000,
+          "D28": 2,
+          "D30": 10000,
+          "D37": 15000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "X",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Y",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 15000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 40000
+        },
+        {
+          "cell": "Summary!B19",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "workplace_access_at55_is_not_qualified",
+      "overrides": {
+        "Inputs": {
+          "D27": 40000,
+          "D28": 2,
+          "D37": 15000,
+          "D93": 2020,
+          "D95": 55
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "X",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Y",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 15000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 40000
+        },
+        {
+          "cell": "Summary!B19",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "verified_workplace_roth_qualifies_at60",
+      "overrides": {
+        "Inputs": {
+          "D8": 59,
+          "D9": 57,
+          "D10": 60,
+          "D27": 40000,
+          "D28": 2,
+          "D37": 10000,
+          "D53": 60,
+          "D93": 2020,
+          "D95": 60
+        }
+      },
+      "expects": [
+        {
+          "age": 60,
+          "column": "X",
+          "equals": 40000
+        },
+        {
+          "age": 60,
+          "column": "Y",
+          "equals": 10000
+        },
+        {
+          "age": 60,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 60,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 60,
+          "column": "BF",
+          "equals": 30000
+        },
+        {
+          "cell": "Roth_Access!W6",
+          "equals": 10000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "ira_regular_basis_excludes_earnings",
+      "overrides": {
+        "Inputs": {
+          "D27": 40000,
+          "D28": 1,
+          "D30": 10000,
+          "D37": 15000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "X",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "Y",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 5000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 30000
+        },
+        {
+          "cell": "Summary!B19",
+          "equals": 10000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "roth_owners_have_independent_eligibility",
+      "overrides": {
+        "Inputs": {
+          "D8": 59,
+          "D9": 57,
+          "D10": 60,
+          "D27": 40000,
+          "D30": 0,
+          "D37": 25000,
+          "D53": 60,
+          "D90": 0.5,
+          "D92": 2025
+        }
+      },
+      "expects": [
+        {
+          "age": 60,
+          "column": "X",
+          "equals": 20000
+        },
+        {
+          "age": 60,
+          "column": "Y",
+          "equals": 20000
+        },
+        {
+          "age": 60,
+          "column": "Z",
+          "equals": 5000
+        },
+        {
+          "age": 60,
+          "column": "BF",
+          "equals": 20000
+        },
+        {
+          "cell": "Summary!B19",
+          "blank": true
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "primary_only_roth_share_does_not_spill",
+      "overrides": {
+        "Inputs": {
+          "D9": 44,
+          "D10": 56,
+          "D12": 50000,
+          "D35": 20000,
+          "D91": 1
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 8600
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 31400
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Roth_Access!Y6",
+          "equals": 8600
+        },
+        {
+          "cell": "Roth_Access!Z6",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "roth_split_respects_the_lower_individual_limit",
+      "overrides": {
+        "Inputs": {
+          "D9": 44,
+          "D10": 56,
+          "D12": 50000,
+          "D35": 20000,
+          "D91": 0.5
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 15000
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 25000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Roth_Access!Y6",
+          "equals": 7500
+        },
+        {
+          "cell": "Roth_Access!Z6",
+          "equals": 7500
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "conversion_is_internal_and_uses_fifth_tax_year",
+      "overrides": {
+        "Inputs": {
+          "D8": 49,
+          "D9": 47,
+          "D10": 50,
+          "D25": 2000,
+          "D26": 30000,
+          "D47": 10000,
+          "D50": 50,
+          "D51": 2000,
+          "D53": 55,
+          "A75": "Spending just before maturation",
+          "B75": 2031,
+          "C75": 6000,
+          "A76": "Spending at maturation",
+          "B76": 2032,
+          "C76": 6000
+        }
+      },
+      "expects": [
+        {
+          "age": 50,
+          "column": "V",
+          "equals": 2000
+        },
+        {
+          "age": 50,
+          "column": "AA",
+          "equals": 10000
+        },
+        {
+          "age": 50,
+          "column": "AV",
+          "equals": 2000
+        },
+        {
+          "age": 50,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 50,
+          "column": "BE",
+          "equals": 20000
+        },
+        {
+          "age": 50,
+          "column": "BF",
+          "equals": 10000
+        },
+        {
+          "age": 50,
+          "column": "BO",
+          "equals": -2000
+        },
+        {
+          "age": 54,
+          "column": "X",
+          "equals": 0
+        },
+        {
+          "age": 54,
+          "column": "Y",
+          "equals": 0
+        },
+        {
+          "age": 54,
+          "column": "Z",
+          "equals": 6000
+        },
+        {
+          "age": 54,
+          "column": "BF",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "X",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "Y",
+          "equals": 6000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 4000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "optional_conversion_does_not_create_unpayable_tax",
+      "overrides": {
+        "Inputs": {
+          "D26": 30000,
+          "D47": 10000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "W",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "AA",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BE",
+          "equals": 30000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BO",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "rmd_reinvests_only_net_cash",
+      "overrides": {
+        "Inputs": {
+          "D8": 74,
+          "D9": 72,
+          "D10": 75,
+          "D26": 88000,
+          "D53": 75
+        }
+      },
+      "expects": [
+        {
+          "age": 75,
+          "column": "W",
+          "equals": 3577.2357723577234
+        },
+        {
+          "age": 75,
+          "column": "AV",
+          "equals": 715.4471544715446
+        },
+        {
+          "age": 75,
+          "column": "BB",
+          "equals": 2861.7886178861786
+        },
+        {
+          "age": 75,
+          "column": "BO",
+          "equals": -715.4471544715446
+        },
+        {
+          "age": 75,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "rmd_uses_spouse_owners_age",
+      "overrides": {
+        "Inputs": {
+          "D8": 76,
+          "D9": 73,
+          "D10": 77,
+          "D26": 88000,
+          "D53": 78,
+          "D97": 2
+        }
+      },
+      "expects": [
+        {
+          "age": 77,
+          "column": "D",
+          "equals": 74
+        },
+        {
+          "age": 77,
+          "column": "S",
+          "equals": 0
+        },
+        {
+          "age": 77,
+          "column": "W",
+          "equals": 0
+        },
+        {
+          "age": 77,
+          "column": "BE",
+          "equals": 88000
+        },
+        {
+          "age": 78,
+          "column": "D",
+          "equals": 75
+        },
+        {
+          "age": 78,
+          "column": "S",
+          "equals": 3577.2357723577234
+        },
+        {
+          "age": 78,
+          "column": "W",
+          "equals": 3577.2357723577234
+        },
+        {
+          "age": 78,
+          "column": "AV",
+          "equals": 715.4471544715446
+        },
+        {
+          "age": 78,
+          "column": "BB",
+          "equals": 2861.7886178861786
+        },
+        {
+          "age": 78,
+          "column": "BO",
+          "equals": -715.4471544715446
+        },
+        {
+          "age": 78,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "age125_dashboard",
+      "overrides": {
+        "Inputs": {
+          "D8": 124,
+          "D9": 122,
+          "D10": 125,
+          "D25": 2000,
+          "D51": 2000,
+          "D37": 1000,
+          "D53": 125
+        }
+      },
+      "expects": [
+        {
+          "age": 125,
+          "column": "BH",
+          "equals": 1000
+        },
+        {
+          "cell": "Inputs!B70",
+          "equals": 2
+        },
+        {
+          "cell": "Projection!C7",
+          "equals": null
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        },
+        {
+          "cell": "Report_Data!A3",
+          "equals": 125
+        },
+        {
+          "cell": "Report_Data!B3",
+          "equals": 1000
+        },
+        {
+          "cell": "Report_Data!A4",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "full_horizon_to125_dashboard",
+      "overrides": {
+        "Inputs": {
+          "D8": 22,
+          "D9": 20,
+          "D25": 100000,
+          "D51": 100000,
+          "D37": 1000,
+          "D53": 125
+        }
+      },
+      "expects": [
+        {
+          "age": 54,
+          "column": "BH",
+          "equals": 100000
+        },
+        {
+          "age": 55,
+          "column": "BH",
+          "equals": 99000
+        },
+        {
+          "age": 125,
+          "column": "BH",
+          "equals": 29000
+        },
+        {
+          "cell": "Inputs!B70",
+          "equals": 104
+        },
+        {
+          "cell": "Projection!C109",
+          "equals": null
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        },
+        {
+          "cell": "Report_Data!A105",
+          "equals": 125
+        },
+        {
+          "cell": "Report_Data!B105",
+          "equals": 29000
+        },
+        {
+          "cell": "Report_Data!A106",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "late_shortfall_reaches_dashboard",
+      "overrides": {
+        "Inputs": {
+          "D8": 22,
+          "D9": 20,
+          "D25": 100000,
+          "D51": 100000,
+          "D37": 1000,
+          "D53": 95,
+          "A75": "Late required outflow",
+          "B75": 2094,
+          "C75": 65000
+        }
+      },
+      "expects": [
+        {
+          "age": 89,
+          "column": "BH",
+          "equals": 65000
+        },
+        {
+          "age": 89,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 90,
+          "column": "BH",
+          "equals": 0
+        },
+        {
+          "age": 90,
+          "column": "Z",
+          "equals": 1000
+        },
+        {
+          "age": 95,
+          "column": "BH",
+          "equals": 0
+        },
+        {
+          "age": 95,
+          "column": "Z",
+          "equals": 1000
+        },
+        {
+          "cell": "Summary!B26",
+          "equals": 2094
+        },
+        {
+          "cell": "Summary!B27",
+          "equals": 1000
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        },
+        {
+          "cell": "Summary!B3",
+          "prefix": "NO"
+        },
+        {
+          "cell": "Summary!B4",
+          "equals": 2094
+        }
+      ]
+    },
+    {
+      "name": "invalid_age126",
+      "overrides": {
+        "Inputs": {
+          "D53": 126
+        }
+      },
+      "expects": [
+        {
+          "cell": "Inputs!B70",
+          "equals": 0
+        },
+        {
+          "cell": "Projection!C5",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "scenario_selector_uses_active_cash_controls",
+      "overrides": {
+        "Inputs": {
+          "E8": 54,
+          "E9": 52,
+          "E10": 56,
+          "E11": 1,
+          "E12": 10000,
+          "E13": 0,
+          "E14": 0,
+          "E25": 0,
+          "E26": 0,
+          "E27": 0,
+          "E28": 1,
+          "E29": 2020,
+          "E30": 0,
+          "E31": 0,
+          "E32": 0,
+          "E33": 0,
+          "E34": 0,
+          "E35": 0,
+          "E36": 10000,
+          "E37": 0,
+          "E38": 0,
+          "E39": 0,
+          "E42": 0,
+          "E43": 0,
+          "E44": 0,
+          "E46": 0,
+          "E47": 0,
+          "E48": 1,
+          "E50": 55,
+          "E51": 0,
+          "E52": 30000,
+          "E53": 55,
+          "E54": 999,
+          "E58": 999,
+          "E67": 75,
+          "E68": 0,
+          "E86": 0.5,
+          "E87": 0,
+          "E88": 125,
+          "E89": 1,
+          "E90": 1,
+          "E91": 1,
+          "E92": 0,
+          "E93": 0,
+          "E94": 0,
+          "E95": 126,
+          "E96": 126,
+          "E97": 1,
+          "E98": 1,
+          "B4": 2
+        }
+      },
+      "expects": [
+        {
+          "cell": "Inputs!B86",
+          "equals": 0.5
+        },
+        {
+          "age": 55,
+          "column": "O",
+          "equals": 30000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 8000
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 7000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "health_mixed_medicare_and_marketplace",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 67,
+          "D31": 5000,
+          "D52": 50000,
+          "D102": 1,
+          "D103": 1,
+          "D106": 8000,
+          "D107": 7000,
+          "D108": 3000,
+          "D109": 3000,
+          "D110": 1200,
+          "D111": 800,
+          "D112": 1000,
+          "D113": 1000,
+          "D114": 500,
+          "D115": 400,
+          "D116": 1,
+          "D117": 1,
+          "D118": 16000,
+          "D119": 8000,
+          "D120": 10000,
+          "D121": 1,
+          "D122": 220000,
+          "D123": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!D6",
+          "equals": "Medicare"
+        },
+        {
+          "cell": "Healthcare!E6",
+          "equals": "Marketplace"
+        },
+        {
+          "cell": "Healthcare!M6",
+          "equals": 7000
+        },
+        {
+          "cell": "Healthcare!N6",
+          "equals": 10000
+        },
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!L6",
+          "equals": 1148.4
+        },
+        {
+          "cell": "Healthcare!P6",
+          "equals": 15248.4
+        },
+        {
+          "cell": "Healthcare!Q6",
+          "equals": 6148.4
+        },
+        {
+          "cell": "Projection!P6",
+          "equals": 5000
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 6026.19223659889
+        },
+        {
+          "cell": "Healthcare!Y8",
+          "equals": 50000
+        },
+        {
+          "cell": "Healthcare!L8",
+          "equals": 0
+        },
+        {
+          "cell": "Healthcare!M8",
+          "equals": 0
+        },
+        {
+          "cell": "Healthcare!E8",
+          "equals": "Medicare"
+        },
+        {
+          "cell": "Healthcare!P8",
+          "equals": 10900
+        },
+        {
+          "cell": "Summary!B25",
+          "equals": "YES"
+        }
+      ]
+    },
+    {
+      "name": "health_irmaa_prior_return_filing_status",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 65,
+          "D31": 5000,
+          "D52": 50000,
+          "D102": 1,
+          "D103": 1,
+          "D106": 8000,
+          "D107": 7000,
+          "D108": 3000,
+          "D109": 3000,
+          "D110": 1200,
+          "D111": 800,
+          "D112": 1000,
+          "D113": 1000,
+          "D114": 500,
+          "D115": 400,
+          "D116": 1,
+          "D117": 1,
+          "D118": 16000,
+          "D119": 8000,
+          "D120": 10000,
+          "D121": 1,
+          "D122": 220000,
+          "D123": 0,
+          "D54": 64
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!F6",
+          "equals": "Single"
+        },
+        {
+          "cell": "Healthcare!Z6",
+          "equals": "MFJ"
+        },
+        {
+          "cell": "Healthcare!E6",
+          "equals": "Not covered"
+        },
+        {
+          "cell": "Healthcare!L6",
+          "equals": 1148.4
+        }
+      ]
+    },
+    {
+      "name": "health_hsa_cobra_and_qualified_cost_only",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D31": 10000,
+          "D52": 30000,
+          "D102": 3,
+          "D103": 2,
+          "D106": 4000,
+          "D107": 3000,
+          "D112": 1000,
+          "D113": 200,
+          "D114": 100,
+          "D115": 50
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!D6",
+          "equals": "COBRA"
+        },
+        {
+          "cell": "Healthcare!AB6",
+          "equals": 4000
+        },
+        {
+          "cell": "Healthcare!P6",
+          "equals": 8350
+        },
+        {
+          "cell": "Healthcare!Q6",
+          "equals": 5200
+        },
+        {
+          "cell": "Projection!P6",
+          "equals": 5200
+        },
+        {
+          "cell": "Projection!BG6",
+          "equals": 4800
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 0
+        },
+        {
+          "cell": "Healthcare!AF6",
+          "equals": 3150
+        }
+      ]
+    },
+    {
+      "name": "health_hsa_owner_under65_excludes_spouse_medicare",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D8": 63,
+          "D9": 64,
+          "D10": 64,
+          "D53": 64,
+          "D31": 5000,
+          "D52": 30000,
+          "D102": 2,
+          "D106": 4000,
+          "D109": 3000,
+          "D111": 800,
+          "D112": 1000,
+          "D113": 200,
+          "D121": 1,
+          "D122": 220000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!D6",
+          "equals": "Other"
+        },
+        {
+          "cell": "Healthcare!E6",
+          "equals": "Medicare"
+        },
+        {
+          "cell": "Healthcare!L6",
+          "equals": 1148.4
+        },
+        {
+          "cell": "Healthcare!AB6",
+          "equals": 0
+        },
+        {
+          "cell": "Healthcare!P6",
+          "equals": 10148.4
+        },
+        {
+          "cell": "Projection!P6",
+          "equals": 1200
+        }
+      ]
+    },
+    {
+      "name": "health_missing_medicare_lookback_blocks_decision",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 67,
+          "D31": 5000,
+          "D52": 50000,
+          "D102": 1,
+          "D103": 1,
+          "D106": 8000,
+          "D107": 7000,
+          "D108": 3000,
+          "D109": 3000,
+          "D110": 1200,
+          "D111": 800,
+          "D112": 1000,
+          "D113": 1000,
+          "D114": 500,
+          "D115": 400,
+          "D116": 1,
+          "D117": 1,
+          "D118": 16000,
+          "D119": 8000,
+          "D120": 10000,
+          "D121": 1,
+          "D122": -1,
+          "D123": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!T6",
+          "equals": "Missing IRMAA MAGI"
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "Check healthcare"
+        }
+      ]
+    },
+    {
+      "name": "health_missing_spouse_only_benchmark_blocks_decision",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 67,
+          "D31": 5000,
+          "D52": 50000,
+          "D102": 1,
+          "D103": 1,
+          "D106": 8000,
+          "D107": 7000,
+          "D108": 3000,
+          "D109": 3000,
+          "D110": 1200,
+          "D111": 800,
+          "D112": 1000,
+          "D113": 1000,
+          "D114": 500,
+          "D115": 400,
+          "D116": 1,
+          "D117": 1,
+          "D118": 16000,
+          "D119": 8000,
+          "D120": 0,
+          "D121": 1,
+          "D122": 220000,
+          "D123": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!T6",
+          "equals": "Missing ACA quote"
+        },
+        {
+          "cell": "Healthcare!O6",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "Check healthcare"
+        }
+      ]
+    },
+    {
+      "name": "health_aca_magi_adds_back_social_security_and_muni_interest",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D52": 30000,
+          "D44": 6000,
+          "D45": 55,
+          "D46": 5000,
+          "D102": 1,
+          "D106": 10000,
+          "D116": 1,
+          "D119": 12000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 41000
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 9434.460998151571
+        }
+      ]
+    },
+    {
+      "name": "health_aca_below_income_floor",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 20000,
+          "D116": 1,
+          "D119": 15000,
+          "D52": 21639.99
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 21639.99
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!AC6",
+          "equals": 0
+        }
+      ]
+    },
+    {
+      "name": "health_aca_at_income_floor",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 10000,
+          "D116": 1,
+          "D119": 15000,
+          "D52": 21640
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 10000
+        },
+        {
+          "cell": "Cash_Flow!AC6",
+          "equals": 10000
+        }
+      ]
+    },
+    {
+      "name": "health_aca_below_133_percent_band",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 20000,
+          "D116": 1,
+          "D119": 15000,
+          "D52": 28781.190000000002
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 28781.190000000002
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 14381.204415
+        },
+        {
+          "cell": "Cash_Flow!AC6",
+          "equals": 14381.204415
+        }
+      ]
+    },
+    {
+      "name": "health_aca_at_133_percent_band",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 20000,
+          "D116": 1,
+          "D119": 15000,
+          "D52": 28781.2
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 28781.2
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 14070.36724
+        },
+        {
+          "cell": "Cash_Flow!AC6",
+          "equals": 14070.36724
+        }
+      ]
+    },
+    {
+      "name": "health_aca_at_400_percent_cliff",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 20000,
+          "D116": 1,
+          "D119": 15000,
+          "D52": 86560
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 86560
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 6153.567999999999
+        },
+        {
+          "cell": "Cash_Flow!AC6",
+          "equals": 6153.567999999999
+        }
+      ]
+    },
+    {
+      "name": "health_aca_one_cent_above_400_percent",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 20000,
+          "D116": 1,
+          "D119": 15000,
+          "D52": 86560.01
+        }
+      },
+      "expects": [
+        {
+          "cell": "Healthcare!O6",
+          "equals": 21640
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 86560.01
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!AC6",
+          "equals": 0
+        }
+      ]
+    },
+    {
+      "name": "health_aca_eligible_draw_funds_when_maximum_draw_fails",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D25": 20000,
+          "D51": 0,
+          "D37": 58500,
+          "D52": 75000,
+          "D102": 1,
+          "D106": 20000,
+          "D116": 1,
+          "D119": 20000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!V6",
+          "equals": 8834.909716251059
+        },
+        {
+          "cell": "Projection!AV6",
+          "equals": 16766.98194325021
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 83834.90971625106
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 11432.072226999142
+        },
+        {
+          "cell": "Projection!Z6",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "equals": "YES"
+        }
+      ]
+    },
+    {
+      "name": "health_brokerage_loss_can_cross_into_aca_eligibility",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D25": 8000,
+          "D51": 16000,
+          "D37": 1000,
+          "D52": 87560,
+          "D86": 0,
+          "D102": 1,
+          "D106": 10000,
+          "D116": 1,
+          "D119": 20000
+        },
+        "Tax_Tables": {
+          "B6": 0,
+          "B7": 0,
+          "B8": 0,
+          "B9": 0,
+          "B10": 0,
+          "B11": 0,
+          "B12": 0,
+          "B17": 0,
+          "B18": 0,
+          "B19": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!V6",
+          "equals": 1000
+        },
+        {
+          "cell": "Projection!AE6",
+          "equals": -1000
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 86560
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 10000
+        },
+        {
+          "cell": "Projection!Z6",
+          "equals": 0
+        }
+      ]
+    },
+    {
+      "name": "health_funding_resolves_133_percent_credit_discontinuity",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D25": 1900,
+          "D51": 0,
+          "D37": 1100,
+          "D52": 27000,
+          "D86": 0,
+          "D102": 1,
+          "D106": 10000,
+          "D116": 1,
+          "D119": 10000
+        },
+        "Tax_Tables": {
+          "B6": 0,
+          "B7": 0,
+          "B8": 0,
+          "B9": 0,
+          "B10": 0,
+          "B11": 0,
+          "B12": 0,
+          "B17": 0,
+          "B18": 0,
+          "B19": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!V6",
+          "equals": 1717.4246295350024
+        },
+        {
+          "cell": "Summary!B25",
+          "equals": "YES"
+        }
+      ]
+    },
+    {
+      "name": "targeting_equal_active_conversion_matches_all_cash_flows",
+      "overrides": {
+        "Inputs": {
+          "D25": 10000,
+          "D51": 10000,
+          "D26": 30000,
+          "D37": 6000,
+          "D47": 5000
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 5000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B9",
+          "equals": 55
+        },
+        {
+          "cell": "Income_Targeting!B24",
+          "equals": 5000
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "equals": 5000
+        },
+        {
+          "cell": "Income_Targeting!D24",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!B25",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!C25",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!D25",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!B29",
+          "equals": 7000
+        },
+        {
+          "cell": "Income_Targeting!C29",
+          "equals": 7000
+        },
+        {
+          "cell": "Income_Targeting!D29",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!B28",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!C28",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!B31",
+          "equals": "Funded"
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Funded"
+        }
+      ]
+    },
+    {
+      "name": "targeting_resolves_tax_funded_draws",
+      "overrides": {
+        "Inputs": {
+          "D25": 10000,
+          "D51": 10000,
+          "D26": 30000,
+          "D37": 6000
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 5000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B24",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "equals": 5000
+        },
+        {
+          "cell": "Income_Targeting!B29",
+          "equals": 6000
+        },
+        {
+          "cell": "Income_Targeting!C29",
+          "equals": 7000
+        },
+        {
+          "cell": "Income_Targeting!C25",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!D29",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!C28",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Funded"
+        }
+      ]
+    },
+    {
+      "name": "targeting_uses_single_filer_tax_schedule",
+      "overrides": {
+        "Inputs": {
+          "D54": 54,
+          "D25": 10000,
+          "D51": 10000,
+          "D26": 30000
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 5000
+        },
+        "Tax_Tables": {
+          "B144": 0.1,
+          "B145": 0.1,
+          "B146": 0.1,
+          "B147": 0.1,
+          "B148": 0.1,
+          "B149": 0.1,
+          "B150": 0.1,
+          "B171": 0,
+          "B160": 0,
+          "B161": 0,
+          "B162": 0,
+          "B163": 0,
+          "B164": 0,
+          "B165": 0,
+          "B166": 0,
+          "B167": 0,
+          "B168": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B7",
+          "equals": "Single"
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "equals": 5000
+        },
+        {
+          "cell": "Income_Targeting!C25",
+          "equals": 500
+        },
+        {
+          "cell": "Income_Targeting!C29",
+          "equals": 500
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Funded"
+        }
+      ]
+    },
+    {
+      "name": "targeting_unfunded_conversion_keeps_explicit_cash_gap",
+      "overrides": {
+        "Inputs": {
+          "D26": 30000
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 5000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B24",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "equals": 5000
+        },
+        {
+          "cell": "Income_Targeting!C25",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!C28",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Cash shortfall"
+        },
+        {
+          "cell": "Income_Targeting!D24",
+          "blank": true
+        },
+        {
+          "cell": "Income_Targeting!D25",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "targeting_required_distribution_not_convertible",
+      "overrides": {
+        "Inputs": {
+          "D8": 74,
+          "D9": 72,
+          "D10": 75,
+          "D53": 75,
+          "D26": 24600,
+          "D25": 50000,
+          "D51": 50000
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 24600
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B11",
+          "equals": 1000
+        },
+        {
+          "cell": "Income_Targeting!B34",
+          "equals": 23600
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "equals": 23600
+        },
+        {
+          "cell": "Income_Targeting!C25",
+          "equals": 4920
+        },
+        {
+          "cell": "Income_Targeting!C29",
+          "equals": 4920
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Request not fully funded"
+        },
+        {
+          "cell": "Income_Targeting!A92",
+          "equals": 23600
+        },
+        {
+          "cell": "Income_Targeting!B92",
+          "equals": 23600
+        },
+        {
+          "cell": "Income_Targeting!C92",
+          "equals": "Funded"
+        },
+        {
+          "cell": "Income_Targeting!D24",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "targeting_rejects_age_after_end_of_plan",
+      "overrides": {
+        "Inputs": {},
+        "Income_Targeting": {
+          "B5": 56,
+          "B21": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B6",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!B7",
+          "equals": "Check retirement age"
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "blank": true
+        },
+        {
+          "cell": "Income_Targeting!A42",
+          "blank": true
+        },
+        {
+          "cell": "Income_Targeting!S42",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "targeting_unavailable_with_missing_healthcare_quote",
+      "overrides": {
+        "Inputs": {
+          "D101": 1,
+          "D102": 1,
+          "D106": 6000,
+          "D116": 1,
+          "D119": 0
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 5000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!F5",
+          "equals": "Missing ACA quote"
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Check healthcare"
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "blank": true
+        },
+        {
+          "cell": "Income_Targeting!A42",
+          "blank": true
+        },
+        {
+          "cell": "Income_Targeting!S42",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "targeting_aca_cliff_preserves_earliest_fundable_branch",
+      "overrides": {
+        "Inputs": {
+          "D25": 21000,
+          "D51": 0,
+          "D26": 10000,
+          "D37": 12000,
+          "D52": 70000,
+          "D86": 0,
+          "D101": 1,
+          "D102": 1,
+          "D106": 10000,
+          "D116": 1,
+          "D119": 20000
+        },
+        "Income_Targeting": {
+          "B5": 0,
+          "B21": 5000
+        },
+        "Tax_Tables": {
+          "B6": 0,
+          "B7": 0,
+          "B8": 0,
+          "B9": 0,
+          "B10": 0,
+          "B11": 0,
+          "B12": 0,
+          "B17": 0,
+          "B18": 0,
+          "B19": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Income_Targeting!B26",
+          "equals": 10000
+        },
+        {
+          "cell": "Income_Targeting!B28",
+          "equals": 0
+        },
+        {
+          "cell": "Income_Targeting!B29",
+          "equals": 12000
+        },
+        {
+          "cell": "Income_Targeting!C24",
+          "equals": 5000
+        },
+        {
+          "cell": "Income_Targeting!C26",
+          "equals": 10000
+        },
+        {
+          "cell": "Income_Targeting!C28",
+          "equals": 440
+        },
+        {
+          "cell": "Income_Targeting!C29",
+          "equals": 11560
+        },
+        {
+          "cell": "Income_Targeting!C31",
+          "equals": "Cash shortfall"
+        },
+        {
+          "cell": "Income_Targeting!C42",
+          "equals": "Funded"
+        },
+        {
+          "cell": "Income_Targeting!K42",
+          "equals": 10000
+        },
+        {
+          "cell": "Income_Targeting!H42",
+          "equals": 12000
+        }
+      ]
+    },
+    {
+      "name": "payroll_caps_each_joint_earner_separately",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D11": 2,
+          "D12": 300000,
+          "D126": 0.9
+        },
+        "Tax_Tables": {
+          "B50": 0.062,
+          "B51": 184500,
+          "B52": 0.0145,
+          "B53": 0.009,
+          "B54": 250000,
+          "B191": 200000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "BT",
+          "equals": 270000
+        },
+        {
+          "age": 55,
+          "column": "BU",
+          "equals": 30000
+        },
+        {
+          "age": 55,
+          "column": "AR",
+          "equals": 18099
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "payroll_single_uses_single_additional_medicare_threshold",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D11": 2,
+          "D12": 300000,
+          "D54": 54,
+          "D126": 0.9
+        },
+        "Tax_Tables": {
+          "B50": 0.062,
+          "B51": 184500,
+          "B52": 0.0145,
+          "B53": 0.009,
+          "B54": 250000,
+          "B191": 200000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "F",
+          "equals": "Single"
+        },
+        {
+          "age": 55,
+          "column": "BT",
+          "equals": 300000
+        },
+        {
+          "age": 55,
+          "column": "BU",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "AR",
+          "equals": 16689
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "capital_loss_released_proportionally_and_used_across_years",
+      "overrides": {
+        "Inputs": {
+          "D25": 25000,
+          "D51": 40000,
+          "D52": 10000,
+          "D53": 56,
+          "A75": "Synthetic retirement expense",
+          "B75": 2027,
+          "C75": 18600
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "AE",
+          "equals": -6000
+        },
+        {
+          "age": 55,
+          "column": "BV",
+          "equals": -3000
+        },
+        {
+          "age": 55,
+          "column": "BW",
+          "equals": 3000
+        },
+        {
+          "age": 55,
+          "column": "BX",
+          "equals": -3000
+        },
+        {
+          "age": 55,
+          "column": "BY",
+          "equals": 6000
+        },
+        {
+          "age": 55,
+          "column": "CE",
+          "equals": 16000
+        },
+        {
+          "age": 55,
+          "column": "CF",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BD",
+          "equals": 24000
+        },
+        {
+          "age": 55,
+          "column": "AK",
+          "equals": 7000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 1400
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 56,
+          "column": "V",
+          "equals": 0
+        },
+        {
+          "age": 56,
+          "column": "AE",
+          "equals": 0
+        },
+        {
+          "age": 56,
+          "column": "BV",
+          "equals": -3000
+        },
+        {
+          "age": 56,
+          "column": "BW",
+          "equals": 0
+        },
+        {
+          "age": 56,
+          "column": "BX",
+          "equals": -3000
+        },
+        {
+          "age": 56,
+          "column": "BY",
+          "equals": 6000
+        },
+        {
+          "age": 56,
+          "column": "BD",
+          "equals": 32600
+        },
+        {
+          "age": 56,
+          "column": "AK",
+          "equals": 7000
+        },
+        {
+          "age": 56,
+          "column": "AV",
+          "equals": 1400
+        },
+        {
+          "age": 56,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "capital_loss_below_standard_deduction_carries_in_full",
+      "overrides": {
+        "Inputs": {
+          "D25": 25000,
+          "D51": 40000,
+          "D52": 10000,
+          "D37": 20000
+        },
+        "Tax_Tables": {
+          "B23": 32200
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 10000
+        },
+        {
+          "age": 55,
+          "column": "AE",
+          "equals": -6000
+        },
+        {
+          "age": 55,
+          "column": "BV",
+          "equals": -3000
+        },
+        {
+          "age": 55,
+          "column": "BW",
+          "equals": 6000
+        },
+        {
+          "age": 55,
+          "column": "BX",
+          "equals": -3000
+        },
+        {
+          "age": 55,
+          "column": "BY",
+          "equals": 6000
+        },
+        {
+          "age": 55,
+          "column": "AK",
+          "equals": 7000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "federal_and_california_opening_carryforwards_stay_separate",
+      "overrides": {
+        "Inputs": {
+          "D25": 20000,
+          "D51": 4000,
+          "D37": 10000,
+          "D127": 5000,
+          "D128": 12000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 10714.285714285716
+        },
+        {
+          "age": 55,
+          "column": "AE",
+          "equals": 8571.428571428572
+        },
+        {
+          "age": 55,
+          "column": "BV",
+          "equals": 3571.4285714285725
+        },
+        {
+          "age": 55,
+          "column": "BW",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BX",
+          "equals": -3000
+        },
+        {
+          "age": 55,
+          "column": "BY",
+          "equals": 3428.5714285714275
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "amt_preserves_preferential_gain_rates_and_compares_total_regular_tax",
+      "overrides": {
+        "Inputs": {
+          "D25": 850000,
+          "D51": 0,
+          "D52": 350000,
+          "D37": 1500000
+        },
+        "Tax_Tables": {
+          "B6": 0.1,
+          "B7": 0.12,
+          "B8": 0.22,
+          "B9": 0.24,
+          "B10": 0.32,
+          "B11": 0.35,
+          "B12": 0.37,
+          "C6": 0,
+          "C7": 24800,
+          "C8": 100800,
+          "C9": 211400,
+          "C10": 403550,
+          "C11": 512450,
+          "C12": 768700,
+          "B17": 0,
+          "B18": 0.15,
+          "B19": 0.2,
+          "B23": 32200,
+          "C17": 0,
+          "C18": 98900,
+          "C19": 613700,
+          "B80": 140200,
+          "B81": 1000000,
+          "B82": 0.5,
+          "B83": 0.26,
+          "B84": 0.28,
+          "B85": 244500
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 850000
+        },
+        {
+          "age": 55,
+          "column": "AE",
+          "equals": 850000
+        },
+        {
+          "age": 55,
+          "column": "AK",
+          "equals": 1200000
+        },
+        {
+          "age": 55,
+          "column": "AN",
+          "equals": 61468
+        },
+        {
+          "age": 55,
+          "column": "AO",
+          "equals": 155205
+        },
+        {
+          "age": 55,
+          "column": "BZ",
+          "equals": 1159800
+        },
+        {
+          "age": 55,
+          "column": "CA",
+          "equals": 850000
+        },
+        {
+          "age": 55,
+          "column": "CB",
+          "equals": 237059
+        },
+        {
+          "age": 55,
+          "column": "AQ",
+          "equals": 20386
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 237059
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 537059
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "regular_gain_worksheet_caps_tax_at_all_ordinary_rate",
+      "overrides": {
+        "Inputs": {
+          "D25": 500,
+          "D51": 0,
+          "D52": 132200,
+          "D37": 200000
+        },
+        "Tax_Tables": {
+          "B6": 0.1,
+          "B7": 0.12,
+          "B8": 0.22,
+          "B9": 0.24,
+          "B10": 0.32,
+          "B11": 0.35,
+          "B12": 0.37,
+          "C6": 0,
+          "C7": 24800,
+          "C8": 100800,
+          "C9": 211400,
+          "C10": 403550,
+          "C11": 512450,
+          "C12": 768700,
+          "B17": 0,
+          "B18": 0.15,
+          "B19": 0.2,
+          "B23": 32200,
+          "C17": 0,
+          "C18": 98900,
+          "C19": 613700,
+          "B80": 140200,
+          "B81": 1000000,
+          "B82": 0.5,
+          "B83": 0.26,
+          "B84": 0.28,
+          "B85": 244500
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "AE",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "AN",
+          "equals": 11504
+        },
+        {
+          "age": 55,
+          "column": "AO",
+          "equals": 60
+        },
+        {
+          "age": 55,
+          "column": "AQ",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 11564
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "california_senior_credit_and_phaseout_use_federal_agi",
+      "overrides": {
+        "Inputs": {
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D52": 506911,
+          "D53": 65
+        }
+      },
+      "expects": [
+        {
+          "age": 65,
+          "column": "AK",
+          "equals": 506911
+        },
+        {
+          "age": 65,
+          "column": "CC",
+          "equals": 506911
+        },
+        {
+          "age": 65,
+          "column": "CD",
+          "equals": 441
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "published_2027_federal_and_2026_california_floors",
+      "overrides": {
+        "Inputs": {
+          "D52": 133200
+        },
+        "Tax_Tables": {
+          "B219": 1,
+          "B6": 0.1,
+          "B7": 0.12,
+          "B8": 0.22,
+          "B9": 0.24,
+          "B10": 0.32,
+          "B11": 0.35,
+          "B12": 0.37,
+          "B30": 0.01,
+          "B31": 0.02,
+          "B32": 0.04,
+          "B33": 0.06,
+          "B34": 0.08,
+          "B35": 0.093,
+          "B36": 0.103,
+          "B37": 0.113,
+          "B38": 0.123
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "AL",
+          "equals": 33200
+        },
+        {
+          "age": 55,
+          "column": "AM",
+          "equals": 100000
+        },
+        {
+          "age": 55,
+          "column": "AN",
+          "equals": 11488
+        },
+        {
+          "age": 55,
+          "column": "AS",
+          "equals": 121400
+        },
+        {
+          "age": 55,
+          "column": "AT",
+          "equals": 3986.24
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "published_2027_payroll_cap_by_earner",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D11": 2,
+          "D12": 300000,
+          "D126": 0.9
+        },
+        "Tax_Tables": {
+          "B219": 1,
+          "B50": 0.062,
+          "B52": 0.0145,
+          "B53": 0.009
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "BT",
+          "equals": 270000
+        },
+        {
+          "age": 55,
+          "column": "BU",
+          "equals": 30000
+        },
+        {
+          "age": 55,
+          "column": "AR",
+          "equals": 18582.6
+        },
+        {
+          "age": 55,
+          "column": "AU",
+          "equals": 4200
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "subcent_shortfall_keeps_funded_headline",
+      "overrides": {
+        "Inputs": {
+          "D37": 0.009
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!BR6",
+          "equals": 0.009,
+          "tolerance": 0
+        },
+        {
+          "cell": "Summary!B3",
+          "equals": "YES"
+        },
+        {
+          "cell": "Summary!B4",
+          "equals": "None"
+        }
+      ]
+    },
+    {
+      "name": "exact_cent_shortfall_reaches_dashboard",
+      "overrides": {
+        "Inputs": {
+          "D37": 0.01
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!BR6",
+          "equals": 0.01,
+          "tolerance": 0
+        },
+        {
+          "cell": "Summary!B3",
+          "equals": "NO"
+        },
+        {
+          "cell": "Summary!B4",
+          "equals": 2027
+        }
+      ]
+    },
+    {
+      "name": "wage_growth_includes_inflation_and_stops_at_retirement",
+      "overrides": {
+        "Inputs": {
+          "D10": 57,
+          "D12": 30000,
+          "D13": 0.1,
+          "D14": 0.025,
+          "D53": 57
+        },
+        "Tax_Tables": {
+          "B219": 1
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "G",
+          "equals": 1.025
+        },
+        {
+          "age": 55,
+          "column": "I",
+          "equals": 33000
+        },
+        {
+          "age": 55,
+          "column": "AU",
+          "equals": 462
+        },
+        {
+          "age": 56,
+          "column": "I",
+          "equals": 36300
+        },
+        {
+          "age": 56,
+          "column": "AU",
+          "equals": 508.2
+        },
+        {
+          "age": 57,
+          "column": "I",
+          "equals": 0
+        },
+        {
+          "age": 57,
+          "column": "AU",
+          "equals": 0
+        }
+      ]
+    }
+  ]
+}

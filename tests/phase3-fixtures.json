@@ -1,0 +1,296 @@
+{
+  "common_overrides": {
+    "Inputs": {
+      "B4": 1,
+      "D8": 54,
+      "D9": 52,
+      "D10": 55,
+      "D11": 1,
+      "D12": 0,
+      "D13": 0,
+      "D14": 0,
+      "D25": 0,
+      "D26": 0,
+      "D27": 0,
+      "D28": 1,
+      "D29": 2020,
+      "D30": 0,
+      "D31": 0,
+      "D32": 0,
+      "D33": 0,
+      "D34": 0,
+      "D35": 0,
+      "D36": 0,
+      "D37": 0,
+      "D38": 0,
+      "D39": 0,
+      "D42": 0,
+      "D43": 0,
+      "D44": 0,
+      "D46": 0,
+      "D47": 0,
+      "D48": 1,
+      "D50": 55,
+      "D51": 0,
+      "D52": 0,
+      "D53": 55,
+      "D54": 999,
+      "D58": 999,
+      "D67": 75,
+      "D68": 0,
+      "D86": 1,
+      "D87": 0,
+      "D88": 125,
+      "D89": 1,
+      "D90": 1,
+      "D91": 1,
+      "D92": 0,
+      "D93": 0,
+      "D94": 0,
+      "D95": 126,
+      "D96": 126,
+      "D97": 1,
+      "D98": 1
+    },
+    "Asset_Allocation": {
+      "B6": 0,
+      "B7": 0,
+      "B8": 0,
+      "B9": 0,
+      "B10": 0,
+      "C6": 0,
+      "C7": 0,
+      "C8": 0,
+      "C9": 0,
+      "C10": 0,
+      "D6": 0,
+      "D7": 0,
+      "D8": 0,
+      "D9": 0,
+      "D10": 0,
+      "E6": 0,
+      "E7": 0,
+      "E8": 0,
+      "E9": 0,
+      "E10": 0
+    },
+    "Tax_Tables": {
+      "B6": 0.2,
+      "B7": 0.2,
+      "B8": 0.2,
+      "B9": 0.2,
+      "B10": 0.2,
+      "B11": 0.2,
+      "B12": 0.2,
+      "B17": 0.2,
+      "B18": 0.2,
+      "B19": 0.2,
+      "B30": 0,
+      "B31": 0,
+      "B32": 0,
+      "B33": 0,
+      "B34": 0,
+      "B35": 0,
+      "B36": 0,
+      "B37": 0,
+      "B38": 0,
+      "B23": 0,
+      "B24": 0,
+      "B44": 0,
+      "B46": 0,
+      "B50": 0,
+      "B52": 0,
+      "B53": 0,
+      "B74": 0,
+      "B83": 0,
+      "B84": 0,
+      "B219": 0
+    }
+  },
+  "cases": [
+    {
+      "name": "sepp_fixed_distribution_with_paid_tax_and_unfunded_living_costs",
+      "overrides": {
+        "Inputs": {
+          "D26": 100000,
+          "D37": 4500,
+          "D53": 60,
+          "D68": 1,
+          "D69": 0.05
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "R",
+          "equals": 5000
+        },
+        {
+          "age": 55,
+          "column": "W",
+          "equals": 5000
+        },
+        {
+          "age": 55,
+          "column": "AV",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "BE",
+          "equals": 95000
+        },
+        {
+          "age": 56,
+          "column": "R",
+          "equals": 5000
+        },
+        {
+          "age": 56,
+          "column": "W",
+          "equals": 5000
+        },
+        {
+          "age": 56,
+          "column": "AV",
+          "equals": 1000
+        },
+        {
+          "age": 56,
+          "column": "Z",
+          "equals": 500
+        },
+        {
+          "age": 56,
+          "column": "BE",
+          "equals": 90000
+        },
+        {
+          "age": 57,
+          "column": "R",
+          "equals": 5000
+        },
+        {
+          "age": 57,
+          "column": "W",
+          "equals": 5000
+        },
+        {
+          "age": 57,
+          "column": "AV",
+          "equals": 1000
+        },
+        {
+          "age": 57,
+          "column": "Z",
+          "equals": 500
+        },
+        {
+          "age": 57,
+          "column": "BE",
+          "equals": 85000
+        },
+        {
+          "age": 58,
+          "column": "R",
+          "equals": 5000
+        },
+        {
+          "age": 58,
+          "column": "W",
+          "equals": 5000
+        },
+        {
+          "age": 58,
+          "column": "AV",
+          "equals": 1000
+        },
+        {
+          "age": 58,
+          "column": "Z",
+          "equals": 500
+        },
+        {
+          "age": 58,
+          "column": "BE",
+          "equals": 80000
+        },
+        {
+          "age": 59,
+          "column": "R",
+          "equals": 5000
+        },
+        {
+          "age": 59,
+          "column": "W",
+          "equals": 5000
+        },
+        {
+          "age": 59,
+          "column": "AV",
+          "equals": 1000
+        },
+        {
+          "age": 59,
+          "column": "Z",
+          "equals": 500
+        },
+        {
+          "age": 59,
+          "column": "BE",
+          "equals": 75000
+        },
+        {
+          "age": 60,
+          "column": "R",
+          "equals": 0
+        },
+        {
+          "age": 60,
+          "column": "W",
+          "equals": 5625
+        },
+        {
+          "age": 60,
+          "column": "AV",
+          "equals": 1125
+        },
+        {
+          "age": 60,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "age": 60,
+          "column": "BE",
+          "equals": 69375
+        },
+        {
+          "cell": "Cash_Flow!N6",
+          "equals": 1000
+        },
+        {
+          "cell": "Cash_Flow!O6",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!P6",
+          "equals": 4000
+        },
+        {
+          "cell": "Cash_Flow!Q6",
+          "equals": 500
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "NO"
+        }
+      ]
+    }
+  ]
+}
