@@ -7,6 +7,8 @@ from math import floor, isfinite
 
 from .funding import FundingInputs, solve_funding
 from .scenario import Scenario, YearSnapshot
+from roth_contributions import annual_limits, reduced_limit
+
 from .tax import TaxInputs, TaxTables, YearTax
 
 SHORTFALL = 0.01
@@ -69,6 +71,7 @@ class Period:
     aca: tuple
     roth_target: float
     savings_capacity: tuple
+    roth_phaseout: tuple | None
     savings_share: float
     rmd_divisor: float
     sepp_window: bool
@@ -164,29 +167,36 @@ class AnnualModel:
                 qualified += (h['F'] if h['D'] == 'COBRA' else 0)
                 qualified += (h['G'] if h['E'] == 'COBRA' else 0)
                 if surcharge_qualifies:
-                    qualified += (h['W'] * i[108] + h['X'] * i[109]) * p['G']
+                    medical_index = (1 + i.get(132, i[14])) ** p['A']
+                    qualified += (h['W'] * i[108] + h['X'] * i[109]) * medical_index
             legacy_irmaa_count = 0
         else:
             medicare_count = 0
             irmaa_single = single
             legacy_irmaa_count = (1 + int(not single and spouse_age >= 65)) if age >= 65 else 0
-            medical = p['AY']
-            if not working:
-                medical += i[42 if age < 65 else 43] * p['G'] * (i[57] if single else 1)
+            if 130 in i:
+                legacy_irmaa_count = int(not working) * (int(age >= 65) + int(not single and spouse_age >= 65))
+            medical = p['AY'] if working else h['P'] - h['L']
             qualified, surcharge_qualifies = (medical, True) if not working else (0, False)
         divisor = (self.rmd_divisors[min(owner_age, 120) - 72]
                    if owner_age >= max(72, i[67]) else 0)
         sepp = (i[68] == 1 and not working and self.sepp_owner_age < 60
                 and owner_age < max(60, self.sepp_owner_age + 5))
-        limit, catchup = (self.scenario.tax[c] for c in ('B61', 'B62'))
+        limits = annual_limits(self.scenario.tax, row.year, p['H'], i[14], single)
+        if limits is None:
+            limit, catchup = (self.scenario.tax[c] * p['G'] for c in ('B61', 'B62'))
+            roth_phaseout = None
+        else:
+            limit, catchup, low, high = limits
+            roth_phaseout = (low, high)
         return Period(
             row, year_tax, age, spouse_age, owner_age, working, single, p['G'], p['H'], baseline,
             wages, deferral, hsa_contribution, match, ss, other, exempt, payroll, sdi, cash_income,
             p['AW'], max(0, p['AW'] - fixed), p['AX'], medical, qualified, medicare_count,
             surcharge_qualifies, legacy_irmaa_count, irmaa_single, (h['M'], h['N'], h['O']),
             i[35] * p['G'] if working else 0,
-            ((limit + (catchup if age >= 50 else 0)) * p['G'],
-             0 if single else (limit + (catchup if spouse_age >= 50 else 0)) * p['G']),
+            (limit + (catchup if age >= 50 else 0),
+             0 if single else limit + (catchup if spouse_age >= 50 else 0)), roth_phaseout,
             1 if single else i[91], divisor, sepp,
         )
 
@@ -267,7 +277,7 @@ class AnnualModel:
         sepp = min(state.traditional, state.sepp_balance * i[69]) if p.sepp_window else 0
         rmd = state.traditional / p.rmd_divisor if p.rmd_divisor else 0
         mandatory = min(state.traditional, max(sepp, rmd))
-        headroom = max(0, i[49] * p.tax_index + p.year_tax.federal_deduction
+        headroom = max(0, i[49] * p.cpi + p.year_tax.federal_deduction
                        - (mandatory + p.other_income + interest + 0.85 * p.social_security))
         traditional_limit = mandatory if p.working or p.owner_age < 60 or sepp > 0 else state.traditional
         seasoned, access = self._roth_access(state, p, year)
@@ -304,12 +314,15 @@ class AnnualModel:
         unpaid_spending = max(0, due_spending - paid_spending)
         shortfall = state.payable + unpaid_spending
         residual = max(0, cash_available - paid_tax - paid_spending)
+        roth_magi = tax.agi - funding.conversion
+        capacity = tuple(reduced_limit(cap, roth_magi, p.roth_phaseout) if cap > 0 else 0
+                         for cap in p.savings_capacity)
         savings_limit = 0
         if p.working and i[98] == 1:
             share = p.savings_share
             savings_limit = min(max(0, net_wages),
-                                p.savings_capacity[0] / share if share else p.roth_target,
-                                p.savings_capacity[1] / (1 - share) if share < 1 else p.roth_target)
+                                capacity[0] / share if share else p.roth_target,
+                                capacity[1] / (1 - share) if share < 1 else p.roth_target)
         roth_savings = min(p.roth_target, savings_limit, residual)
         deposit = max(0, residual - roth_savings)
 
@@ -375,7 +388,7 @@ class AnnualModel:
                     ('N', 'O', 'P', 'Q', 'R', 'S', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB',
                      'AC', 'AD', 'AE', 'AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AN', 'AO'),
                     first_ira_year + access + paid_roth + saved + converted + state.regular
-                    + state.conversions + state.seasoned + state.roth + p.savings_capacity,
+                    + state.conversions + state.seasoned + state.roth + capacity,
                 )),
             }
         return YearResult(year, p.age, balance / p.cpi, balance, shortfall / p.cpi, shortfall, cut / p.cpi, checks)

@@ -3,12 +3,12 @@
 Run from this directory using Python 3.11 or newer. The scripts read `.xlsx` packages with Python's standard library. The scenario runner also needs LibreOffice's `soffice` command, or its path supplied with `--soffice`.
 
 ```sh
-python3 model_acceptance.py /path/to/retirement-model.xlsx
+python3 model_acceptance.py --release /path/to/retirement-model.xlsx
 python3 phase2_fixtures.py > phase2-fixtures.json
 python3 xlsx_acceptance.py /path/to/retirement-model.xlsx phase2-fixtures.json --ledger
 ```
 
-`model_acceptance.py` independently reconciles saved cash, spending, tax payables, Roth balances by owner, and portfolio cash flow. It checks the Summary's first shortfall, the selected end age and the four retained chart objects. It reads saved values. Use the Excel release check below to verify recalculation and chart rendering.
+`model_acceptance.py` independently reconciles saved cash, spending, tax payables, Roth balances by owner, and portfolio cash flow. It checks the Summary's first shortfall, the selected end age and the four retained chart objects. It reads saved values. The release flag also checks that every sheet is visible and that inherited document metadata is absent. Use the Excel release check below to verify recalculation and chart rendering.
 
 `xlsx_acceptance.py` makes temporary copies, applies the fixture inputs, clears stale formula caches, recalculates each copy in a separate LibreOffice profile, and verifies both the explicit expected values and the annual reconciliations. It never overwrites the source. Use `--case NAME` to run selected cases, `--jobs 1` to reduce memory use, or `--keep DIRECTORY` to keep recalculated copies for investigation. Fixture settings use a synthetic 20% tax and zero investment returns to make the expected results calculable by hand. These assumptions are for testing only.
 

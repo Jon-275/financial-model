@@ -7,6 +7,7 @@ from openpyxl.utils.cell import get_column_letter as L, coordinate_from_string, 
 import dashboard
 import funding_search
 import risk_cleanup
+import roth_contributions
 import workbook_layout
 import healthcare
 import published_tax
@@ -57,7 +58,7 @@ def inputs(wb):
         ('Primary first workplace distribution age',126,'126 disables withdrawals. Enter the age the plan allows distributions.'),
         ('Spouse first workplace distribution age',126,'126 disables withdrawals. Enter the age the plan allows distributions.'),
         ('Traditional account owner',1,'1 = primary, 2 = spouse. One owner for withdrawals, conversions and RMDs.'),
-        ('Include eligible Roth IRA savings?',1,'1 = assume the savings route is eligible and has no extra tax. 0 = disable. Confirm eligibility and any IRA pro-rata tax separately.'),
+        ('Include eligible Roth IRA savings?',1,'1 applies the direct Roth IRA limit. 0 leaves new Roth IRA savings out.'),
     ]
     put('Inputs','A85','CASH AND ACCOUNT ACCESS','band')
     for r,(label,value,note) in enumerate(rows,86):
@@ -68,13 +69,38 @@ def inputs(wb):
         put('Inputs',f'H{r}',f'=IF(AND(D{r}=E{r},E{r}=F{r}),"","VARIES")','note')
     put('Inputs','A99','Cash and account input check','label')
     numeric='COUNT(INDEX(D86:F98,0,B4))=13'
-    ages=','.join(f'B{r}=INT(B{r}),B{r}>=0,B{r}<={limit}' for r,limit in ((29,2026),(87,125),(88,125),(92,2026),(93,2026),(94,2026),(95,126),(96,126)))
+    ages=','.join(f'B{r}=INT(B{r}),B{r}>=0,B{r}<={limit}' for r,limit in ((29,"B130"),(87,125),(88,125),(92,"B130"),(93,"B130"),(94,"B130"),(95,126),(96,126)))
     checks=','.join((numeric,ages,'B87<=B88','MIN(B86,B89:B91)>=0','MAX(B86,B89:B91)<=1',
                      'OR(B97=1,B97=2)','OR(B98=0,B98=1)','OR(B28=1,B28=2)',
                      'MIN(B25:B27,B30:B38,B42:B44,B46:B47,B52,B59)>=0',
+                     'ISNUMBER(CHOOSE(B4,D55,E55,F55))','CHOOSE(B4,D55,E55,F55)>=0','CHOOSE(B4,D55,E55,F55)<=1',
                      'OR(B28=2,B30<=B27)','B13>=-1','B14>-1','MIN(B17:B22)>-1'))
     put('Inputs','B99',f'=IFERROR(IF(AND({checks}),"OK","Check cash and Roth inputs"),"Check cash and Roth inputs")','note')
-    put('Inputs','B70','=IF(AND(B71="OK",B99="OK",B125="OK",B129="OK"),B53-B8+1,0)')
+    put('Inputs','A83',"Use today's dollars. Shared by all scenarios.", 'note')
+    put('Inputs','A84','One-time expense check','label')
+    put('Inputs','B84','=IF(COUNTA(B83:C83)=0,"OK","Move one-time expenses to Inputs rows 75–82")','note')
+    put('Inputs','A130','Opening balance year','label')
+    put('Inputs','B130',2026,'input')
+    put('Inputs','G130','Use the year your opening ages and balances apply to. The first full forecast year is the following year.','note')
+    put('Inputs','A131','Annual investment fee','label')
+    put('Inputs','B131',0,'percent_input')
+    put('Inputs','G131','Applied to all accounts. Enter 0 if your investment returns already include fees.','note')
+    put('Inputs','A132','Annual healthcare inflation','label')
+    put('Inputs','B132','','percent_input')
+    put('Inputs','G132','Leave blank to use general inflation. Applies to medical costs you enter.','note')
+    put('Inputs','A133','Year, fee and healthcare check','label')
+    put('Inputs','B133','=IFERROR(IF(AND(ISNUMBER(B130),B130=INT(B130),B130>=2026,B130<=9999-125,ISNUMBER(B131),B131>=0,B131<1,OR(B132="",AND(ISNUMBER(B132),B132>-1))),"OK","Check opening year, fees and healthcare inflation"),"Check opening year, fees and healthcare inflation")','note')
+    put('Inputs','B70','=IF(AND(B71="OK",B84="OK",B99="OK",B125="OK",B129="OK",B133="OK"),B53-B8+1,0)')
+    for r in range(17,23):
+        rate = original(wb['Inputs'], f'B{r}')
+        put('Inputs',f'B{r}',f'=(1+({rate}))*(1-$B$131)-1')
+    put('Inputs','G14','Returns and pay growth are nominal. Raising inflation alone reduces purchasing power.','note')
+    for col in 'DEF':
+        styles['Inputs'][f'{col}55'] = 'percent_input'
+    put('Inputs','A55','Survivor’s share of combined Social Security','label')
+    put('Inputs','B55','=B44*CHOOSE(B4,D55,E55,F55)')
+    put('Inputs','C55','today’s $','label')
+    put('Inputs','G55','Enter the survivor’s share in the scenario column. Column B shows the benefit in today’s dollars.','note')
     for addr, val in {'A13':'Annual wage growth','G13':'Enter the full annual increase, including inflation.',
                       'A27':'Opening Roth balance','A28':'Opening Roth type: 1 = IRA, 2 = workplace',
                       'A29':'Primary first Roth IRA tax year','A30':'Opening Roth IRA basis accessible today',
@@ -173,8 +199,12 @@ def roth():
                f'MAX(0,L{r}-MAX(0,U{r}-H{r}))',f'MAX(0,M{r}-MAX(0,V{r}-I{r}))']
         close=['D5','E5','F5','G5'] if r==5 else [f'MAX(0,D{r}+Y{r}+AA{r}-U{r})*(1+{rate})',
             f'MAX(0,E{r}+Z{r}+AB{r}-V{r})*(1+{rate})',f'MAX(0,F{r}-W{r})*(1+{rate})',f'MAX(0,G{r}-X{r})*(1+{rate})']
-        capacity=['0','0'] if r==5 else [f'(Tax_Tables!$B$61+IF(B{r}>=50,Tax_Tables!$B$62,0))*{p("G")}',
-            f'IF({p("F")}="Single",0,(Tax_Tables!$B$61+IF(C{r}>=50,Tax_Tables!$B$62,0))*{p("G")})']
+        single = f'{p("F")}="Single"'
+        magi = f'({p("AK")}-{p("AA")})'
+        capacity = ['0', '0'] if r == 5 else [
+            roth_contributions.formula_capacity(p('B'), p('H'), f'B{r}', single, magi),
+            f'IF({single},0,{roth_contributions.formula_capacity(p("B"), p("H"), f"C{r}", single, magi)})',
+        ]
         vals=[p('B'),p('C'),p('D'),*opens,*acc,*moves,*basis,*close,f'SUM(AI{r}:AL{r})',*capacity,
               f'SUM(Y{r}:AB{r})-SUM(U{r}:X{r})']
         assert len(vals)==len(ROTH_HEADERS),(r,len(vals))
@@ -209,7 +239,9 @@ def projection(wb):
                     'Z4':'Essential funding shortfall','AV4':'Current-year tax','BB4':'Taxable savings deposited'}.items(): put(s,a,label)
     for r in range(5,END+1):
         p=r-1; f=group(r)+STEPS-1
+        put(s,f'H{r}',active(r,f'(1+Inputs!$B$14)^(B{r}-2026)'))
         if r==5:
+            put(s,'B5',active(5,'Inputs!$B$130'))
             put(s,'X5',active(r,rt('T',r))); put(s,'BF5',active(r,rt('AM',r)))
             continue
         values={**{c:fd(fc,f) for c,fc in CANDIDATE.items()},
@@ -218,6 +250,7 @@ def projection(wb):
             'K':f'IF(E{r}="Working",MIN(MAX(0,I{r}-J{r}),Inputs!$B$34*G{r}),0)',
             'M':cf('R',r),'O':f'IF(AND(C{r}>=Inputs!$B$87,C{r}<=Inputs!$B$88),Inputs!$B$52*G{r},0)',
             'Q':f'MAX(0,{cf("W",r)})','X':rt('T',r),'Z':cf('V',r),'BB':cf('T',r),'BF':rt('AM',r),
+            'U':f'MAX(0,Inputs!$B$49*G{r}+AL{r}-(T{r}+O{r}+AC{r}+0.85*N{r}))',
             'BJ':f'BH{r}-BI{r}-{cf("O",r)}',
             'BO':f'SUM(J{r}:M{r})+BB{r}-SUM(V{r}:W{r})-Y{r}-P{r}',
             'BR':f'Z{r}',
@@ -238,7 +271,7 @@ def reporting():
         'B12':'=IF(AND(Inputs!$B$70>=2,Projection!E6="Working",SUM(Cash_Flow!C6,Projection!J6:L6)>0),(SUM(Projection!J6:M6)+MAX(0,Projection!BB6-Projection!V6))/SUM(Cash_Flow!C6,Projection!J6:L6),"")',
         'A19':'Available bridge assets at retirement','B19':f'=IF({eligible},{target},"")',
         'C19':'Opening brokerage balance plus Roth funds available in the first bridge year. See Roth_Access.',
-        'B25':'=IF(Inputs!$B$70=0,IF(Inputs!$B$71<>"OK",Inputs!$B$71,IF(Inputs!$B$99<>"OK",Inputs!$B$99,IF(Inputs!$B$125<>"OK","Check healthcare inputs",Inputs!$B$129))),IF(COUNTIF(Healthcare!$T$6:$T$130,"Missing*")+COUNTIF(Healthcare!$T$6:$T$130,"Confirm*")>0,"Check healthcare inputs",IF(COUNTIF(Cash_Flow!$AM$5:$AM$130,"OK")<>Inputs!$B$70,"Check funding calculation",IF(MAX(Projection!$BR$5:$BR$130)<0.01,"YES","NO - cash shortfall"))))',
+        'B25':'=IF(Inputs!$B$70=0,IF(Inputs!$B$71<>"OK",Inputs!$B$71,IF(Inputs!$B$84<>"OK",Inputs!$B$84,IF(Inputs!$B$99<>"OK",Inputs!$B$99,IF(Inputs!$B$125<>"OK","Check healthcare inputs",IF(Inputs!$B$129<>"OK",Inputs!$B$129,Inputs!$B$133))))),IF(COUNTIF(Healthcare!$T$6:$T$130,"Missing*")+COUNTIF(Healthcare!$T$6:$T$130,"Confirm*")>0,"Check healthcare inputs",IF(COUNTIF(Cash_Flow!$AM$5:$AM$130,"OK")<>Inputs!$B$70,"Check funding calculation",IF(MAX(Projection!$BR$5:$BR$130)<0.01,"YES","NO - cash shortfall"))))',
         'B26':'=IF(B25="YES","None",IF(B25="NO - cash shortfall",INDEX(Projection!$B$5:$B$130,MATCH(TRUE(),INDEX(IF(ISNUMBER(Projection!$BR$5:$BR$130),Projection!$BR$5:$BR$130>=0.01,FALSE()),0),0)),""))',
         'C25':'Checks required spending and tax in each working and retirement year.',
         'A33':'Opening Roth account type','B33':'=IF(Inputs!$B$70=0,"",IF(Inputs!$B$28=2,"Workplace Roth","Roth IRA"))',
@@ -373,7 +406,7 @@ def guidance():
             'G86': 'Enter 100% if you can spend all of the other taxable income in row 52.',
             'G87': 'Enter your age when the income starts. Use 0 to start in the first projected year.',
             'G88': 'Enter the last age the income is received. Use the same start and end age for a one-time payment.',
-            'G98': 'Use 1 to include planned Roth IRA savings if eligible. Use 0 to leave them out.',
+            'G98': 'Use 1 to apply the direct Roth IRA limit. Use 0 to leave new Roth IRA savings out.',
         },
         'Summary': {
             'A25': 'Can the plan cover its costs?',
@@ -403,10 +436,14 @@ def main():
     inputs(wb); cash_ledger(); roth(); funding(wb); projection(wb); reporting(); risk_cleanup.configure(m, wb); reconciliation()
     tax_policy.configure(m,wb)
     published_tax.configure(m)
+    roth_contributions.configure(m)
     tax_policy.bind_projection(m,lambda r,k:fd(funding_search.columns(tax_policy)[k],group(r)+STEPS-1))
     healthcare.configure(m,wb)
     targeting.configure(m,wb)
-    put('Inputs','E125','TAX AND TAXABLE ACCOUNT','band')
+    put('Asset_Allocation','A33','PROFILE 2 - Higher cash allocation')
+    put('Asset_Allocation','A42','PROFILE 3 - Highest cash allocation')
+    put('Asset_Allocation','A22','The separate risk report uses these correlations. Keep the diagonal at 1.00 and matching values on either side equal.')
+    put('Asset_Allocation','A91','The separate risk report applies early losses to equity. Other assets keep their assumed returns.')
     put('Summary','B5','=COUNTIF(Inputs!$H$8:$H$69,"VARIES")+COUNTIF(Inputs!$H$86:$H$98,"VARIES")+COUNTIF(Inputs!$H$101:$H$124,"VARIES")+COUNTIF(Inputs!$H$126:$H$128,"VARIES")')
     put('Summary','A41','Marketplace MAGI as % of poverty guideline')
     rr='MAX(2,Inputs!$B$10-Inputs!$B$8+1)'
@@ -429,7 +466,7 @@ def main():
     put('Income_Targeting','C39','Counts requests limited by cash, balances or the withdrawal policy.','note')
     guidance()
     dashboard.configure(put)
-    workbook_layout.write_scenarios(put, wb)
+    workbook_layout.write_scenarios(put)
     order = workbook_layout.sheet_order([s for s in wb.sheetnames if s not in risk_cleanup.LEGACY_SHEETS] + MODULES)
     out.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared},separators=(',',':')))
     print('Authored cells by module:',{s:len(c) for s,c in cells.items()})

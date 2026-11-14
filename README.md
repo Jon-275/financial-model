@@ -11,4 +11,20 @@ The separate risk report recalculates spending, taxes and withdrawals under diff
 - [Release records](docs/release-notes/phase-3.md) for Phase 3, [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md).
 - [Portfolio management](docs/portfolio-management.md): tax harvesting guidance separate from the forecast.
 
-The workbook build is scripted from the pre-Phase 1 horizon workbook. Use the [release record](docs/release-notes/phase-1.md) to identify the build baseline and review the checks run. Keep personal inputs, statements and workbook copies on approved local storage. Use synthetic inputs for shared tests.
+The workbook uses fictional inputs. Save a private copy before entering your own figures. All 15 worksheet tabs are visible, including **Funding_Calc** for withdrawals, **Targeting_Calc** for Roth conversions and **Report_Data** for the Summary charts.
+
+## Rebuild the workbook
+
+The [build template](workbook/build-template.xlsx) provides the starting layout and legacy formulas. Use the [finished workbook](workbook/retirement-model.xlsx) to run a plan.
+
+Install Python 3.11 or later, Node.js and LibreOffice. The build also requires the Codex spreadsheet runtime's `@oai/artifact-tool` package. Point `ARTIFACT_NODE_MODULES` to the runtime's `node_modules` directory and `NODE_BIN` to its Node.js executable if needed. The finished workbook opens in desktop Excel independently of the build tools.
+
+```sh
+python3 -m pip install -r tools/requirements.txt
+mkdir -p scratch
+ARTIFACT_NODE_MODULES=/path/to/runtime/node_modules \
+  bash tools/build_model.sh workbook/build-template.xlsx scratch/retirement-model.xlsx
+python3 tests/model_acceptance.py --release scratch/retirement-model.xlsx
+```
+
+The build needs a new output path. Keep the file name `retirement-model.xlsx` so the Excel chart references resolve. See the [test guide](tests/README.md) for scenario checks and Excel verification.

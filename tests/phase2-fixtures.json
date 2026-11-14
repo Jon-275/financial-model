@@ -2,6 +2,8 @@
   "common_overrides": {
     "Inputs": {
       "B4": 1,
+      "B131": 0,
+      "B132": "",
       "D8": 54,
       "D9": 52,
       "D10": 55,
@@ -3470,6 +3472,258 @@
         {
           "cell": "Summary!B25",
           "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "opening_year_moves_calendar_and_preserves_tax_year",
+      "overrides": {
+        "Inputs": {
+          "B130": 2027,
+          "D10": 56,
+          "D29": 2027,
+          "D12": 30000,
+          "D14": 0.025,
+          "D49": 100000
+        },
+        "Tax_Tables": {
+          "B219": 1
+        }
+      },
+      "expects": [
+        {
+          "cell": "Projection!B5",
+          "equals": 2027
+        },
+        {
+          "cell": "Projection!B6",
+          "equals": 2028
+        },
+        {
+          "age": 55,
+          "column": "G",
+          "equals": 1.025
+        },
+        {
+          "age": 55,
+          "column": "H",
+          "equals": 1.050625
+        },
+        {
+          "age": 55,
+          "column": "AL",
+          "equals": 34030
+        },
+        {
+          "age": 55,
+          "column": "U",
+          "equals": 136530
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "joint_roth_uses_2027_income_phaseout",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 255000,
+          "D35": 20000,
+          "D91": 0.5
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 8600
+        },
+        {
+          "cell": "Roth_Access!AN6",
+          "equals": 4300
+        },
+        {
+          "cell": "Roth_Access!AO6",
+          "equals": 4300
+        }
+      ]
+    },
+    {
+      "name": "joint_roth_stops_at_upper_income_limit",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 260000,
+          "D35": 6000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "M",
+          "equals": 0
+        },
+        {
+          "cell": "Roth_Access!AN6",
+          "equals": 0
+        }
+      ]
+    },
+    {
+      "name": "fee_reduces_account_growth",
+      "overrides": {
+        "Inputs": {
+          "D25": 1000,
+          "D51": 1000,
+          "B131": 0.01
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "BC",
+          "equals": 990
+        },
+        {
+          "cell": "Inputs!B18",
+          "equals": -0.01
+        }
+      ]
+    },
+    {
+      "name": "healthcare_budget_switches_each_spouse_at_65",
+      "overrides": {
+        "Inputs": {
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 65,
+          "D25": 20000,
+          "D51": 20000,
+          "D42": 20000,
+          "D43": 10000,
+          "B132": 0.05
+        }
+      },
+      "expects": [
+        {
+          "age": 65,
+          "column": "BA",
+          "equals": 15750
+        },
+        {
+          "age": 65,
+          "column": "BC",
+          "equals": 4250
+        },
+        {
+          "cell": "Summary!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "survivor_benefit_tracks_combined_social_security",
+      "overrides": {
+        "Inputs": {
+          "D44": 40000,
+          "D45": 55,
+          "D54": 54,
+          "D55": 0.6
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "N",
+          "equals": 24000
+        },
+        {
+          "cell": "Inputs!B55",
+          "equals": 24000
+        }
+      ]
+    },
+    {
+      "name": "one_time_expense_instruction_row_requires_review",
+      "overrides": {
+        "Inputs": {
+          "B83": 2031,
+          "C83": 5000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Inputs!B70",
+          "equals": 0
+        },
+        {
+          "cell": "Summary!B3",
+          "equals": "CHECK PLAN"
+        },
+        {
+          "cell": "Summary!C3",
+          "equals": "Move one-time expenses to Inputs rows 75\u201382"
+        },
+        {
+          "cell": "Summary!C6",
+          "blank": true
+        }
+      ]
+    },
+    {
+      "name": "unavailable_workplace_roth_is_reported",
+      "overrides": {
+        "Inputs": {
+          "D27": 2000,
+          "D28": 2,
+          "D37": 1000
+        }
+      },
+      "expects": [
+        {
+          "cell": "Summary!B3",
+          "equals": "NO"
+        },
+        {
+          "cell": "Summary!B5",
+          "equals": 2000
+        },
+        {
+          "cell": "Summary!B6",
+          "equals": 2000
+        }
+      ]
+    },
+    {
+      "name": "qualified_workplace_roth_is_available",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 61,
+          "D53": 61,
+          "D27": 2000,
+          "D28": 2,
+          "D93": 2020,
+          "D95": 60
+        }
+      },
+      "expects": [
+        {
+          "cell": "Summary!B3",
+          "equals": "YES"
+        },
+        {
+          "cell": "Summary!B5",
+          "equals": 2000
+        },
+        {
+          "cell": "Summary!B6",
+          "equals": 0
         }
       ]
     },

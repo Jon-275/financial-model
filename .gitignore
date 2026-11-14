@@ -5,6 +5,7 @@
 /private/
 /workbook/*
 !/workbook/retirement-model.xlsx
+!/workbook/build-template.xlsx
 
 __pycache__/
 *.py[cod]

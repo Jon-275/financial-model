@@ -1,11 +1,10 @@
 """Annual coverage, HSA reimbursement, and ACA premium credits.
 
-The legacy budget path intentionally retains the horizon baseline's spending and
-HSA formulas. Detailed coverage is an opt-in, annual US-contiguous-states model.
+The household budget switches each person’s share to the Medicare budget at 65.
+Detailed coverage is an opt-in, annual US-contiguous-states model.
 The funding solver evaluates the same credit formula at each candidate MAGI.
 """
 
-import re
 
 SHEET = 'Healthcare'
 INPUT_STATUS = 'Inputs!$B$125'
@@ -152,16 +151,6 @@ def _inputs(m):
     m.put(s, 'G125', 'Check Healthcare for missing Marketplace quotes and Medicare income history.', 'note')
 
 
-def _legacy(m, wb, col, row):
-    expr = m.original(wb['Projection'], f'{col}{row}')
-    prefix = 'IF(ROW()-4>Inputs!$B$70,"",'
-    if expr.startswith(prefix):
-        expr = expr[len(prefix):-1]
-    # These two baseline formulas contain local cells and explicitly qualified
-    # table ranges. Move only the local cells onto the Projection sheet.
-    return re.sub(r'(?<![\w.$!:])(\$?[A-Z]{1,3}\$?\d+)(?![\w.])', r'Projection!\1', expr)
-
-
 def _irmaa_per_beneficiary(mag, filing, factor, year):
     """Annual Medicare Part B plus Part D surcharge for one enrollee.
 
@@ -179,7 +168,7 @@ def _irmaa_per_beneficiary(mag, filing, factor, year):
     return f'INDEX(Tax_Tables!$E$89:$E$94,1+{others}+{top})*({factor})'
 
 
-def _healthcare_rows(m, wb):
+def _healthcare_rows(m):
     s = SHEET
     m.put(s, 'A1', 'Healthcare by person', 'title')
     m.put(s, 'A2', 'Costs are annual. Detailed mode separates Marketplace credits, Medicare surcharges and HSA reimbursements.', 'note')
@@ -190,7 +179,7 @@ def _healthcare_rows(m, wb):
             vals = [p('B'), p('C'), p('D'), '"Opening balances"', '"Opening balances"',
                     *('0',) * 14, '"Opening balances"', *('0',) * 5, p('F'), *('0',) * 6]
         else:
-            year, age, spouse, phase, filing, cpi = (p(k) for k in ('B', 'C', 'D', 'E', 'F', 'G'))
+            year, age, spouse, phase, filing = (p(k) for k in ('B', 'C', 'D', 'E', 'F'))
             detailed = 'Inputs!$B$101=1'
             legacy = 'Inputs!$B$101=0'
             single = f'{filing}="Single"'
@@ -208,28 +197,32 @@ def _healthcare_rows(m, wb):
             legacy_magi = f'({m.pj("AK", legacy_year)}+{m.pj("AG", legacy_year)})/{p("H")}'
             legacy_tier = (f'IF({single},MATCH({legacy_magi},Tax_Tables!$B$182:$B$187,1),'
                            f'MATCH({legacy_magi},Tax_Tables!$B$89:$B$94,1))')
-            legacy_count = f'IF({single},1,1+IF({spouse}>=65,1,0))'
-            legacy_irmaa = f'IF({age}<65,0,INDEX(Tax_Tables!$E$89:$E$94,{legacy_tier})*{p("H")}*{legacy_count})'
-            legacy_cost = _legacy(m, wb, 'BA', row)
+            med_index = f'(1+IF(ISNUMBER(Inputs!$B$132),Inputs!$B$132,Inputs!$B$14))^{p("A")}'
+            legacy_count = f'--({age}>=65)+--AND(NOT({single}),{spouse}>=65)'
+            legacy_irmaa = f'IF({phase}="Working",0,INDEX(Tax_Tables!$E$89:$E$94,{legacy_tier})*{p("H")}*({legacy_count}))'
+            primary_cost = f'IF({age}<65,Inputs!$B$42,Inputs!$B$43)'
+            spouse_cost = f'IF({spouse}<65,Inputs!$B$42,Inputs!$B$43)'
+            budget = f'IF({single},{primary_cost}*Inputs!$B$57,({primary_cost}+{spouse_cost})/2)'
+            legacy_cost = f'IF({phase}="Working",0,({budget})*({med_index})+L{row})+K{row}'
             # Annual premiums use inflation relative to the opening date. FPL
             # starts from the published 2027 coverage guideline when available.
             fpl = (f'IF(AND(M{row}>0,N{row}>0),IF(A{row}<=Tax_Tables!$A$214,'
                    f'IF({single},Tax_Tables!$B$214,Tax_Tables!$C$214),'
-                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*({cpi})/(1+Inputs!$B$14)),0)')
+                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{p("H")}/(1+Inputs!$B$14)),0)')
             actual_magi = magi(p('AK'), p('N'), p('AI'), p('AG'))
             cols = {
                 'A': year, 'B': age, 'C': spouse,
                 'D': f'IF({legacy},"Legacy budget",IF({phase}="Working","Working budget",{coverage(f"W{row}","Inputs!$B$102")}))',
                 'E': f'IF({single},"Not covered",IF({legacy},"Legacy budget",IF({phase}="Working","Working budget",{coverage(f"X{row}","Inputs!$B$103")})))',
-                'F': f'IF({retired},IF(W{row}=1,SUM(Inputs!$B$108,Inputs!$B$110),IF(Inputs!$B$102=0,0,Inputs!$B$106))*({cpi}),0)',
-                'G': f'IF(AND({retired},{living}),IF(X{row}=1,SUM(Inputs!$B$109,Inputs!$B$111),IF(Inputs!$B$103=0,0,Inputs!$B$107))*({cpi}),0)',
-                'H': f'IF({retired},Inputs!$B$112*({cpi}),0)',
-                'I': f'IF(AND({retired},{living}),Inputs!$B$113*({cpi}),0)',
-                'J': f'IF({retired},(Inputs!$B$114+IF({single},0,Inputs!$B$115))*({cpi}),0)',
+                'F': f'IF({retired},IF(W{row}=1,SUM(Inputs!$B$108,Inputs!$B$110),IF(Inputs!$B$102=0,0,Inputs!$B$106))*({med_index}),0)',
+                'G': f'IF(AND({retired},{living}),IF(X{row}=1,SUM(Inputs!$B$109,Inputs!$B$111),IF(Inputs!$B$103=0,0,Inputs!$B$107))*({med_index}),0)',
+                'H': f'IF({retired},Inputs!$B$112*({med_index}),0)',
+                'I': f'IF(AND({retired},{living}),Inputs!$B$113*({med_index}),0)',
+                'J': f'IF({retired},(Inputs!$B$114+IF({single},0,Inputs!$B$115))*({med_index}),0)',
                 'K': p('AY'),
                 'L': f'IF({legacy},{legacy_irmaa},IF({retired},AA{row}*(W{row}+X{row}),0))',
                 'M': f'IF(U{row}=1,F{row},0)+IF(V{row}=1,G{row},0)',
-                'N': f'IF(U{row}+V{row}=2,Inputs!$B$118,IF(U{row}=1,Inputs!$B$119,IF(V{row}=1,Inputs!$B$120,0)))*({cpi})',
+                'N': f'IF(U{row}+V{row}=2,Inputs!$B$118,IF(U{row}=1,Inputs!$B$119,IF(V{row}=1,Inputs!$B$120,0)))*({med_index})',
                 'O': fpl,
                 'P': f'IF({legacy},{legacy_cost},SUM(F{row}:L{row}))',
                 'Q': (f'IF({legacy},IF({phase}="Working",0,P{row}),'
@@ -249,7 +242,7 @@ def _healthcare_rows(m, wb):
                 'Z': f'IF(W{row}+X{row}=0,"",{prior_filing})',
                 'AA': f'IF(OR(W{row}+X{row}=0,Y{row}<0),0,{_irmaa_per_beneficiary(f"Y{row}",f"Z{row}",p("H"),year)})',
                 'AB': (f'IF(AND({retired},{owner_alive}),IF(D{row}="COBRA",F{row},0)+IF(E{row}="COBRA",G{row},0)'
-                       f'+IF({premium_qualified},(W{row}*Inputs!$B$108+X{row}*Inputs!$B$109)*({cpi})+L{row},0),0)'),
+                       f'+IF({premium_qualified},(W{row}*Inputs!$B$108+X{row}*Inputs!$B$109)*({med_index})+L{row},0),0)'),
                 'AC': actual_magi,
                 'AD': f'IF(O{row}>0,AC{row}/O{row},0)',
                 'AE': p('P'),
@@ -258,6 +251,8 @@ def _healthcare_rows(m, wb):
             vals = [cols[m.L(i)] for i in range(1, len(HEADERS)+1)]
 
             # Projection is the book of record for gross spending and HSA draws.
+            m.put('Projection', f'AY{row}', m.active(row,
+                f'IF(AND(C{row}>=Inputs!$B$58,C{row}<Inputs!$B$58+Inputs!$B$60),Inputs!$B$59*({med_index}),0)'))
             m.put('Projection', f'AZ{row}', m.active(row, _hc('L', row)))
             m.put('Projection', f'BA{row}', m.active(row, _hc('P', row)))
             m.put('Projection', f'P{row}', m.active(row, f'MIN(BG{row-1},{_hc("Q",row)})'))
@@ -291,7 +286,7 @@ def configure(m, wb):
         m.MODULES.append(SHEET)
     _tables(m)
     _inputs(m)
-    _healthcare_rows(m, wb)
+    _healthcare_rows(m)
     m.put('Projection', 'BA4', 'Gross healthcare before Marketplace credit')
     m.put('Projection', 'P4', 'HSA reimbursement for eligible healthcare')
     m.put('README', 'A127', 'Healthcare: Inputs rows 101–124 optionally model coverage by person. Use gross quotes and verify Marketplace eligibility. See Healthcare for net premiums and HSA reimbursement.')

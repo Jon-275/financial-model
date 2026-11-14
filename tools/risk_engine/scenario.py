@@ -130,9 +130,12 @@ def _grid(sheet, min_row: int, max_row: int, max_column: int) -> dict[int, dict[
 
 
 def _one_offs(raw) -> dict[int, float]:
+    inputs = raw['Inputs']
+    if any(_cell(inputs[address], f'Inputs!{address}') not in (None, '') for address in ('B83', 'C83')):
+        _invalid('Inputs!B83:C83', 'move one-time expenses to rows 75–82')
     entries: dict[int, float] = {}
     for row, (_, year_cell, amount_cell) in enumerate(
-        raw['Inputs'].iter_rows(min_row=75, max_row=82, max_col=3), 75
+        inputs.iter_rows(min_row=75, max_row=82, max_col=3), 75
     ):
         year = _cell(year_cell, f'Inputs!B{row}')
         amount = _cell(amount_cell, f'Inputs!C{row}')
@@ -154,6 +157,7 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
     detailed_cell = source[101 - 4][selected + 2]
     detailed = _integer(_cell(detailed_cell, f'Inputs!{selected_col}101'), 'Inputs!B101', 0, 1)
     inputs = {4: selected}
+    modern = raw['Inputs']['A130'].value == 'Opening balance year'
     for row in _INPUT_ROWS:
         location = f'Inputs!{selected_col}{row}'
         value = _cell(source[row - 4][selected + 2], location)
@@ -165,6 +169,10 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             value = 0
         else:
             _number(value, location)
+        if modern and row == 55:
+            if not 0 <= value <= 1:
+                _invalid(location, 'expected a share from zero to one')
+            value *= inputs[44]
         _matches(data[row]['B'], value, f'Inputs!B{row}')
         inputs[row] = value
 
@@ -177,6 +185,16 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             _number(value, f'Inputs!B{row}')
         inputs[row] = value
 
+    if modern:
+        raw_inputs = raw['Inputs']
+        inputs[130] = _integer(_cell(raw_inputs['B130'], 'Inputs!B130'), 'Inputs!B130', _OPENING_YEAR, 9874)
+        inputs[131] = _number(_cell(raw_inputs['B131'], 'Inputs!B131'), 'Inputs!B131')
+        medical = _cell(raw_inputs['B132'], 'Inputs!B132')
+        inputs[132] = inputs[14] if medical in (None, '') else _number(medical, 'Inputs!B132')
+        if not 0 <= inputs[131] < 1 or inputs[132] <= -1:
+            _invalid('Inputs!B131:B132', 'fee or healthcare inflation is outside the supported range')
+        if _cell(cached['Inputs']['B133'], 'Inputs!B133') != 'OK':
+            _invalid('Inputs!B133', 'planning assumptions have not passed validation')
     _validate_assumptions(inputs)
     return selected, inputs, _one_offs(raw)
 
@@ -198,7 +216,7 @@ def _validate_assumptions(inputs: Mapping[int, Cell]) -> None:
     for row in (15, 16):
         integer(row, 1, 3)
     for row in (29, 92, 93, 94):
-        integer(row, 0, _OPENING_YEAR)
+        integer(row, 0, int(inputs.get(130, _OPENING_YEAR)))
     for row in (95, 96):
         integer(row, 0, 126)
     for row in (68, 98):
@@ -270,18 +288,21 @@ def _allocation(raw, inputs) -> Allocation:
         (working, (17, 19, 21), 63, 65), (retirement, (18, 20, 22), 64, 66)
     ):
         for row, weight in zip(return_rows, weights):
-            _matches(inputs[row], math.fsum(x * y for x, y in zip(weight, means)), f'Inputs!B{row}')
+            gross = math.fsum(x * y for x, y in zip(weight, means))
+            net = (1 + gross) * (1 - inputs.get(131, 0)) - 1
+            _matches(inputs[row], net, f'Inputs!B{row}')
         for row, yields in ((qualified_row, qualified), (ordinary_row, ordinary)):
             _matches(inputs[row], math.fsum(x * y for x, y in zip(weights[0], yields)), f'Inputs!B{row}')
     return Allocation(names, means, vols, ordinary, qualified, corr, working, retirement)
 
 
 def _tax_tables(raw, cached) -> tuple[dict[str, Cell], dict[str, Cell]]:
-    rows = _grid(cached['Tax_Tables'], 1, 252, 8)
+    last = 265 if raw['Tax_Tables']['A253'].value == 'DIRECT ROTH IRA CONTRIBUTIONS' else 252
+    rows = _grid(cached['Tax_Tables'], 1, last, 8)
     cached_values = {f'{col}{row}': value for row, cells in rows.items() for col, value in cells.items()
                      if value not in (None, '')}
     literal_numbers = {}
-    for row, cells in enumerate(raw['Tax_Tables'].iter_rows(min_row=1, max_row=252, max_col=8), 1):
+    for row, cells in enumerate(raw['Tax_Tables'].iter_rows(min_row=1, max_row=last, max_col=8), 1):
         for col, cell in enumerate(cells, 1):
             loc = f'{get_column_letter(col)}{row}'
             if cell.data_type == 'f':
@@ -303,7 +324,7 @@ def _tax_tables(raw, cached) -> tuple[dict[str, Cell], dict[str, Cell]]:
 
 def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wage_growth) -> None:
     step = row - _FIRST_ROW
-    year = _OPENING_YEAR + step
+    year = int(inputs.get(130, _OPENING_YEAR)) + step
     age, spouse = inputs[8] + step, inputs[9] + step
     index = (1 + inputs[14]) ** step
     working = age < inputs[10]
@@ -312,7 +333,7 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
     phase = 'Start' if step == 0 else ('Working' if working else
                                        'Bridge' if age < 60 else
                                        'Pre-Medicare' if age < 65 else 'Medicare')
-    projection_expected = dict(A=step, B=year, C=age, D=spouse, E=phase, F=filing, G=index, H=index)
+    projection_expected = dict(A=step, B=year, C=age, D=spouse, E=phase, F=filing, G=index, H=(1 + inputs[14]) ** (year - _OPENING_YEAR))
     if step == 0:
         projection_expected.update(BC=inputs[25], BD=inputs[51], BE=inputs[26], BF=inputs[27],
                                    BG=inputs[31], BW=inputs[127], BY=inputs[128])
@@ -343,7 +364,7 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
             fixed = inputs[38] * inputs[40] / 12
         spending = max(0, inputs[36 if working else 37] - inputs[38]) * index + fixed
         spending *= inputs[56] if single else 1
-        care = inputs[59] * index if inputs[58] <= age < inputs[58] + inputs[60] else 0
+        care = inputs[59] * (1 + inputs.get(132, inputs[14])) ** step if inputs[58] <= age < inputs[58] + inputs[60] else 0
         projection_expected.update(I=wages, J=deferral, K=hsa, L=inputs[33] * index if working else 0,
                                    N=social_security, O=other, AG=exempt, AW=spending,
                                    AX=one_offs.get(year, 0) * index, AY=care, BT=primary, BU=wages - primary)
@@ -435,6 +456,8 @@ def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_
         'sequence': [sequence, stress_returns],
         'return_basis': return_basis,
     }
+    if 130 in inputs:
+        payload['planning'] = [inputs[row] for row in (130, 131, 132)]
     if not real_wage_growth:
         payload['wage_growth_includes_inflation'] = True
     canonical = json.dumps(payload, sort_keys=True, separators=(',', ':'), allow_nan=False)

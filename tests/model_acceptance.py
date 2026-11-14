@@ -81,6 +81,30 @@ def check_chart_structure(workbook: Path) -> None:
                     raise AssertionError(f"Broken chart formula in {path}")
 
 
+def check_release_package(workbook: Path) -> None:
+    with ZipFile(workbook) as archive:
+        book = ET.fromstring(archive.read("xl/workbook.xml"))
+        sheets = book.findall(f"{q('sheets')}/{q('sheet')}")
+        hidden = [sheet.get("name") for sheet in sheets if sheet.get("state", "visible") != "visible"]
+        if not sheets or hidden:
+            raise AssertionError(f"Release workbook must expose all worksheets. Hidden tabs: {hidden}")
+        for view in book.findall(f"{q('bookViews')}/{q('workbookView')}"):
+            if view.get("showSheetTabs", "1") in ("0", "false"):
+                raise AssertionError("Release workbook must display its sheet tabs.")
+        discarded = {"docProps/custom.xml", "docMetadata/LabelInfo.xml", "xl/calcChain.xml"}
+        if set(archive.namelist()) & discarded:
+            raise AssertionError("Release workbook contains inherited document metadata.")
+        for part in ("[Content_Types].xml", "_rels/.rels", "xl/_rels/workbook.xml.rels"):
+            for entry in ET.fromstring(archive.read(part)):
+                target = (entry.get("PartName") or entry.get("Target") or "").lstrip("/")
+                if part == "xl/_rels/workbook.xml.rels" and target == "calcChain.xml":
+                    target = "xl/calcChain.xml"
+                if target in discarded:
+                    raise AssertionError(f"Release workbook still references removed metadata in {part}.")
+        if len(ET.fromstring(archive.read("docProps/core.xml"))) or book.find("{*}revisionPtr") is not None:
+            raise AssertionError("Release workbook contains document history or author properties.")
+
+
 def check_probe_formula_encoding(workbook: Path) -> None:
     # Excel for Mac drops shared formulas with cross-sheet references on open.
     with ZipFile(workbook) as archive:
@@ -268,7 +292,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("workbook", type=Path)
     parser.add_argument("--tolerance", type=float, default=0.01)
+    parser.add_argument("--release", action="store_true", help="Check published sheet visibility and document metadata.")
     args = parser.parse_args()
+    if args.release:
+        check_release_package(args.workbook)
     from xlsx_acceptance import scan_errors
     with Workbook(args.workbook) as wb:
         scan_errors(wb)

@@ -1,6 +1,6 @@
 # Portfolio risk analysis
 
-Use this report to see how market returns affect the ability to fund spending and taxes. It reads the active scenario and the **Risk_Settings** tab, then recalculates cash, taxes and account access for each path. The report reflects the workbook settings at the time it was generated.
+Use this report to see how market returns affect the ability to fund spending and taxes. It reads the active scenario and the **Risk_Settings** tab, then recalculates cash, taxes and account access for each path. The report reflects the workbook settings at the time it was generated. It expects the Tax_Tables layout produced by the build and stops if that layout has changed.
 
 ## Run the report
 
@@ -23,7 +23,7 @@ The report is a snapshot. Rerun it after changing any workbook inputs. Keep the 
 
 ## How the analysis works
 
-- **Returns.** The engine uses the active working and retirement portfolios from **Asset_Allocation**. It draws one correlated set of asset returns per year and applies each account’s mix to those returns. The model treats years as independent. The workbook’s return basis controls whether the starting assumption anchors compound growth or the average annual return. The HSA follows the Roth return in the deterministic workbook, while its own asset mix determines its exposure to market shocks. `--volatility 0` reproduces the baseline.
+- **Returns.** The engine uses the active working and retirement portfolios from **Asset_Allocation**. It draws one correlated set of asset returns per year and applies each account’s mix to those returns. The model treats years as independent. If you entered an investment fee, the workbook and market paths both apply it to account growth. The workbook’s return basis controls whether the starting assumption anchors compound growth or the average annual return. The HSA follows the Roth return in the deterministic workbook, while its own asset mix determines its exposure to market shocks. `--volatility 0` reproduces the baseline.
 - **Annual funding.** Each path uses its own account balances and brokerage basis. It recalculates taxes, eligible withdrawals, conversions, healthcare credits and income-based Medicare surcharges. Then it pays tax and spending, funds any optional savings, and applies the year’s returns. A path has a shortfall if at least one cent of required spending or taxes is unpaid in any year. A missed savings target is tracked separately from required obligations.
 - **Flexible spending.** Both policies use identical market returns. The report cuts spending when the opening portfolio falls below the share of the base plan set on **Risk_Settings**. Only flexible recurring retirement costs are eligible for cuts. Healthcare, taxes, one-time expenses and fixed mortgage payments keep their planned amounts.
 - **Early losses.** The report applies each stock return on **Risk_Settings** to the first retirement years. Other assets and later years use the plan’s investment assumptions.

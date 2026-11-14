@@ -2,16 +2,18 @@
 
 from lxml import etree
 
+from example_inputs import EXAMPLE_NOTICE, INSPECTION_NOTE, example_cells
+from workbook_metadata import make_sheets_visible
+
 _MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 _PROPS = '{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}'
 _VT = '{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}'
 _TAB_ORDER = (
     'Start Here', 'Inputs', 'Summary', 'Cash_Flow', 'Projection', 'Roth_Access',
     'Healthcare', 'Asset_Allocation', 'Income_Targeting', 'Risk_Settings',
-    'Tax_Tables', 'Checks',
+    'Tax_Tables', 'Checks', 'Report_Data', 'Funding_Calc', 'Targeting_Calc',
 )
-_HIDDEN = ('Report_Data', 'Funding_Calc', 'Targeting_Calc')
-_INPUT_GROUPS = ((17, 24), (55, 57), (59, 60), (75, 82), (102, 124))
+_INPUT_GROUPS = ((17, 24), (55, 57), (59, 60), (102, 124))
 
 
 def _tab_name(name):
@@ -20,22 +22,14 @@ def _tab_name(name):
 
 def sheet_order(names):
     """Sort sheet names without renaming the compiler's source worksheet."""
-    ordered = sorted(names, key=lambda name: _TAB_ORDER.index(_tab_name(name))
-                     if _tab_name(name) in _TAB_ORDER else len(_TAB_ORDER))
-    return [name for name in ordered if name not in _HIDDEN] + [name for name in _HIDDEN if name in ordered]
+    return sorted(names, key=lambda name: _TAB_ORDER.index(_tab_name(name))
+                  if _tab_name(name) in _TAB_ORDER else len(_TAB_ORDER))
 
 
-def write_scenarios(put, workbook):
-    """Preserve the base case and make each saved alternative change one assumption."""
-    inputs = workbook['Inputs']
-    later_retirement = inputs['D10'].value + 5
-    lower_spending = round(inputs['D37'].value * 0.9, 2)
+def write_scenarios(put):
+    """Seed the release workbook with fictional household inputs."""
     for address, value in {
-        'D7': 'Base plan',
-        'E7': f'Retire at {later_retirement}',
-        'E10': later_retirement,
-        'F7': 'Spend 10% less',
-        'F37': lower_spending,
+        **example_cells(),
         'G7': 'The saved alternatives each change one input.',
         'G16': 'Choose a retirement investment profile. Expand rows 17–24 to see the rates.',
         'G54': 'Enter 999 to keep the two-person plan. Expand the rows below to enter survivor costs.',
@@ -50,18 +44,21 @@ def write_scenarios(put, workbook):
     for address, value in {
         'A1': 'RETIREMENT PLAN',
         'A3': 'QUICK START',
-        'A4': '1. On Inputs, choose 1 for Base plan, 2 to retire later or 3 to spend less in retirement.',
+        'A4': '1. On Inputs, choose 1 for Example plan, 2 to retire later or 3 to spend less in retirement.',
         'A5': '2. Review ages, wages, balances and spending. Set the last age to show in row 53.',
         'A6': '3. Read the funding answer at the top of Summary.',
         'A7': 'If the plan falls short, open Cash_Flow to see what went unpaid in the first shortfall year.',
-        'A12': 'Use the + signs at the left of Inputs to open sections such as healthcare and one-time expenses.',
+        'A9': EXAMPLE_NOTICE,
+        'A12': 'Use the + signs at the left of Inputs to open optional details such as healthcare.',
         'A16': 'Cash_Flow shows how bills were paid. Projection and Roth_Access show balances and which savings were available.',
         'A18': 'Income_Targeting compares Roth conversions for one retirement year when money is available to convert.',
         'A19': 'Asset_Allocation sets the investment mix. Tax_Tables lists tax rates and limits.',
-        'A20': 'Risk_Settings holds the inputs for the separate portfolio risk report.',
-        'A22': 'The risk report recalculates costs and withdrawals for each market path. Rerun it after changing inputs.',
-        'A23': '',
+        'A20': 'Risk_Settings supplies the separate portfolio risk report. See the repository’s Portfolio risk analysis guide.',
+        'A22': 'This workbook uses fixed returns. Rerun the separate report to test market paths after you change inputs.',
+        'A23': INSPECTION_NOTE,
         'A39': 'The separate risk report uses asset volatility and correlations from Asset_Allocation.',
+        'A75': 'On Inputs, use rows 75–82 for one-time expenses. Enter the calendar year and amount in today’s dollars.',
+        'A87': 'Summary uses spending after the mortgage ends to estimate the savings target.',
         'A89': 'PORTFOLIO RISK',
         'A90': 'The separate risk report recalculates the plan under different market returns. It shows how often costs were paid in full.',
         'A91': 'Choose the return method and early-retirement stress settings on Risk_Settings.',
@@ -75,7 +72,7 @@ def write_scenarios(put, workbook):
         'A109': 'EARLY RETIREMENT LOSSES',
         'A110': 'The risk report compares fixed spending with temporary cuts to flexible spending during poor markets.',
         'A111': 'Risk_Settings shows the stock returns tested during the first retirement years.',
-        'A112': 'The report counts any year with unpaid spending or taxes as a shortfall, even if the portfolio recovers later.',
+        'A112': 'The risk report counts a shortfall when at least one cent of spending or tax goes unpaid in a year.',
         'A113': '',
         'A114': '',
         'A115': '',
@@ -125,6 +122,36 @@ def _group_inputs(root):
                 rows[number].set('hidden', '1')
 
 
+def _validate_inputs(root):
+    rules = (
+        ('B4', 'whole', 'between', 1, 3, 'Choose scenario 1, 2 or 3.'),
+        ('D8:F10 D53:F53', 'whole', 'between', 0, 125, 'Enter a whole age from 0 to 125.'),
+        ('D98:F98 D101:F101', 'whole', 'between', 0, 1, 'Enter 0 or 1.'),
+        ('D55:F55', 'decimal', 'between', 0, 1, 'Enter a share from 0% to 100%.'),
+        ('B130', 'whole', 'between', 2026, 9874, 'Enter a whole opening year from 2026 to 9874.'),
+        ('B131', 'decimal', 'between', 0, 0.999999999999999, 'Enter a fee from 0% to less than 100%.'),
+        ('B132', 'decimal', 'greaterThan', -1, None, 'Enter inflation above -100%, or leave this blank.'),
+    )
+    validations = root.find(_MAIN + 'dataValidations')
+    if validations is None:
+        validations = etree.Element(_MAIN + 'dataValidations')
+        later = ('hyperlinks', 'printOptions', 'pageMargins', 'pageSetup', 'headerFooter',
+                 'rowBreaks', 'colBreaks', 'drawing', 'legacyDrawing', 'tableParts', 'extLst')
+        following = next((node for node in root if etree.QName(node).localname in later), None)
+        if following is None:
+            root.append(validations)
+        else:
+            following.addprevious(validations)
+    for cells, kind, operator, first, last, message in rules:
+        item = etree.SubElement(validations, _MAIN + 'dataValidation', sqref=cells, type=kind,
+                                operator=operator, allowBlank='1' if cells == 'B132' else '0',
+                                showErrorMessage='1', errorTitle='Check this input', error=message)
+        etree.SubElement(item, _MAIN + 'formula1').text = str(first)
+        if last is not None:
+            etree.SubElement(item, _MAIN + 'formula2').text = str(last)
+    validations.set('count', str(len(validations)))
+
+
 def apply_sheet_layout(name, root):
     """Apply presentation metadata after values and formulas are assembled."""
     views = root.find(_MAIN + 'sheetViews')
@@ -139,6 +166,7 @@ def apply_sheet_layout(name, root):
     if name == 'Inputs':
         _freeze(view, columns=3, rows=6)
         _group_inputs(root)
+        _validate_inputs(root)
     if name in {'Cash_Flow', 'Roth_Access'}:
         _freeze(view, columns=2, rows=4)
     if name == 'README':
@@ -171,7 +199,7 @@ def _update_sheet_titles(app, names):
 
 
 def apply_tab_order(workbook, app=None):
-    """Reorder visible tabs and preserve worksheet IDs and relationships."""
+    """Reorder tabs and preserve worksheet IDs and relationships."""
     sheets = workbook.find(_MAIN + 'sheets')
     original = [sheet.get('name') for sheet in sheets]
     by_name = dict(zip(original, sheets))
@@ -185,8 +213,7 @@ def apply_tab_order(workbook, app=None):
     for sheet in sheets:
         name = sheet.get('name')
         sheet.set('name', _tab_name(name))
-        if name in _HIDDEN:
-            sheet.set('state', 'hidden')
+    make_sheets_visible(workbook)
 
     start = str(indices.get('README', indices.get('Start Here', 0)))
     for view in workbook.findall(f'{_MAIN}bookViews/{_MAIN}workbookView'):

@@ -15,16 +15,20 @@ for (const [name, cells] of Object.entries(plan.cells)) {
     if (!rows.has(r)) rows.set(r, []);
     rows.get(r).push({ address, col: rank(col), value, formula: typeof value === 'string' && value.startsWith('=') });
   }
-  for (const list of rows.values()) {
-    list.sort((a, b) => a.col - b.col);
-    for (let i = 0; i < list.length;) {
-      let j = i + 1;
-      while (j < list.length && list[j].col === list[j - 1].col + 1 && list[j].formula === list[i].formula) j++;
-      const range = sheet.getRange(`${list[i].address}:${list[j-1].address}`);
-      const values = [list.slice(i,j).map((v) => v.value)];
-      if (list[i].formula) range.formulas = values;
-      else range.values = values;
-      i = j;
+  for (const list of rows.values()) list.sort((a, b) => a.col - b.col);
+  // INDEX can temporarily spill over empty cells while its scenario inputs are absent.
+  for (const formulas of [false, true]) {
+    for (const list of rows.values()) {
+      const entries = list.filter((cell) => cell.formula === formulas);
+      for (let first = 0; first < entries.length;) {
+        let end = first + 1;
+        while (end < entries.length && entries[end].col === entries[end - 1].col + 1) end++;
+        const range = sheet.getRange(`${entries[first].address}:${entries[end - 1].address}`);
+        const values = [entries.slice(first, end).map((cell) => cell.value)];
+        if (formulas) range.formulas = values;
+        else range.values = values;
+        first = end;
+      }
     }
   }
 }

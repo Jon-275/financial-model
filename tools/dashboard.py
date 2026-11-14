@@ -6,6 +6,10 @@ LAST_CASH_ROW = 14
 
 
 def configure(put):
+    end_row = 'Inputs!$B$70'
+    end_roth = lambda col: f'INDEX(Roth_Access!${col}$5:${col}$130,{end_row})'
+    restricted = f'IF({end_roth("R")}=0,{end_roth("AK")},0)+IF({end_roth("S")}=0,{end_roth("AL")},0)'
+    end_cpi = f'INDEX(Projection!$G$5:$G$130,{end_row})'
     labels = {
         'A1': ('RETIREMENT PLAN SUMMARY', 'title'),
         'A2': ('=IF(Inputs!$B$70=0,"Check Inputs","Scenario "&Inputs!$B$7&"  |  retire at age "&TEXT(Inputs!$B$10,"0")&"  |  end at age "&TEXT(Inputs!$B$53,"0"))', None),
@@ -18,6 +22,9 @@ def configure(put):
         'A5': ('Ending portfolio in today’s dollars', 'label'),
         'B5': ('=IF(OR(B25="YES",B25="NO - cash shortfall"),B29,"")', 'summary_money'),
         'C5': ('Balance at the selected end age, before estimated tax on traditional savings.', 'note'),
+        'A6': ('Workplace Roth unavailable at end', 'label'),
+        'B6': (f'=IF(B5="","",({restricted})/{end_cpi})', 'summary_money'),
+        'C6': ('=IF(N(B6)>0,"Included above. The plan cannot draw it at the end age.","")', 'note'),
         'A7': ('SAVINGS TARGET', 'band'),
         'A8': ('Savings target in today’s dollars', None),
         'C8': ('Based on spending after the mortgage ends, healthcare and the withdrawal rate you entered.', 'note'),

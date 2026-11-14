@@ -21,6 +21,6 @@ The tax calculation covers ordinary W-2 and retirement income, qualifying gains 
 
 ## Build and verify
 
-Use the age-125 baseline at commit the original age-125 template and the current `tools/build_model.sh`. Keep the output filename `retirement-model.xlsx` so the existing chart references retain their workbook name. The prior production workbook is retained at an earlier development version. See [tests](../../tests/README.md) for the build and regression commands.
+Use the [current build instructions](../../README.md#rebuild-the-workbook) and [test guide](../../tests/README.md).
 
 On November 6, 2026, all 65 regression and synthetic scenarios passed in LibreOffice. Three representative cases also passed on full-size copies, including a plan funded only below the Marketplace limit and a conversion that is better funded by preserving the credit. The scripted build passed end to end, and the packaged workbook passed independent cash, account and healthcare reconciliation in all 73 active years. Existing scenario cells were preserved, and all five chart objects remain in the file. Native Excel recalculation and interactive chart refresh were not verified.

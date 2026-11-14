@@ -47,19 +47,16 @@ with zipfile.ZipFile(template) as src:
             cache=ref.find(cache_tag)
             match=re.fullmatch(r"'retirement-model\.xlsx'!RM(Plan|Trials)([A-Z]+)",fm)
             data=dashboard_chart_data(fm,calc)
-            if data is not None:
-                if cache is None: cache=E.SubElement(ref,cache_tag)
-            elif cache is None:
-                continue
-            elif match:
+            if data is None and match:
                 key,col=match.groups(); sheet,first=('Projection',5) if key=='Plan' else ('Monte_Carlo',25)
                 data=[calc[sheet][f'{col}{r}'].value for r in range(first,first+(count if key=='Plan' else risk_count))]
-            elif '!' in fm:
+            elif data is None and '!' in fm:
                 sheet,a=fm.split('!',1); sheet=sheet.strip("'")
                 if sheet not in calc.sheetnames: continue
                 c1,r1,c2,r2=range_boundaries(a)
                 data=[calc[sheet].cell(r,col).value for r in range(r1,r2+1) for col in range(c1,c2+1)]
-            else: continue
+            if data is None: continue
+            if cache is None: cache=E.SubElement(ref,cache_tag)
             for pt in list(cache.findall(c('pt'))): cache.remove(pt)
             pt_count=cache.find(c('ptCount'))
             if pt_count is None: pt_count=E.SubElement(cache,c('ptCount'))

@@ -7,6 +7,7 @@ from dashboard import SHEET as REPORT_DATA
 from dashboard_package import install_dashboard
 import risk_cleanup
 import workbook_layout
+import workbook_metadata
 from openpyxl.formula.translate import Translator
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
@@ -63,8 +64,8 @@ def main():
                 part=f'xl/worksheets/sheet{next_part}.xml'; rid=f'rId{next_rel}'
                 next_part+=1; next_rel+=1
                 sa={'name':n,'sheetId':str(next_sheet),q(R,'id'):rid}; next_sheet+=1
-                if n in {'Funding_Calc','Targeting_Calc',REPORT_DATA}: sa['state']='hidden'
                 E.SubElement(sheets,x('sheet'),attrib=sa)
+                sp[n] = part
                 E.SubElement(rel,q(PKG,'Relationship'),Id=rid,Type=R+'/worksheet',Target=part[3:])
                 E.SubElement(ct,q(CT,'Override'),PartName='/'+part,ContentType='application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml')
                 root=E.Element(x('worksheet'),nsmap={None:X,'r':R}); E.SubElement(root,x('dimension'),ref='A1')
@@ -151,10 +152,10 @@ def main():
                     rows[row_number].set('ht', str(height))
                     rows[row_number].set('customHeight', '1')
             workbook_layout.apply_sheet_layout(n, root)
+            workbook_metadata.clear_revision_ids(root)
             changes[part]=pack(root); print(n,len(edits),flush=True)
         app = read(src, 'docProps/app.xml')
         workbook_layout.apply_tab_order(wb, app)
-        changes['docProps/app.xml'] = pack(app)
         install_dashboard(src, authored, wb, ct, changes, sp['Summary'], ap['Summary'])
         # Use the open space beside the conversion controls, above the full sweep.
         part = 'xl/drawings/drawing2.xml'
@@ -166,6 +167,9 @@ def main():
                     column.text = str(int(column.text) - 16)
         changes[part] = pack(drawing)
         wb.find(x('calcPr')).set('fullCalcOnLoad','1')
+        skip.update(workbook_metadata.clean_metadata(src, wb, app, ct, rel, changes))
+        workbook_metadata.compact_shared_strings(src, (part for part in sp.values() if part not in skip), changes)
+        changes['docProps/app.xml'] = pack(app)
         changes.update({'xl/workbook.xml':pack(wb),'xl/_rels/workbook.xml.rels':pack(rel),'[Content_Types].xml':pack(ct)})
         for index, title in [(2,'Incremental tax and healthcare cost per dollar converted'),(3,'Current-year tax and healthcare costs')]:
             part=f'xl/charts/chart{index}.xml'; chart=read(src,part)
