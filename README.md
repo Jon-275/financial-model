@@ -1,4 +1,4 @@
-# Retirement model
+# Financial Planning
 
 The Excel workbook projects household cash, taxes and account access through the end age you choose, up to age 125. Open **Start Here**, choose a scenario on **Inputs**, then read the funding answer at the top of **Summary**. [Open the workbook](workbook/retirement-model.xlsx)
 
