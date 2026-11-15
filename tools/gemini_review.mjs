@@ -127,7 +127,7 @@ function summarize(findings, sha) {
     'Commit ' + sha.slice(0, 7),
     details || 'Gemini found no actionable issues in the reviewed changes.',
   ].join('\n\n').replaceAll('@', '@\u200b').slice(0, 50_000);
-  return { conclusion: blocking ? 'failure' : 'success', output: { title, summary } };
+  return { state: blocking ? 'failure' : 'success', output: { title, summary } };
 }
 
 async function updateComment(github, repo, number, { title, summary }) {
@@ -160,12 +160,11 @@ export async function reviewPullRequest({ github, context, core, apiKey, fetchAp
   }
 
   const sha = pr.head.sha;
-  const { data: check } = await github.rest.checks.create({
-    ...repo, name: checkName, head_sha: sha, status: 'in_progress',
+  const runUrl = `${context.serverUrl}/${repo.owner}/${repo.repo}/actions/runs/${context.runId}`;
+  const publish = (state, description) => github.rest.repos.createCommitStatus({
+    ...repo, sha, context: checkName, state, description, target_url: runUrl,
   });
-  const complete = (conclusion, output) => github.rest.checks.update({
-    ...repo, check_run_id: check.id, status: 'completed', conclusion, output,
-  });
+  await publish('pending', 'Gemini is reviewing this commit.');
 
   try {
     const files = await github.paginate(github.rest.pulls.listFiles, { ...pull, per_page: 100 });
@@ -177,26 +176,20 @@ export async function reviewPullRequest({ github, context, core, apiKey, fetchAp
     const findings = patches ? await getFindings(apiKey, patches, paths, fetchApi) : [];
     const { data: latest } = await github.rest.pulls.get(pull);
     if (latest.head.sha !== sha || latest.state !== 'open' || latest.draft || latest.base.ref !== 'main') {
-      await complete('cancelled', {
-        title: 'Pull request changed',
-        summary: 'The pull request changed before Gemini finished reviewing this commit.',
-      });
+      await publish('error', 'The pull request changed before the review finished.');
       return;
     }
     if (!patches) {
-      await complete('success', {
-        title: 'No reviewable source changes',
-        summary: 'Gemini reviews source code and workflows. Workbook changes are covered by Workbook checks.',
-      });
+      await publish('success', 'No reviewable source or workflow changes.');
       return;
     }
-    const { conclusion, output } = summarize(findings, sha);
+    const { state, output } = summarize(findings, sha);
     await updateComment(github, repo, number, output);
-    await complete(conclusion, output);
+    await publish(state, output.title);
   } catch (error) {
     // Log a safe message and fail the required check, including on incomplete reviews.
     const summary = error.message.replaceAll('@', '@\u200b').slice(0, 1_000);
-    await complete('failure', { title: 'Review could not complete', summary });
+    await publish('failure', 'Gemini review could not complete. See the workflow log.');
     core.setFailed(summary);
   }
 }
