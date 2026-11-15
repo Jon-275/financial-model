@@ -35,7 +35,9 @@ python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsx \
 
 GitHub runs **Workbook checks** on each pull request into `main` and after changes land on `main`. It checks tracked workbooks for private inputs and metadata, validates the saved release workbook, runs the risk tests, and recalculates six scenarios in LibreOffice. See the [workflow](../.github/workflows/workbook-checks.yml) for the commands and the scenario list.
 
-Gemini posts an advisory review of code and workflow changes on ready pull requests from branches in this repository. It uses GitHub's text patches and the `GEMINI_API_KEY` repository secret. Greptile and **Workbook checks** supply the required checks.
+**Gemini Review** checks source and workflow changes on ready pull requests, including forks. It blocks merging for critical or high-severity findings or if the review cannot finish. Suggestions appear in the PR comment. PRs without source or workflow changes pass the Gemini check, and **Workbook checks** still validates the workbook.
+
+Gemini reads GitHub's text patches and uses the `GEMINI_API_KEY` repository secret. To retry a review, use **Actions → Gemini 4 Hydrogen PR Review → Run workflow**, select `main`, and enter the PR number. Run the reviewer tests locally with `node --test tests/gemini_review.test.mjs` from the repository root.
 
 ## Microsoft Excel release check
 
