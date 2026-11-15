@@ -28,3 +28,13 @@ python3 tests/model_acceptance.py --release scratch/retirement-model.xlsx
 ```
 
 The build needs a new output path. Keep the file name `retirement-model.xlsx` so the Excel chart references resolve. See the [test guide](tests/README.md) for scenario checks and Excel verification.
+
+## Keep private workbook copies out of Git
+
+Save personal workbooks and reports under `private/` or outside this checkout. In each clone, enable the pre-commit check from the repository root.
+
+```sh
+git config --local core.hooksPath .githooks
+```
+
+The check reads staged workbook files. It requires the fictional inputs in the release workbook, checks inherited document metadata, and verifies the build template against its audited checksum. If the template changes, audit its inputs, saved results and document properties before updating `TEMPLATE_SHA256` in `tools/check_workbook_commit.py`.

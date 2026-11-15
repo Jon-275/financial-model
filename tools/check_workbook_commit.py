@@ -1,0 +1,72 @@
+"""Check staged Excel workbooks before a repository commit."""
+
+from hashlib import sha256
+from pathlib import Path
+import subprocess
+import sys
+from tempfile import TemporaryDirectory
+from xml.etree import ElementTree
+from zipfile import BadZipFile
+
+from example_inputs import example_cells
+
+
+ROOT = Path(__file__).resolve().parents[1]
+RELEASE = 'workbook/retirement-model.xlsx'
+TEMPLATE = 'workbook/build-template.xlsx'
+TEMPLATE_SHA256 = '8c07a8d5d6d58feb90b6dc4feceef95129acb89eb2393337fcb5b80900b53af1'
+SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
+sys.path.insert(0, str(ROOT / 'tests'))
+
+from model_acceptance import check_release_package
+from xlsx_read import Workbook
+
+
+def git(*args):
+    return subprocess.check_output(['git', *args], cwd=ROOT)
+
+
+def check_sample_workbook(path):
+    check_release_package(path)
+    with Workbook(path) as workbook:
+        inputs = workbook['Inputs']
+        for address, expected in example_cells().items():
+            cell = inputs[address]
+            actual = '' if cell.value is None else cell.value
+            if cell.formula is not None or type(actual) is bool or actual != expected:
+                raise ValueError(f'Inputs!{address} differs from the fictional scenario.')
+        for address, expected in {'B5': 0, 'B21': 0, 'B36': 250000}.items():
+            cell = workbook['Income_Targeting'][address]
+            if cell.formula is not None or type(cell.value) is bool or cell.value != expected:
+                raise ValueError(f'Income_Targeting!{address} differs from the example settings.')
+
+
+def main():
+    data = git('diff', '--cached', '--name-only', '--diff-filter=AMT', '--no-renames', '-z')
+    for raw_path in filter(None, data.split(b'\0')):
+        name = raw_path.decode('utf-8', errors='surrogateescape')
+        if Path(name).suffix.lower() not in SPREADSHEET_EXTENSIONS:
+            continue
+        try:
+            if name not in (RELEASE, TEMPLATE):
+                raise ValueError('Keep extra workbook copies under the ignored private/ directory.')
+            files = git('ls-files', '--stage', '--', name).splitlines()
+            if len(files) != 1 or files[0].split(b' ', 1)[0] != b'100644':
+                raise ValueError('Expected a regular workbook file.')
+            content = git('show', f':{name}')
+            if name == TEMPLATE:
+                if sha256(content).hexdigest() != TEMPLATE_SHA256:
+                    raise ValueError('The build template changed. Audit it for private inputs and metadata before updating its checksum.')
+            else:
+                with TemporaryDirectory(prefix='retirement-workbook-check-') as directory:
+                    staged = Path(directory) / Path(name).name
+                    staged.write_bytes(content)
+                    check_sample_workbook(staged)
+        except (AssertionError, BadZipFile, ElementTree.ParseError, KeyError, ValueError) as exc:
+            print(f'{name}: {exc}', file=sys.stderr)
+            return 1
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())
