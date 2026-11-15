@@ -10,30 +10,30 @@ SHEET = 'Healthcare'
 INPUT_STATUS = 'Inputs!$B$125'
 
 CONTROL_ROWS = (
-    ('Detailed healthcare model?', 0, '0 = current household budget. 1 = separate retirement coverage and expenses by person.', 'integer'),
-    ('Primary pre-Medicare coverage', 0, '0 none; 1 Marketplace; 2 other; 3 COBRA; 4 Marketplace with confirmed no Medicare eligibility after 65.', 'integer'),
-    ('Spouse pre-Medicare coverage', 0, '0 none; 1 Marketplace; 2 other; 3 COBRA; 4 Marketplace with confirmed no Medicare eligibility after 65.', 'integer'),
-    ('Primary Medicare starts at age', 65, '126 = no enrollment in the model. Enter an earlier start only if confirmed.', 'integer'),
-    ('Spouse Medicare starts at age', 65, '126 = no enrollment in the model. Enter an earlier start only if confirmed.', 'integer'),
-    ('Primary pre-Medicare gross premium', 0, 'Annual premium before any credit, in today’s dollars. Enter the person’s share if on a joint policy.', 'dollar'),
-    ('Spouse pre-Medicare gross premium', 0, 'Annual premium before any credit, in today’s dollars. Enter the person’s share if on a joint policy.', 'dollar'),
-    ('Primary Medicare basic premium', 0, 'Annual Part A/B/D or Advantage premium in today’s dollars. Exclude Medigap and income surcharges.', 'dollar'),
-    ('Spouse Medicare basic premium', 0, 'Annual Part A/B/D or Advantage premium in today’s dollars. Exclude Medigap and income surcharges.', 'dollar'),
-    ('Primary Medigap and other premiums', 0, 'Annual supplemental premiums not eligible for HSA reimbursement, in today’s dollars.', 'dollar'),
-    ('Spouse Medigap and other premiums', 0, 'Annual supplemental premiums not eligible for HSA reimbursement, in today’s dollars.', 'dollar'),
-    ('Primary qualified out-of-pocket costs', 0, 'Annual HSA-eligible expenses after insurance, in today’s dollars. Do not include premiums.', 'dollar'),
-    ('Spouse qualified out-of-pocket costs', 0, 'Annual HSA-eligible expenses after insurance, in today’s dollars. Do not include premiums.', 'dollar'),
-    ('Primary other out-of-pocket costs', 0, 'Annual costs not eligible for HSA reimbursement, in today’s dollars.', 'dollar'),
-    ('Spouse other out-of-pocket costs', 0, 'Annual costs not eligible for HSA reimbursement, in today’s dollars.', 'dollar'),
-    ('Primary eligible for Marketplace credit?', 0, '1 only if no affordable eligible employer plan or eligible government coverage, including Medicaid and Medicare; otherwise 0.', 'integer'),
-    ('Spouse eligible for Marketplace credit?', 0, '1 only if no affordable eligible employer plan or eligible government coverage, including Medicaid and Medicare; otherwise 0.', 'integer'),
-    ('Marketplace benchmark: both eligible', 0, 'Enter one annual second-lowest-cost silver plan quote covering both eligible enrollees, in today’s dollars.', 'dollar'),
-    ('Marketplace benchmark: primary only', 0, 'Enter the annual second-lowest-cost silver quote for the eligible primary person alone, in today’s dollars.', 'dollar'),
-    ('Marketplace benchmark: spouse only', 0, 'Enter the annual second-lowest-cost silver quote for the eligible spouse alone, in today’s dollars.', 'dollar'),
-    ('HSA account owner', 1, '1 primary, 2 spouse. No beneficiary transfer is assumed if the spouse dies.', 'integer'),
-    ('IRMAA MAGI before opening year', -1, 'Federal AGI plus tax-exempt interest for the calendar year before Projection opens. -1 = unknown; 0 is valid.', 'dollar'),
-    ('IRMAA MAGI in opening year', -1, 'Federal AGI plus tax-exempt interest for the opening calendar year. -1 = unknown; 0 is valid.', 'dollar'),
-    ('HSA-qualified share of long-term care', 0, '0% to 100%. Enter only the share confirmed eligible for reimbursement; 0% is the conservative default.', 'percent'),
+    ('Detailed healthcare model?', 0, 'Use 0 for a household budget or 1 for costs by person.', 'integer'),
+    ('Primary pre-Medicare coverage', 0, '0 None, 1 Marketplace, 2 Other, 3 COBRA. See the Model guide for 4.', 'integer'),
+    ('Spouse pre-Medicare coverage', 0, '0 None, 1 Marketplace, 2 Other, 3 COBRA. See the Model guide for 4.', 'integer'),
+    ('Primary Medicare starts at age', 65, 'Enter the confirmed start age. Use 126 for no enrollment.', 'integer'),
+    ('Spouse Medicare starts at age', 65, 'Enter the confirmed start age. Use 126 for no enrollment.', 'integer'),
+    ('Primary pre-Medicare gross premium', 0, 'Enter this person’s yearly premium before credits.', 'dollar'),
+    ('Spouse pre-Medicare gross premium', 0, 'Enter this person’s yearly premium before credits.', 'dollar'),
+    ('Primary Medicare basic premium', 0, 'Enter yearly basic Medicare premiums. See the Model guide.', 'dollar'),
+    ('Spouse Medicare basic premium', 0, 'Enter yearly basic Medicare premiums. See the Model guide.', 'dollar'),
+    ('Primary Medigap and other premiums', 0, 'Enter yearly Medigap or other supplemental premiums.', 'dollar'),
+    ('Spouse Medigap and other premiums', 0, 'Enter yearly Medigap or other supplemental premiums.', 'dollar'),
+    ('Primary qualified out-of-pocket costs', 0, 'Enter yearly medical bills your HSA can cover after insurance.', 'dollar'),
+    ('Spouse qualified out-of-pocket costs', 0, 'Enter yearly medical bills your HSA can cover after insurance.', 'dollar'),
+    ('Primary other out-of-pocket costs', 0, 'Enter yearly out-of-pocket costs your HSA can’t cover.', 'dollar'),
+    ('Spouse other out-of-pocket costs', 0, 'Enter yearly out-of-pocket costs your HSA can’t cover.', 'dollar'),
+    ('Primary eligible for Marketplace credit?', 0, 'Use 1 if eligible or 0 otherwise. See the Model guide.', 'integer'),
+    ('Spouse eligible for Marketplace credit?', 0, 'Use 1 if eligible or 0 otherwise. See the Model guide.', 'integer'),
+    ('Marketplace benchmark: both eligible', 0, 'Enter the yearly benchmark quote for both eligible people.', 'dollar'),
+    ('Marketplace benchmark: primary only', 0, 'Enter the yearly benchmark quote for you alone.', 'dollar'),
+    ('Marketplace benchmark: spouse only', 0, 'Enter the yearly benchmark quote for your spouse alone.', 'dollar'),
+    ('HSA account owner', 1, 'Use 1 if you own the HSA or 2 if your spouse owns it.', 'integer'),
+    ('Medicare surcharge income, prior year', -1, 'Enter income for the year before row 130. Use -1 if unknown.', 'dollar'),
+    ('Medicare surcharge income, opening year', -1, 'Enter income for the year in row 130. Use -1 if unknown.', 'dollar'),
+    ('HSA-qualified share of long-term care', 0, 'Enter the share of care costs your HSA can cover. Use 0% if unsure.', 'percent'),
 )
 
 HEADERS = (
@@ -148,7 +148,7 @@ def _inputs(m):
               f'IF(B101=0,"OK",IF(AND(B101=1,{checks}),"OK","Check healthcare inputs"))),"Check healthcare inputs")')
     m.put(s, 'A125', 'Healthcare input check', 'label')
     m.put(s, 'B125', status, 'note')
-    m.put(s, 'G125', 'Check Healthcare for missing Marketplace quotes and Medicare income history.', 'note')
+    m.put(s, 'G125', 'Check Healthcare for missing quotes or Medicare income.', 'note')
 
 
 def _irmaa_per_beneficiary(mag, filing, factor, year):
@@ -289,4 +289,3 @@ def configure(m, wb):
     _healthcare_rows(m)
     m.put('Projection', 'BA4', 'Gross healthcare before Marketplace credit')
     m.put('Projection', 'P4', 'HSA reimbursement for eligible healthcare')
-    m.put('README', 'A127', 'Healthcare: Inputs rows 101–124 optionally model coverage by person. Use gross quotes and verify Marketplace eligibility. See Healthcare for net premiums and HSA reimbursement.')

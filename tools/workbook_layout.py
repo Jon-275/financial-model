@@ -2,7 +2,7 @@
 
 from lxml import etree
 
-from example_inputs import EXAMPLE_NOTICE, INSPECTION_NOTE, example_cells
+from example_inputs import example_cells
 from workbook_metadata import make_sheets_visible
 
 _MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -28,58 +28,8 @@ def sheet_order(names):
 
 def write_scenarios(put):
     """Seed the release workbook with fictional household inputs."""
-    for address, value in {
-        **example_cells(),
-        'G7': 'The saved alternatives each change one input.',
-        'G16': 'Choose a retirement investment profile. Expand rows 17–24 to see the rates.',
-        'G54': 'Enter 999 to keep the two-person plan. Expand the rows below to enter survivor costs.',
-        'G58': 'Enter 999 to leave long-term care out. Expand the rows below to enter the cost and duration.',
-        'G101': 'Use 0 for the household budget. Use 1 and expand the rows below to enter costs by person.',
-        'G125': 'Expand rows 102–124 to enter Marketplace quotes and prior Medicare income.',
-        'A62': 'Legacy Marketplace income reference',
-        'G62': 'Used only for the older Projection income ratio. The Healthcare sheet calculates the credit limit separately.',
-    }.items():
+    for address, value in example_cells().items():
         put('Inputs', address, value)
-
-    for address, value in {
-        'A1': 'RETIREMENT PLAN',
-        'A3': 'QUICK START',
-        'A4': '1. On Inputs, choose 1 for Example plan, 2 to retire later or 3 to spend less in retirement.',
-        'A5': '2. Review ages, wages, balances and spending. Set the last age to show in row 53.',
-        'A6': '3. Read the funding answer at the top of Summary.',
-        'A7': 'If the plan falls short, open Cash_Flow to see what went unpaid in the first shortfall year.',
-        'A9': EXAMPLE_NOTICE,
-        'A12': 'Use the + signs at the left of Inputs to open optional details such as healthcare.',
-        'A16': 'Cash_Flow shows how bills were paid. Projection and Roth_Access show balances and which savings were available.',
-        'A18': 'Income_Targeting compares Roth conversions for one retirement year when money is available to convert.',
-        'A19': 'Asset_Allocation sets the investment mix. Tax_Tables lists tax rates and limits.',
-        'A20': 'Risk_Settings supplies the separate portfolio risk report. See the repository’s Portfolio risk analysis guide.',
-        'A22': 'This workbook uses fixed returns. Rerun the separate report to test market paths after you change inputs.',
-        'A23': INSPECTION_NOTE,
-        'A39': 'The separate risk report uses asset volatility and correlations from Asset_Allocation.',
-        'A75': 'On Inputs, use rows 75–82 for one-time expenses. Enter the calendar year and amount in today’s dollars.',
-        'A87': 'Summary uses spending after the mortgage ends to estimate the savings target.',
-        'A89': 'PORTFOLIO RISK',
-        'A90': 'The separate risk report recalculates the plan under different market returns. It shows how often costs were paid in full.',
-        'A91': 'Choose the return method and early-retirement stress settings on Risk_Settings.',
-        'A92': 'Check how often a shortfall occurs and when it first happens.',
-        'A93': '',
-        'A94': '',
-        'A95': '',
-        'A96': '',
-        'A97': '',
-        'A98': '',
-        'A109': 'EARLY RETIREMENT LOSSES',
-        'A110': 'The risk report compares fixed spending with temporary cuts to flexible spending during poor markets.',
-        'A111': 'Risk_Settings shows the stock returns tested during the first retirement years.',
-        'A112': 'The risk report counts a shortfall when at least one cent of spending or tax goes unpaid in a year.',
-        'A113': '',
-        'A114': '',
-        'A115': '',
-        'A119': 'The projection and risk report stop at the end age you choose on Inputs, up to age 125.',
-        'A120': '',
-    }.items():
-        put('README', address, value)
 
 
 def _freeze(view, columns, rows):
@@ -171,6 +121,13 @@ def apply_sheet_layout(name, root):
         _freeze(view, columns=2, rows=4)
     if name == 'README':
         view.set('tabSelected', '1')
+        # The old introduction leaves formatted rows after its text is cleared.
+        data = root.find(_MAIN + 'sheetData')
+        for row in reversed(list(data)):
+            if any(len(cell) for cell in row):
+                break
+            data.remove(row)
+        root.find(_MAIN + 'dimension').set('ref', f"A1:A{data[-1].get('r')}")
     else:
         view.attrib.pop('tabSelected', None)
 

@@ -5,6 +5,7 @@ import json, sys
 from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter as L, coordinate_from_string, column_index_from_string
 import dashboard
+from example_inputs import EXAMPLE_NOTICE
 import funding_search
 import risk_cleanup
 import roth_contributions
@@ -81,36 +82,26 @@ def inputs(wb):
     put('Inputs','B84','=IF(COUNTA(B83:C83)=0,"OK","Move one-time expenses to Inputs rows 75–82")','note')
     put('Inputs','A130','Opening balance year','label')
     put('Inputs','B130',2026,'input')
-    put('Inputs','G130','Use the year your opening ages and balances apply to. The first full forecast year is the following year.','note')
     put('Inputs','A131','Annual investment fee','label')
     put('Inputs','B131',0,'percent_input')
-    put('Inputs','G131','Applied to all accounts. Enter 0 if your investment returns already include fees.','note')
     put('Inputs','A132','Annual healthcare inflation','label')
     put('Inputs','B132','','percent_input')
-    put('Inputs','G132','Leave blank to use general inflation. Applies to medical costs you enter.','note')
     put('Inputs','A133','Year, fee and healthcare check','label')
     put('Inputs','B133','=IFERROR(IF(AND(ISNUMBER(B130),B130=INT(B130),B130>=2026,B130<=9999-125,ISNUMBER(B131),B131>=0,B131<1,OR(B132="",AND(ISNUMBER(B132),B132>-1))),"OK","Check opening year, fees and healthcare inflation"),"Check opening year, fees and healthcare inflation")','note')
     put('Inputs','B70','=IF(AND(B71="OK",B84="OK",B99="OK",B125="OK",B129="OK",B133="OK"),B53-B8+1,0)')
     for r in range(17,23):
         rate = original(wb['Inputs'], f'B{r}')
         put('Inputs',f'B{r}',f'=(1+({rate}))*(1-$B$131)-1')
-    put('Inputs','G14','Returns and pay growth are nominal. Raising inflation alone reduces purchasing power.','note')
     for col in 'DEF':
         styles['Inputs'][f'{col}55'] = 'percent_input'
     put('Inputs','A55','Survivor’s share of combined Social Security','label')
     put('Inputs','B55','=B44*CHOOSE(B4,D55,E55,F55)')
     put('Inputs','C55','today’s $','label')
-    put('Inputs','G55','Enter the survivor’s share in the scenario column. Column B shows the benefit in today’s dollars.','note')
-    for addr, val in {'A13':'Annual wage growth','G13':'Enter the full annual increase, including inflation.',
+    for addr, val in {'A13':'Annual wage growth',
                       'A27':'Opening Roth balance','A28':'Opening Roth type: 1 = IRA, 2 = workplace',
                       'A29':'Primary first Roth IRA tax year','A30':'Opening Roth IRA basis accessible today',
                       'A35':'Annual Roth IRA savings target (combined)','A50':'Last conversion age (traditional owner)',
-                      'G27':'The opening balance is assigned by type and owner share. New IRA savings and conversions are separate.',
-                      'G28':'Workplace Roth access requires verified plan access and a qualified distribution. No early workplace draw is assumed.',
-                      'G29':'Enter the primary person’s first Roth IRA tax year, or 0 if unknown. See row 92 for the spouse.',
-                      'G30':'Enter only IRA principal available today. Workplace Roth balances do not use this field.',
-                      'G35':'After-tax savings target in today’s dollars. Funded from remaining cash after taxes and spending.',
-                      'G52':'Enter taxable income separately from salary. Rows 86–88 control the cash share and active ages.'}.items():
+                     }.items():
         put('Inputs',addr,val)
 
 CASH_HEADERS = ['Year','Age','Cash income','Required spending','HSA paid','Opening tax payable',
@@ -278,14 +269,7 @@ def reporting():
         'C33':'New Roth IRA savings and conversions are tracked separately by owner.',
         'A34':'First-year Roth savings below target','B34':'=IF(Inputs!$B$70>=2,Cash_Flow!S6,"")',
         'C34':'An unfunded savings target is separate from a spending or tax shortfall.'}.items(): put(s,a,x)
-    for a,x in {'A26':'Cash income pays spending and current-year tax first. Optional Roth IRA savings use remaining cash.',
-                'A28':'Before age 60, the model uses brokerage and eligible Roth IRA principal. Workplace Roth requires verified plan access and full qualification.',
-                'A29':'The model uses age 60 for age-59½ access because it projects whole years. Traditional access follows the selected owner.',
-                'A40':'Withdrawal order sets which eligible accounts fund annual cash needs. See Cash_Flow for taxes paid and shortfalls.',
-                'A79':'The opening Roth IRA or workplace balance is split by owner. New Roth IRA savings and conversions go into separate IRA balances.',
-                'A84':'Roth_Access tracks each owner’s available principal, conversion aging and workplace qualification. Earnings may remain restricted.',
-                'A118':'The funding calculation evaluates this year’s tax on actual draws. Unpaid tax carries forward and reduces after-tax net worth.',
-                'A120':'Risk summaries require a funded base plan. They apply market paths to actual net portfolio cash flows and keep the base tax and access schedule.'}.items(): put('README',a,x)
+
 
 def reconciliation():
     """Calculate annual reconciliation in the ledger and show its details on Checks."""
@@ -330,83 +314,108 @@ def reconciliation():
         for col, formula in {'A': p('B'), 'B': p('C'), 'I': cash('L'), 'J': cash('AM')}.items():
             put(sheet, f'{col}{r}', active(r, formula), 'money')
 
-def guidance():
-    """Explain the first run and put reminders beside the relevant cells."""
+def guidance(start_sheet):
+    """Replace the template's long introduction and explain editable inputs."""
+    quick_start = {
+        'A1': 'RETIREMENT PLAN',
+        'A3': 'QUICK START',
+        'A4': '1. ' + EXAMPLE_NOTICE,
+        'A5': '2. Pick a scenario in Inputs B4. Edit the blue-text cells in that scenario’s column.',
+        'A6': '3. Check ages, pay, balances and spending. Set the last age to show in row 53, up to 125.',
+        'A7': '4. Open Summary for the result. If costs went unpaid, find the first year in Cash_Flow.',
+        'A10': 'INPUT TIPS',
+        'A11': 'Use today’s dollars unless a note says otherwise. Enter the full annual pay raise, including inflation.',
+        'A12': 'Use the + signs on Inputs for optional settings. Column B shows the selected values.',
+        'A13': 'Row 55 sets the survivor’s share of combined Social Security.',
+        'A15': 'MORE HELP',
+        'A16': 'Open the Model guide in the financial-model repository for help with taxes, healthcare and Roth conversions.',
+    }
+    for (cell,) in start_sheet.iter_rows(max_col=1):
+        if cell.value is not None and cell.coordinate not in quick_start:
+            put('README', cell.coordinate, '')
+
+    styles['Inputs'].update({f'G{row}': 'note' for row in (14, 55, 130, 131, 132)})
     notes = {
-        'README': {
-            'A3': 'START HERE',
-            'A4': '1. Pick a scenario on Inputs. Enter 1, 2 or 3 in B4. The matching columns are D, E and F.',
-            'A5': '2. Check your ages, wages, balances and spending. Enter the age the plan should run through in row 53.',
-            'A6': '3. Open Summary. Start with “Can the plan cover its costs?”',
-            'A7': 'If it says no, find the first year it falls short. Use Cash_Flow to see which bills went unpaid.',
-            'A8': 'Use today’s dollars unless the input note says otherwise. Enter your full annual pay raise, including inflation.',
-            'A10': 'WHAT TO EDIT',
-            'A11': 'Edit the blue-text cells on Inputs. Column B shows the values for the scenario you selected.',
-            'A12': 'To change investment assumptions, go to Asset_Allocation.',
-            'A13': 'The plan includes the end age you enter, up to age 125.',
-            'A15': 'WHERE TO LOOK NEXT',
-            'A16': 'Cash_Flow shows how the plan pays each year’s bills. Roth_Access shows what it can withdraw.',
-            'A17': 'Healthcare shows costs and credits by year. Turn on detailed coverage in Inputs to see costs by person.',
-            'A18': 'Income_Targeting compares Roth conversions for one retirement year.',
-            'A19': 'Projection shows the full year-by-year plan.',
-            'A20': 'Risk_Settings controls the separate report on market returns and retirement spending.',
-            'A21': 'Checks flags calculation or input issues for review.',
-            'A22': 'The separate risk report recalculates costs and withdrawals for each market path. Rerun it after changing inputs.',
-            'A23': 'Tax_Tables lists the published tax amounts and sources.',
-            'A26': 'Cash pays taxes first, then required spending. Roth IRA savings use what’s left.',
-            'A30': 'The model uses a household healthcare budget by default. Turn on detailed coverage to enter costs for each person.',
-            'A47': 'See Tax_Tables for the published California disability insurance rates.',
-            'A53': 'Turn on detailed healthcare in Inputs to estimate Marketplace credits. Conversions, investment gains and interest can reduce the credit.',
-            'A57': 'The model checks whether the alternative minimum tax adds to federal income tax. See Tax_Tables for the amounts by year.',
-            'A89': 'PORTFOLIO RISK REPORT',
-            'A90': 'Use the separate risk report to see how the plan holds up under different market returns.',
-            'A91': 'Set the early-loss and spending options on Risk_Settings.',
-            'A92': 'The report shows how often the plan pays every bill and when shortfalls first occur.',
-            'A93': '',
-            'A94': '',
-            'A95': '',
-            'A96': '',
-            'A97': '',
-            'A98': '',
-            'A109': '',
-            'A110': '',
-            'A111': '',
-            'A112': '',
-            'A113': '',
-            'A114': '',
-            'A115': '',
-            'A120': 'Rerun the separate risk report after changing assumptions or risk settings.',
-            'A122': 'Tax_Tables shows the published rates and the years they apply. Later years use the model’s inflation assumptions where applicable.',
-        },
+        'README': quick_start,
         'Inputs': {
             'A1': 'PLAN INPUTS',
             'A2': 'Pick a scenario in B4. Edit the blue-text cells in its column. Column B shows the selected values.',
+            'C4': '',
             'G4': '“Varies” marks inputs that differ across scenarios.',
-            'G9': 'Enter your spouse’s age at the start of the year.',
-            'G10': 'Wages stop in the year you reach this age.',
+            'G7': 'Rename the scenario if you change its purpose.',
+            'G8': 'Enter your age at the start of the opening year.',
+            'G9': 'Enter your spouse’s age at the start of the opening year.',
+            'G10': 'Enter the age when wages stop.',
             'G11': 'Enter how many people earn wages.',
-            'G12': 'Enter annual wages for both earners before taxes and deductions.',
+            'G12': 'Enter total yearly pay before taxes and deductions.',
+            'G13': 'Enter the full annual pay increase, including inflation.',
+            'G14': 'Enter expected yearly inflation for general expenses.',
+            'G15': 'Choose a working-years profile from Asset_Allocation.',
+            'G16': 'Choose a retirement profile. Open rows 17–24 for returns.',
+            'G17': 'This return comes from Asset_Allocation.',
+            'G23': 'This average uses today’s balances across all accounts.',
             'G25': 'Enter the current value of investments in taxable accounts.',
             'G26': 'Enter the current value of traditional retirement accounts.',
             'G27': 'Enter the combined Roth balance today.',
-            'G30': 'Enter Roth IRA contributions or conversions you can already withdraw.',
+            'G28': 'Use 1 for Roth IRA or 2 for workplace Roth.',
+            'G29': 'Enter your first Roth IRA tax year. Use 0 if unknown.',
+            'G30': 'Enter Roth IRA contributions and conversions available today.',
+            'G31': 'Enter your current health savings account (HSA) balance.',
             'G32': 'Enter combined annual pre-tax 401(k) contributions.',
             'G33': 'Enter what your employer adds each year.',
             'G34': 'Enter your annual health savings account contribution.',
             'G35': 'Enter the annual Roth IRA savings goal for both people.',
             'G36': 'Enter what you spend now, including healthcare.',
             'G37': 'Enter retirement spending. Enter healthcare separately below.',
-            'G38': 'Enter mortgage principal and interest already included in spending. Leave property tax and insurance in regular spending.',
-            'G47': 'Enter the annual amount to move from traditional savings to Roth. Withdrawal order 2 uses the ceiling in row 49.',
-            'G48': '1 uses taxable investments first. 2 uses traditional savings up to the ceiling in row 49, then taxable investments.',
-            'G49': 'Enter the limit for ordinary income after the standard deduction. The model adjusts it for inflation.',
-            'G51': 'Enter the adjusted cost of the investments you still own. Use your brokerage records.',
+            'G38': 'Enter mortgage principal and interest included above.',
+            'G39': 'Enter the calendar year of your last payment.',
+            'G40': 'Enter months paid in that year. January counts as 1.',
+            'G41': 'Enter the rate used to estimate your savings target.',
+            'G42': 'Enter yearly premiums and care costs before Medicare.',
+            'G43': 'Enter yearly Medicare, supplemental and out-of-pocket costs.',
+            'G44': 'Enter both yearly benefits for the claim age in row 45.',
+            'G45': 'Enter the claim age used for the benefits in row 44.',
+            'G46': 'Enter yearly tax-exempt interest. See cash share in row 89.',
+            'G47': 'Enter the yearly amount to move from traditional savings to Roth.',
+            'G48': 'Use 1 for taxable first or 2 for traditional up to row 49.',
+            'G49': 'Enter the income limit after the standard deduction.',
+            'G50': 'Enter the account owner’s last age for Roth conversions.',
+            'G51': 'Enter your cost basis from your brokerage records.',
             'G52': 'Enter annual taxable income apart from wages. See rows 86–88.',
             'G53': 'Enter the last age to show in the plan, up to 125.',
+            'G54': 'Enter your age at first death. Use 999 for a two-person plan.',
+            'G55': 'Enter the share of both benefits the survivor receives.',
+            'G56': 'Enter the share of the couple’s spending the survivor needs.',
+            'G57': 'Enter the survivor’s share of the couple’s healthcare budget.',
+            'G58': 'Enter the age care starts. Use 999 to leave it out.',
+            'G59': 'Enter the yearly cost of care in today’s dollars.',
+            'G60': 'Enter how many years you expect to pay for long-term care.',
+            'G61': 'Enter the tax rate for estimating after-tax net worth.',
+            'A62': 'Legacy Marketplace income reference',
+            'G62': 'This value supplies the reference ratio on Projection.',
+            'G63': 'This yield comes from the taxable account’s investment mix.',
+            'G65': 'This yield comes from cash and bonds in the taxable account.',
+            'G67': 'Enter the age when required withdrawals begin.',
+            'G68': 'Use 1 for fixed early withdrawals or 0 to leave them out.',
+            'G69': 'Enter the annual rate used to set the fixed payment.',
+            'A73': 'ONE-TIME EXPENSES',
             'G86': 'Enter 100% if you can spend all of the other taxable income in row 52.',
-            'G87': 'Enter your age when the income starts. Use 0 to start in the first projected year.',
-            'G88': 'Enter the last age the income is received. Use the same start and end age for a one-time payment.',
-            'G98': 'Use 1 to apply the direct Roth IRA limit. Use 0 to leave new Roth IRA savings out.',
+            'G87': 'Enter your age when the income starts. Use 0 for the first year.',
+            'G88': 'Enter the last age you receive it. Match row 87 for one year.',
+            'G89': 'Enter the share paid out in cash. Count the interest once.',
+            'G90': 'Enter your share of the opening Roth balance and available basis.',
+            'G91': 'Enter your share of planned Roth IRA savings.',
+            'G92': 'Enter your spouse’s first Roth IRA tax year. Use 0 if unknown.',
+            'G93': 'Enter the first workplace Roth tax year. Use 0 if unknown.',
+            'G94': 'Enter the first workplace Roth tax year. Use 0 if unknown.',
+            'G95': 'Enter the first withdrawal age. Use 126 to exclude the account.',
+            'G96': 'Enter the first withdrawal age. Use 126 to exclude the account.',
+            'G97': 'Use 1 for your account or 2 for your spouse’s.',
+            'G98': 'Use 1 to include eligible Roth IRA savings or 0 to skip.',
+            'G126': 'Enter your share of wages when both people work.',
+            'G130': 'Enter the year your opening ages and balances apply to.',
+            'G131': 'Enter 0 if your investment returns already include fees.',
+            'G132': 'Enter a rate for medical costs or leave blank to use general inflation.',
         },
         'Summary': {
             'A25': 'Can the plan cover its costs?',
@@ -457,14 +466,9 @@ def main():
         put('Summary',f'A{r}',title,'label')
         put('Summary',f'B{r}',f'=IF(Inputs!$B$70>={rr},INDEX(Healthcare!${col}$5:${col}$130,{rr}),"")','summary_money')
     put('Summary','C47','After Marketplace credit, before HSA reimbursement. See Healthcare for coverage by person.','note')
-    put('README','A101','Set a retirement age and an amount on Income_Targeting. The comparison uses that year’s filing status, balances and healthcare.')
-    put('README','A102','Marketplace estimates use the published 2026 and 2027 contribution bands. Later years hold the 2027 percentages constant.')
-    put('README','A104','Compare tax and net healthcare for funded amounts. A request can be limited by balances, required distributions or funding.')
-    put('README','A107','Each comparison recalculates withdrawals needed to pay tax and costs for the selected year. It does not run the request through later years.')
-    put('README','A128','Payroll tax applies the Social Security cap per earner. Ordinary taxable account sales can realize gains or losses; remaining losses carry forward separately for federal and California tax.')
     put('Income_Targeting','C38','Counts sweep rows that fully fund the requested conversion.','note')
     put('Income_Targeting','C39','Counts requests limited by cash, balances or the withdrawal policy.','note')
-    guidance()
+    guidance(wb['README'])
     dashboard.configure(put)
     workbook_layout.write_scenarios(put)
     order = workbook_layout.sheet_order([s for s in wb.sheetnames if s not in risk_cleanup.LEGACY_SHEETS] + MODULES)

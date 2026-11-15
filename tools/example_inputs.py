@@ -34,5 +34,4 @@ def example_cells():
     return inputs
 
 
-EXAMPLE_NOTICE = 'This workbook uses fictional assumptions. Save a private copy before entering your own figures.'
-INSPECTION_NOTE = 'Trace draws in Funding_Calc, conversion trials in Targeting_Calc, and Summary charts in Report_Data.'
+EXAMPLE_NOTICE = 'Save a private copy before entering your figures. The example uses fictional data.'
