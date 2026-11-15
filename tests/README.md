@@ -31,6 +31,12 @@ python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsx \
   tests/phase3-fixtures.json --compact --ledger
 ```
 
+## Pull request checks
+
+GitHub runs **Workbook checks** on each pull request into `main` and after changes land on `main`. It checks tracked workbooks for private inputs and metadata, validates the saved release workbook, runs the risk tests, and recalculates six scenarios in LibreOffice. See the [workflow](../.github/workflows/workbook-checks.yml) for the commands and the scenario list.
+
+Gemini posts an advisory review of code and workflow changes on ready pull requests from branches in this repository. It uses GitHub's text patches and the `GEMINI_API_KEY` repository secret. Greptile and **Workbook checks** supply the required checks.
+
 ## Microsoft Excel release check
 
 Create a test directory and use `tools/workbook_recalc.py` to copy the release without its saved formula values. Keep the filename `retirement-model.xlsx` so the workbook chart references resolve. Open the copy in desktop Excel and check that it opens without a repair prompt. In Excel for Mac, use Control+Option+Shift+F9 to rebuild dependencies and recalculate. Save the copy and run `model_acceptance.py` against it. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)

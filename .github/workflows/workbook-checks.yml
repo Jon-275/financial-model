@@ -1,0 +1,64 @@
+name: Financial model CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workbook-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  workbook:
+    name: Workbook checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Check tracked workbooks for private data
+        run: |
+          # Use an empty temporary Git repository so the staged-file guard checks every tracked workbook.
+          commit=$(git rev-parse HEAD)
+          objects=$(git rev-parse --path-format=absolute --git-path objects)
+          check_git=$(mktemp -d)
+          trap 'rm -rf "$check_git"' EXIT
+          git init --quiet --bare "$check_git"
+          export GIT_DIR="$check_git"
+          export GIT_ALTERNATE_OBJECT_DIRECTORIES="$objects"
+          git read-tree "$commit"
+          python tools/check_workbook_commit.py
+      - name: Check the published workbook
+        run: python tests/model_acceptance.py --release workbook/retirement-model.xlsx
+      - name: Install Python dependencies
+        run: python -m pip install -r tools/requirements.txt
+      - name: Run risk and workbook parity tests
+        env:
+          PYTHONPATH: tools
+        run: python -m unittest discover -s tests -p 'test_risk_*.py'
+      - name: Install LibreOffice Calc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-calc
+          soffice --version
+      - name: Recalculate representative scenarios
+        run: |
+          python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase2-fixtures.json --compact --ledger \
+            --case full_horizon_to125_dashboard \
+            --case late_shortfall_reaches_dashboard \
+            --case invalid_age126 \
+            --case targeting_aca_cliff_preserves_earliest_fundable_branch \
+            --case wage_growth_includes_inflation_and_stops_at_retirement
+          python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase3-fixtures.json --compact --ledger
