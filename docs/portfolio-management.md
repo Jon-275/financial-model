@@ -1,9 +1,9 @@
 # Portfolio management
 
-Review unrealized gains and losses in taxable brokerage accounts when rebalancing, after a significant decline, and before year-end.
+Review gains and losses on investments in your taxable brokerage accounts when you rebalance, after a significant decline, and before year-end.
 
-- Harvest losses when they can offset realized gains or provide a useful deduction. If replacing the investment, preserve the target allocation and check for wash sales across both spouses' accounts, including IRAs and automatic reinvestments.
-- Consider harvesting long-term gains in lower-income years. Compare federal tax, California tax and any change in Marketplace health insurance subsidies. Include planned Roth conversions in the same estimate.
-- Skip the trade if the tax benefit is small or uncertain, or if the trade adds investment risk. Record realized gains and losses, updated cost basis, and any losses carried forward.
+1. **Review losses.** A sale at a loss may offset gains or reduce taxable income. If you replace the investment, keep the mix you want and check for a wash sale. Check purchases of the same or a substantially identical investment in the 30 days before and after the sale, including your spouse’s accounts, IRAs and automatic reinvestments. [IRS investment income guide](https://www.irs.gov/publications/p550)
+2. **Review gains in lower-income years.** Selling a long-held investment can make sense when the tax cost is low. Estimate the federal and California tax and any change in your Marketplace health insurance credit. Include planned Roth conversions in the same estimate. [California capital gains and losses](https://www.ftb.ca.gov/file/personal/income-types/capital-gains-and-losses.html) · [Marketplace income guide](https://www.healthcare.gov/income-and-household-information/income/)
+3. **Record the decision.** If you trade, record the gain or loss, the new cost basis, and any unused losses to enter from your tax return. If the benefit is small or the trade adds investment risk, keep your existing holdings.
 
-Review the rules for the year of the trade: [IRS guidance](https://www.irs.gov/publications/p550), [California FTB](https://www.ftb.ca.gov/file/personal/income-types/capital-gains-and-losses.html), and [HealthCare.gov](https://www.healthcare.gov/income-and-household-information/income/).
+The workbook estimates the tax on sales needed to pay bills. Use this guide when deciding whether to sell to realize a gain or loss.

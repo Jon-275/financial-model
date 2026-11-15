@@ -1,40 +1,49 @@
 # Financial Planning
 
-The Excel workbook projects household cash, taxes and account access through the end age you choose, up to age 125. Open **Start Here**, choose a scenario on **Inputs**, then read the funding answer at the top of **Summary**. [Open the workbook](workbook/retirement-model.xlsx)
+Build a retirement plan in Excel and see whether your household can pay its bills and taxes through the age you choose, up to 125. [Download the workbook](https://raw.githubusercontent.com/Jon-275/financial-model/main/workbook/retirement-model.xlsx)
 
-**Summary** charts the portfolio balance and shows how the plan pays its bills around retirement. Use **Cash_Flow** to see what went unpaid and **Roth_Access** to see which savings were available.
+1. Save a private copy before entering personal figures. The workbook contains a fictional example.
+2. Open the copy in desktop Excel. Follow **Start Here** and choose a scenario on **Inputs**.
+3. Open **Summary** to see whether the plan covers its costs. If it falls short, use **Cash_Flow** to see what went unpaid that year.
 
-The separate risk report recalculates spending, taxes and withdrawals under different market returns. Adjust its inputs on **Risk_Settings** and rerun the report after changing the workbook. [Portfolio risk analysis](docs/risk-analysis.md)
+All 15 workbook sheets are visible so you can inspect the calculations.
 
-- [Model guide](docs/model-guide.md): how to enter assumptions and interpret results.
-- [Implementation plan](PLAN.md): phase scope, release gates and progress.
-- [Release records](docs/release-notes/phase-3.md) for Phase 3, [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md).
-- [Portfolio management](docs/portfolio-management.md): tax harvesting guidance separate from the forecast.
+- Enter your assumptions and read the results. [Model guide](docs/model-guide.md)
+- See how the plan handles different market returns. [Risk guide](docs/risk-analysis.md)
+- Review tax loss and gain harvesting. [Portfolio guide](docs/portfolio-management.md)
 
-The workbook uses fictional inputs. Save a private copy before entering your own figures. All 15 worksheet tabs are visible, including **Funding_Calc** for withdrawals, **Targeting_Calc** for Roth conversions and **Report_Data** for the Summary charts.
+## Contribute
 
-## Rebuild the workbook
+Open a pull request into `main`. GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** to pass. Run the local checks before submitting a change and use desktop Excel to verify a workbook release. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
-The [build template](workbook/build-template.xlsx) provides the starting layout and legacy formulas. Use the [finished workbook](workbook/retirement-model.xlsx) to run a plan.
+### Keep private workbook copies out of Git
 
-Install Python 3.11 or later, Node.js and LibreOffice. The build also requires the Codex spreadsheet runtime's `@oai/artifact-tool` package. Point `ARTIFACT_NODE_MODULES` to the runtime's `node_modules` directory and `NODE_BIN` to its Node.js executable if needed. The finished workbook opens in desktop Excel independently of the build tools.
-
-```sh
-python3 -m pip install -r tools/requirements.txt
-mkdir -p scratch
-ARTIFACT_NODE_MODULES=/path/to/runtime/node_modules \
-  bash tools/build_model.sh workbook/build-template.xlsx scratch/retirement-model.xlsx
-python3 tests/model_acceptance.py --release scratch/retirement-model.xlsx
-```
-
-The build needs a new output path. Keep the file name `retirement-model.xlsx` so the Excel chart references resolve. See the [test guide](tests/README.md) for scenario checks and Excel verification.
-
-## Keep private workbook copies out of Git
-
-Save personal workbooks and reports under `private/` or outside this checkout. In each clone, enable the pre-commit check from the repository root.
+Run this command from the repository root once per clone to enable the workbook check before each commit.
 
 ```sh
 git config --local core.hooksPath .githooks
 ```
 
-The check reads staged workbook files. It requires the fictional inputs in the release workbook, checks inherited document metadata, and verifies the build template against its audited checksum. If the template changes, audit its inputs, saved results and document properties before updating `TEMPLATE_SHA256` in `tools/check_workbook_commit.py`.
+Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The published workbook uses the fictional scenario. Audit any change to the build template for private inputs, saved results and document properties before updating its checksum in `tools/check_workbook_commit.py`.
+
+## Rebuild the workbook
+
+The build starts from `workbook/build-template.xlsx` and writes a new workbook. Run the commands from the repository root with Python 3.11 or later, Node.js, LibreOffice Calc, and the Codex spreadsheet runtime containing `@oai/artifact-tool`.
+
+Put `soffice` on your path or set `SOFFICE_BIN` to its executable. Set `ARTIFACT_NODE_MODULES` to the runtime’s absolute `node_modules` path. If the runtime has a separate Node executable, set `NODE_BIN` to that executable.
+
+```sh
+python3 -m pip install -r tools/requirements.txt
+export ARTIFACT_NODE_MODULES=/absolute/path/to/runtime/node_modules
+mkdir -p scratch
+build_dir=$(mktemp -d scratch/build.XXXXXXXX)
+bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsx"
+```
+
+The script runs the release check and prints the result. Keep the file name `retirement-model.xlsx` so the Excel charts resolve their references. The [test and release guide](tests/README.md) shows how to verify a candidate before publication.
+
+## Maintenance and history
+
+- [Annual tax data review](docs/annual-tax-review.md)
+- [Implementation plan and remaining work](PLAN.md)
+- [Release records for Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md)

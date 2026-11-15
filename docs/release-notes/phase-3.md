@@ -1,6 +1,16 @@
 # Phase 3 release record
 
-Released locally on November 6, 2026.
+## Published workbook
+
+On November 15, 2026, the workbook’s quick start changed to four steps on one screen. The input notes use shorter instructions, and the model guide explains healthcare setup and the detailed withdrawal and tax rules. The survivor note now matches the share of combined Social Security entered in row 55.
+
+The rebuilt workbook opened in desktop Excel. All 750,314 formulas and their saved results matched the previous workbook. The survivor benefit and mixed Medicare and Marketplace test cases passed, along with all required pull request checks. [Published workbook update](https://github.com/Jon-275/financial-model/pull/6)
+
+GitHub requires Workbook checks, Greptile Review and Gemini Review on PRs into `main`. See the [test and release guide](../../tests/README.md) for the current checks and the [annual tax data review](../annual-tax-review.md) for maintenance steps.
+
+## Phase 3 launch
+
+Phase 3 first ran locally on November 6, 2026.
 
 - The risk engine reads the workbook’s active scenario and simulates correlated asset returns with separate working and retirement allocations. Each path recalculates annual cash, taxes, healthcare costs and account access. A shortfall counts in the year it occurs, even if the portfolio later recovers.
 - Fixed and flexible spending use the same return draws. The flexible policy can reduce only the eligible part of the recurring retirement budget. The report also tests the workbook’s early retirement stock-return scenarios.
@@ -28,7 +38,7 @@ The rebuilt workbook passed a full calculation in Excel for Mac from blank cache
 
 ## Workbook instructions
 
-The workbook opens with three steps from choosing a scenario to reading the result. The Inputs notes explain common entries in plain language, and Summary points to Cash_Flow when the plan falls short. Rate notes direct readers to Tax_Tables so the instructions stay in step with the model.
+The earlier quick start used three steps from choosing a scenario to reading the result. The Inputs notes explained common entries, and Summary pointed to Cash_Flow when the plan fell short. Rate notes pointed to Tax_Tables.
 
 The README, Inputs and Summary layouts were checked in Excel. All 883,201 formula cells and the scenario assumptions matched the prior release. The active projection reconciled across 73 years, and the refreshed risk report reproduced the prior results.
 

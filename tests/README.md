@@ -1,46 +1,70 @@
-# Workbook acceptance tests
+# Test and release guide
 
-Run from this directory using Python 3.11 or newer. The scripts read `.xlsx` packages with Python's standard library. The scenario runner also needs LibreOffice's `soffice` command, or its path supplied with `--soffice`.
+Run commands from the repository root. Use Python 3.11 or later, Node.js, and LibreOffice Calc with `soffice` on your path. For a different LibreOffice path, add `--soffice /path/to/soffice` to the scenario test command.
 
 ```sh
-python3 model_acceptance.py --release /path/to/retirement-model.xlsx
-python3 phase2_fixtures.py > phase2-fixtures.json
-python3 xlsx_acceptance.py /path/to/retirement-model.xlsx phase2-fixtures.json --ledger
+python3 -m pip install -r tools/requirements.txt
 ```
 
-`model_acceptance.py` independently reconciles saved cash, spending, tax payables, Roth balances by owner, and portfolio cash flow. It checks the Summary's first shortfall, the selected end age and the four retained chart objects. It reads saved values. The release flag also checks that every sheet is visible and that inherited document metadata is absent. Use the Excel release check below to verify recalculation and chart rendering.
-
-`xlsx_acceptance.py` makes temporary copies, applies the fixture inputs, clears stale formula caches, recalculates each copy in a separate LibreOffice profile, and verifies both the explicit expected values and the annual reconciliations. It never overwrites the source. Use `--case NAME` to run selected cases, `--jobs 1` to reduce memory use, or `--keep DIRECTORY` to keep recalculated copies for investigation. Fixture settings use a synthetic 20% tax and zero investment returns to make the expected results calculable by hand. These assumptions are for testing only.
-
-For quicker development feedback, use `--compact` to omit inactive solver rows in disposable copies. Cases focused on conversion comparison still include the full selected-year sweep. Run an unmodified workbook and representative full-size cases before release. The combined fixture file contains the Phase 1 regressions and independent checks for Marketplace thresholds, Medicare lookbacks, HSA eligibility, tax tables, capital losses and one-year conversions.
-
-Use the combined fixtures with the current workbook. The historical `phase1-fixtures.json` still covers the old risk worksheets in the Phase 1 release.
-
-## Portfolio risk
-
-From the repository root, install `tools/requirements.txt` and run:
+## Run the checks locally
 
 ```sh
+python3 tests/model_acceptance.py --release workbook/retirement-model.xlsx
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
+node --test tests/gemini_review.test.mjs
 ```
 
-The risk tests check return paths, account access and funding behavior, saved formula validation, and annual parity with the release workbook. The synthetic SEPP case verifies that spending can remain unpaid even when the year’s taxes are fully paid:
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the Summary, charts, worksheet visibility and workbook metadata. The risk tests check the simulator against the workbook. The Node tests cover when Gemini should pass or fail a pull request.
+
+For a newly built workbook, use its path in the release and scenario commands. Set the same path for the risk tests.
 
 ```sh
+candidate=/absolute/path/to/retirement-model.xlsx
+RISK_TEST_WORKBOOK="$candidate" PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
+```
+
+## Recalculate workbook scenarios
+
+```sh
+python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsx \
+  tests/phase2-fixtures.json --compact --ledger
 python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsx \
   tests/phase3-fixtures.json --compact --ledger
 ```
 
+Each case runs on a temporary copy in LibreOffice. The runner applies test inputs, clears saved formula results, and checks the recalculated values. Cases use fictional inputs. The Phase 2 file includes the earlier tests for the current workbook. The Phase 3 case checks that required spending can go unpaid in a year even when all taxes are paid.
+
+Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
+
+When changing the Phase 2 cases, generate a candidate file in scratch and compare it before updating the tracked copy.
+
+```sh
+mkdir -p scratch
+python3 tests/phase2_fixtures.py > scratch/phase2-fixtures.json
+diff -u tests/phase2-fixtures.json scratch/phase2-fixtures.json
+```
+
 ## Pull request checks
 
-GitHub runs **Workbook checks** on each pull request into `main` and after changes land on `main`. It checks tracked workbooks for private inputs and metadata, validates the saved release workbook, runs the risk tests, and recalculates six scenarios in LibreOffice. See the [workflow](../.github/workflows/workbook-checks.yml) for the commands and the scenario list.
+GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. Workbook checks run on PRs and after changes merge. They include the release and privacy checks, the risk and review tests, and six representative recalculation cases. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
-**Gemini Review** checks source and workflow changes on ready pull requests, including forks. It blocks merging for critical or high-severity findings or if the review cannot finish. Suggestions appear in the PR comment. PRs without source or workflow changes pass the Gemini check, and **Workbook checks** still validates the workbook.
-
-Gemini reads GitHub's text patches and uses the `GEMINI_API_KEY` repository secret. To retry a review, use **Actions → Gemini 4 Hydrogen PR Review → Run workflow**, select `main`, and enter the PR number. Run the reviewer tests locally with `node --test tests/gemini_review.test.mjs` from the repository root.
+Gemini posts its findings on ready PRs. Critical or high-severity findings and incomplete reviews block merging. Gemini checks source code and workflows. It records a pass when neither changed. A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
 
 ## Microsoft Excel release check
 
-Create a test directory and use `tools/workbook_recalc.py` to copy the release without its saved formula values. Keep the filename `retirement-model.xlsx` so the workbook chart references resolve. Open the copy in desktop Excel and check that it opens without a repair prompt. In Excel for Mac, use Control+Option+Shift+F9 to rebuild dependencies and recalculate. Save the copy and run `model_acceptance.py` against it. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
+Use the candidate workbook from the [build instructions](../README.md#rebuild-the-workbook). Set its path below. The commands create a copy with cleared formula results, using the filename the charts expect.
 
-On a separate test copy, change the active scenario's end age and confirm the Projection and portfolio chart both reach the new end year. Record the Excel version and results in the release notes.
+```sh
+candidate=/absolute/path/to/retirement-model.xlsx
+mkdir -p scratch
+excel_check=$(mktemp -d "$PWD/scratch/excel-check.XXXXXXXX")
+python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xlsx"
+```
+
+1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
+2. Verify the saved copy with the command below. On a second copy, change the active scenario’s end age and check that the projection and balance chart reach the new final year.
+3. Record the Excel version, checks run and results in the release record.
+
+```sh
+python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"
+```

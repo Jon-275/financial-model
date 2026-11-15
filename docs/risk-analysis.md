@@ -1,32 +1,50 @@
 # Portfolio risk analysis
 
-Use this report to see how market returns affect the ability to fund spending and taxes. It reads the active scenario and the **Risk_Settings** tab, then recalculates cash, taxes and account access for each path. The report reflects the workbook settings at the time it was generated. It expects the Tax_Tables layout produced by the build and stops if that layout has changed.
+The risk report shows how often your plan pays its bills and taxes under different market returns. It uses the active scenario and the settings on **Risk_Settings**. Save the workbook after making changes and run a new report for that version.
 
 ## Run the report
 
-Use Python 3.11 or later with the packages in `tools/requirements.txt` and LibreOffice’s `soffice` on your path. From the repository root:
+Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path or set `SOFFICE_BIN` to the executable. Run these commands from the repository root.
 
 ```sh
+python3 -m pip install -r tools/requirements.txt
+mkdir -p private
+report_dir=$(mktemp -d "$PWD/private/risk.XXXXXXXX")
 python3 tools/run_risk.py workbook/retirement-model.xlsx \
-  --trials 1000 --seed 2026 --output private/portfolio-risk.json
+  --trials 1000 --seed 2026 --output "$report_dir/portfolio-risk.json"
 ```
 
-The command clears saved formula results in a temporary copy before recalculating. It checks the annual results against a path with no market shocks before writing a report. Use a new output filename for each run. Use `--cached` only with a workbook that has already been recalculated and saved. The same comparison still runs.
+Replace the workbook path with your private copy to use your figures. The runner recalculates a temporary copy in LibreOffice and checks that the plan’s baseline results match before running the report. Use `--cached` only after the workbook has been recalculated and saved. The baseline check still runs.
 
-The JSON includes annual balance ranges, first shortfall ages, early retirement stress results and the workbook checksum. To create the Excel report, run `tools/render_risk.mjs` with Node.js and the bundled `@oai/artifact-tool` package available to the script. If the package is provided in a separate runtime, copy the script to a temporary directory next to a link to the runtime’s `node_modules`.
+The JSON report contains balance ranges, when a shortfall first occurs, and the results of early retirement losses. Each run uses a new output folder under `private/`.
+
+## Create the Excel report
+
+Use the same terminal and output folder. Set `ARTIFACT_NODE_MODULES` to the Codex spreadsheet runtime’s absolute `node_modules` path. Set `NODE_BIN` if you use a separate Node executable. The [build instructions](../README.md#rebuild-the-workbook) explain these settings.
 
 ```sh
-node tools/render_risk.mjs private/portfolio-risk.json private/portfolio-risk.xlsx
+(
+  set -eu
+  render_dir=$(mktemp -d)
+  trap 'rm -rf -- "$render_dir"' EXIT
+  cp tools/render_risk.mjs "$render_dir/"
+  ln -s "${ARTIFACT_NODE_MODULES:?Set the runtime node_modules path}" "$render_dir/node_modules"
+  "${NODE_BIN:-node}" "$render_dir/render_risk.mjs" \
+    "$report_dir/portfolio-risk.json" "$report_dir/portfolio-risk.xlsx"
+)
 ```
 
-The report is a snapshot. Rerun it after changing any workbook inputs. Keep the workbook and reports on approved local storage.
+Open `portfolio-risk.xlsx` in the report folder. Keep copies with personal figures in `private/` or outside the checkout.
 
-## How the analysis works
+## Read the results
 
-- **Returns.** The engine uses the active working and retirement portfolios from **Asset_Allocation**. It draws one correlated set of asset returns per year and applies each account’s mix to those returns. The model treats years as independent. If you entered an investment fee, the workbook and market paths both apply it to account growth. The workbook’s return basis controls whether the starting assumption anchors compound growth or the average annual return. The HSA follows the Roth return in the deterministic workbook, while its own asset mix determines its exposure to market shocks. `--volatility 0` reproduces the baseline.
-- **Annual funding.** Each path uses its own account balances and brokerage basis. It recalculates taxes, eligible withdrawals, conversions, healthcare credits and income-based Medicare surcharges. Then it pays tax and spending, funds any optional savings, and applies the year’s returns. A path has a shortfall if at least one cent of required spending or taxes is unpaid in any year. A missed savings target is tracked separately from required obligations.
-- **Flexible spending.** Both policies use identical market returns. The report cuts spending when the opening portfolio falls below the share of the base plan set on **Risk_Settings**. Only flexible recurring retirement costs are eligible for cuts. Healthcare, taxes, one-time expenses and fixed mortgage payments keep their planned amounts.
-- **Early losses.** The report applies each stock return on **Risk_Settings** to the first retirement years. Other assets and later years use the plan’s investment assumptions.
-- **Reading the results.** Balances and shortfalls are in opening-year dollars. Balance ranges include all paths, including paths with a shortfall. The 95% simulation interval measures sampling variation within the chosen return assumptions. Wages, inflation, longevity and tax assumptions follow the workbook. The same seed, inputs and engine version reproduce the paths.
+- **Plans that cover their costs.** A run counts as a shortfall if at least one cent of required spending or tax goes unpaid in any year. A missed savings goal is tracked separately.
+- **Fixed and flexible spending.** Both policies use the same market returns. The flexible policy cuts part of recurring retirement living costs when the opening balance falls below the share of the planned balance set on **Risk_Settings**. Each run recalculates tax, withdrawals, healthcare credits and Medicare surcharges. The spending rule leaves fixed costs such as mortgage payments in place.
+- **Early losses.** The report also applies the stock returns listed on **Risk_Settings** to the first retirement years. Other assets and later years use the plan’s assumed returns.
+- **Balance ranges.** Dollar amounts use the opening year’s prices. The ranges include runs with shortfalls. The 95% interval shows how much uncertainty comes from running a limited number of simulations.
 
-The tax and coverage logic uses the workbook’s planning estimates. Phase 2 documents the federal and California tax assumptions, Medicare lookback and Marketplace eligibility limits. See the [Phase 2 release record](release-notes/phase-2.md), [IRS Marketplace credit guidance](https://www.irs.gov/affordable-care-act/individuals-and-families/questions-and-answers-on-the-premium-tax-credit), and [SSA Medicare surcharge guidance](https://www.ssa.gov/OP_Home/handbook/handbook.25/handbook-2504.html).
+The report uses each account’s investment mix and applies the fee entered on **Inputs**. The base plan uses the Roth return for the health savings account. Market simulations use the health savings account’s own investments to estimate how much its return varies.
+
+The return setting on **Inputs** determines whether the assumed return represents compound growth or an average for a single year. The model treats each year’s market returns as independent. Wages, inflation and the end age follow the workbook. The same workbook, seed and engine version reproduce the simulations. Use `--volatility 0` to run the market simulations at the plan’s assumed returns. The early-loss tests still run separately.
+
+The report uses the tax and healthcare rules in the workbook. Use a copy built with the current **Tax_Tables** layout. See the [model guide](model-guide.md#tax-rates-and-healthcare-credits) for the tax and coverage assumptions.

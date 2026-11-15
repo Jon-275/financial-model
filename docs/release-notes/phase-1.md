@@ -18,6 +18,6 @@ Use the [current build and test instructions](../../README.md#rebuild-the-workbo
 
 On November 6, 2026, the saved workbook passed independent reconciliation across all active years. All 31 synthetic cases passed after recalculation in LibreOffice. They include taxable draws that cross a bracket, first- and final-year tax, carried tax payable, owner-specific Roth access, the five-tax-year boundary, a shortfall at age 90, and the age-125 limit. The scripted build also passed end to end.
 
-Run the [acceptance tests](../../tests/README.md) after modifying funding logic. The workbook retains its five chart objects. Native Excel recalculation and interactive chart refresh are unverified; check both before distributing to Excel users.
+Run the [acceptance tests](../../tests/README.md) after modifying funding logic. The workbook retains its five chart objects. Phase 1 verification used saved workbook values and LibreOffice. See [Phase 3](phase-3.md#microsoft-excel-verification) for later Excel verification.
 
 Remaining phases are listed in the [implementation plan](../../PLAN.md). Phase 1 does not implement a new tax engine, per-path risk tax and access, or nonqualified workplace Roth draws.
