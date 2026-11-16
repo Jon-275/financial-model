@@ -18,7 +18,7 @@ def configure(model, baseline):
     sequence, monte_carlo = (baseline[name] for name in LEGACY_SHEETS)
     put = lambda address, value, style: model.put(RISK_SHEET, address, value, style)
     put('A1', 'Risk settings', 'title')
-    put('A2', 'These settings apply to the separate retirement risk report. Refresh that report after editing them.', 'note')
+    put('A2', 'Save and close your workbook after editing. Follow the market risk guide to refresh the results on Summary.', 'note')
     put('A4', 'Setting', 'header')
     put('B4', 'Value', 'header')
     put('C4', 'What it changes', 'header')

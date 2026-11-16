@@ -13,7 +13,7 @@ Set the year your starting ages and balances apply to in **Inputs B130**. The fi
 
 - **Pay and other income.** Enter wages before taxes and deductions. Enter the full annual raise, including inflation. A 5% raise takes $80,000 to $84,000 in the first projected year. Use row 52 for other taxable income and rows 86–88 for the share you can spend and the ages you receive it. The full amount counts as taxable income during those years. Use 0 for the starting age to begin in the first projected year. Use the same start and end age for a one-time payment.
 - **Interest paid in cash.** Use rows 46 and 89 for outside tax-exempt interest and its spendable share. Count that interest once across your investment returns and outside income.
-- **Spending.** Include working-year healthcare in current spending. Enter retirement healthcare separately. Include mortgage principal and interest in spending and enter that amount again in row 38 so the model can hold it fixed and remove it after the last payment. Keep property tax and insurance in ongoing spending.
+- **Spending.** Enter living costs in today’s dollars. The model adjusts those costs each year by the inflation rate in row 14. Include working-year healthcare in current spending and enter retirement healthcare separately. Include mortgage principal and interest in spending and repeat that payment in row 38 so the model can hold it fixed and remove it after the last payment. Keep property tax and insurance in ongoing spending.
 - **One-time bills.** Enter the calendar year and cost in today’s dollars in rows 75–82. These expenses apply to all scenarios.
 - **Long-term care.** Enter the starting age, annual cost and number of years in rows 58–60. The model adds one period of care to healthcare costs and adjusts the cost for inflation. Use 999 as the starting age to leave it out.
 - **Investment fees.** Enter the annual fee in B131. Use zero if the returns already include the fee. The model applies the fee after investment growth.
@@ -45,7 +45,12 @@ The ending portfolio can include workplace Roth savings the plan cannot draw by 
 
 ### Print your plan
 
-In desktop Excel, select **Inputs**, then hold **Shift** and select **Summary**. Choose **File → Print → Active Sheets**. The package includes two pages of input decisions and three pages of results. **Print input decisions** on Inputs opens the record on screen. You can also print each sheet individually. Add **Annual Detail** when you need the full timeline. Check the scenario and opening year before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
+Choose a **Dollar view** on the right side of **Summary** before you print.
+
+- **Today’s dollars** show what the amounts can buy at the prices in your opening year. Use this view to compare future costs with your current budget.
+- **Future dollars** show the amounts you expect to pay or receive in each projected year. A $42,000 living budget becomes $43,050 after one year at 2.5% inflation. The two views show the same budget at different price levels.
+
+In desktop Excel, select **Inputs**, then hold **Shift** and select **Summary**. Choose **File → Print → Active Sheets**. The package includes two pages of input decisions and three pages of results. **Print input decisions** on Inputs opens the record on screen. Add **Annual Detail** for the full timeline in today’s dollars. Check the scenario, opening year, and dollar view before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
 
 
 ## Enter healthcare costs
@@ -73,7 +78,7 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 ## Compare Roth conversions and market risk
 
 - **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Enter the conversion amount in that year’s dollars. Compare the amount the plan can convert, the withdrawals needed to cover costs, and the change in tax and healthcare costs. Account balances, required distributions and available cash can limit the conversion. Change the main scenario to see effects on later years.
-- **Risk_Settings.** Use the separate risk report to see how often the plan pays all costs under different market returns. It compares fixed spending with temporary cuts to flexible spending under the same returns. Run it again after changing the plan or risk settings. [Portfolio risk analysis](risk-analysis.md)
+- **Risk_Settings.** Review the assumptions for early losses and flexible spending. Refresh market risk after saving changes. **Summary** then shows how often the plan pays all costs, three funding examples, and the effect of flexible spending. Open **Risk Results** from **Appendix** for the details. [Portfolio risk analysis](risk-analysis.md)
 - **Portfolio management.** Use the portfolio guide to record tax loss and gain harvesting decisions. [Portfolio management](portfolio-management.md)
 
 ## How the model works
@@ -112,7 +117,7 @@ Payroll taxes use wages by earner. Confirm the wage split in row 126. The model 
 
 ### Investment mix and account values
 
-Use rows 15–16 to choose the investment mix for working years and retirement. Check the stock share on **Asset_Allocation** when comparing profiles. The mix sets the return for each account and stays fixed within each period. The separate risk report uses the volatility and correlations on that sheet.
+Use rows 15–16 to choose the investment mix for working years and retirement. Check the stock share on **Asset_Allocation** when comparing profiles. The mix sets the return for each account and stays fixed within each period. The market simulations use the volatility and correlations on that sheet.
 
 For taxable investments, enter the cost basis from your brokerage records. Reinvested income and savings increase it. The model reduces it in proportion to what you sell and taxes price gains when realized. The model uses annual investment income and the applicable tax treatment for interest, real estate investment trust distributions and qualified dividends.
 

@@ -9,6 +9,7 @@ The model tests whether household income and available savings can pay spending 
 | [1. Cash flow and account access](docs/release-notes/phase-1.md) | The annual projection pays taxes first, then required spending. It reports the first year with unpaid costs and tracks each owner’s Roth access. |
 | [2. Taxes, healthcare and conversions](docs/release-notes/phase-2.md) | The model adds healthcare by person, tests tax and Marketplace credit changes as withdrawals rise, and compares Roth conversion amounts for one year. |
 | [3. Risk analysis and workbook usability](docs/release-notes/phase-3.md) | The risk report recalculates cash, taxes and account access for each set of market returns. **Start Here**, **Inputs** and **Summary** guide readers from setup to a five-page printable plan. |
+| [4. Market risk and funding decisions](docs/market-risk-plan.md) | **Summary** includes market risk, funding examples, and a choice of today’s or future dollars. The five-page plan prints with the selected view. |
 
 Keep tax loss and gain harvesting in the [portfolio guide](docs/portfolio-management.md). The model includes the tax effect of investment sales needed to pay bills.
 

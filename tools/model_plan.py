@@ -9,6 +9,8 @@ import plan_report
 import input_record
 import funding_search
 import risk_cleanup
+import risk_presentation
+import risk_workbook
 import roth_contributions
 import workbook_layout
 import healthcare
@@ -18,7 +20,7 @@ import targeting
 
 END = 130
 FUNDING_ROWS = STEPS = funding_search.ROWS
-MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',dashboard.SHEET,plan_report.APPENDIX,plan_report.INDEX]
+MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',risk_workbook.SHEET,dashboard.SHEET,plan_report.APPENDIX,plan_report.INDEX]
 cells = defaultdict(dict)
 styles = defaultdict(dict)
 shared = defaultdict(dict)
@@ -488,8 +490,8 @@ def main():
     targeting.configure(m,wb)
     put('Asset_Allocation','A33','PROFILE 2 - Higher cash allocation')
     put('Asset_Allocation','A42','PROFILE 3 - Highest cash allocation')
-    put('Asset_Allocation','A22','The separate risk report uses these correlations. Keep the diagonal at 1.00 and matching values on either side equal.')
-    put('Asset_Allocation','A91','The separate risk report applies early losses to equity. Other assets keep their assumed returns.')
+    put('Asset_Allocation','A22','Market risk uses these correlations. Keep the diagonal at 1.00 and matching values on either side equal.')
+    put('Asset_Allocation','A91','The early-loss tests apply to stocks. Other assets keep their assumed returns.')
     put('Summary','B5','=COUNTIF(Inputs!$H$8:$H$69,"VARIES")+COUNTIF(Inputs!$H$86:$H$98,"VARIES")+COUNTIF(Inputs!$H$101:$H$124,"VARIES")+COUNTIF(Inputs!$H$126:$H$128,"VARIES")')
     put('Summary','A41','Marketplace MAGI as % of poverty guideline')
     rr='MAX(2,Inputs!$B$10-Inputs!$B$8+1)'
@@ -509,6 +511,11 @@ def main():
     dashboard.configure(put)
     plan_report.move_details(wb['Summary'], cells['Summary'], styles['Summary'], put)
     plan_report.configure(put)
+    risk_presentation.configure(put)
+    def is_tax_formula(address):
+        value = cells['Tax_Tables'].get(address, wb['Tax_Tables'][address].value)
+        return isinstance(value, str) and value.startswith('=')
+    risk_workbook.configure_freshness(put, is_tax_formula=is_tax_formula)
     plan_report.configure_index(put)
     input_record.configure(put)
     workbook_layout.write_scenarios(put)

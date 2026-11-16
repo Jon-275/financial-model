@@ -129,6 +129,10 @@ def check_plan_print_layout(workbook: Path) -> None:
         breaks = root.find(q('rowBreaks'))
         assert [(point.get('id'), point.get('man')) for point in breaks] == [('32', '1'), ('64', '1')]
         assert root.find(q('pageSetup')).get('orientation') == 'portrait'
+        if 'Risk Results' in parts:
+            views = root.find(f"{q('dataValidations')}/{q('dataValidation')}[@sqref='K18']")
+            assert views is not None and views.get('type') == 'list'
+            assert views.findtext(q('formula1')) == '"Today’s dollars,Future dollars"'
 
 
 def check_probe_formula_encoding(workbook: Path) -> None:

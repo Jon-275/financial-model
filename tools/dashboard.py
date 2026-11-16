@@ -1,6 +1,6 @@
 """Build the detailed measures and the data that feed the retirement plan."""
 
-from plan_report import add_transition_values
+from plan_report import add_transition_values, display_dollars
 
 SHEET = 'Report_Data'
 LAST_PORTFOLIO_ROW = 127
@@ -77,9 +77,25 @@ def configure(put):
         pos, src = row - 1, row + 3
         put(SHEET, f'A{row}', f'=IF({pos}<=$K$2,Projection!C{src},"")', 'whole')
         put(SHEET, f'B{row}', f'=IF({pos}<=$K$2,Projection!BN{src},"")', 'money')
+        put(SHEET, f'AE{row}', f'=IF({pos}<=$K$2,{display_dollars(f"$B{row}", f"Projection!G{src}")},"")', 'money')
         put(SHEET, f'C{row}', f'=IF(AND({pos}<=$K$2,{pos}=$K$5),B{row},"")', 'money')
 
         put(SHEET, f'D{row}', f'=IF(AND({pos}<=$K$2,{pos}=$K$6),B{row},"")', 'money')
+
+    risk_current = "'Risk Results'!$Z$1=\"current\""
+    for column, heading in zip(('AE', 'AF', 'AG', 'AH'),
+                               ('Base projection', '10th percentile', 'Width of middle 80%', 'Simulated median')):
+        put(SHEET, f'{column}1', heading, 'header')
+    for row in range(2, LAST_PORTFOLIO_ROW + 1):
+        result = "'Risk Results'!"
+        source = row + 44
+        current_year = f'AND({risk_current},{row - 1}<=$K$2)'
+        cpi = f'Projection!G{row + 3}'
+        for column, expression in {
+            'AF': f'{result}AI{source}',
+            'AG': f'{result}AK{source}-{result}AI{source}', 'AH': f'{result}AJ{source}',
+        }.items():
+            put(SHEET, f'{column}{row}', f'=IF({current_year},{display_dollars(expression, cpi)},"")', 'money')
 
     # Two-point guide lines survive Excel's PDF export and also mark a
     # shortfall when the portfolio is already depleted.

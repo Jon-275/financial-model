@@ -1,51 +1,51 @@
-/** Author the editable portfolio chart from the active projection. */
+/** Author native chart parts that are combined on one age and dollar axis. */
 const font = 'Arial';
+
+function series(chart, title, values) {
+  const item = chart.series.add(title);
+  item.categoryFormula = 'Report_Data!$A$2:$A$127';
+  item.valuesSource = `Report_Data!$${values}$2:$${values}$127`;
+  return item;
+}
 
 export function addDashboardCharts(workbook) {
   const summary = workbook.worksheets.getItem('Summary');
-  const chart = summary.charts.add('scatter', {
+  const chart = summary.charts.add('line', {
     from: { row: 13, col: 1 },
     extent: { widthPx: 610, heightPx: 300 },
   });
-  chart.title = 'Projected portfolio by age';
   chart.setPosition('B14', 'I28');
+  chart.title = 'Portfolio balance by age';
   chart.titleTextStyle.typeface = font;
-  chart.titleTextStyle.fontSize = 16;
-  chart.legend = { position: 'bottom', textStyle: { typeface: font, fontSize: 11 } };
+  chart.titleTextStyle.fontSize = 15;
+  chart.legend = { position: 'bottom', textStyle: { typeface: font, fontSize: 10 } };
   chart.displayBlanksAs = 'gap';
-  chart.scatterOptions.style = 'lineWithMarkers';
   chart.xAxis = {
-    numberFormatCode: '0', numberFormatSourceLinked: false,
-    textStyle: { typeface: font, fontSize: 11 },
+    axisType: 'textAxis', numberFormatCode: '0', numberFormatSourceLinked: false,
+    textStyle: { typeface: font, fontSize: 10 },
   };
   chart.xAxis.title.text = 'Age';
   chart.yAxis = {
-    min: 0,
-    numberFormatCode: '"$"#,##0',
-    numberFormatSourceLinked: false,
-    textStyle: { typeface: font, fontSize: 11 },
+    min: 0, numberFormatCode: '"$"#,##0', numberFormatSourceLinked: false,
+    textStyle: { typeface: font, fontSize: 10 },
     majorGridlines: { fill: '#D9E4EB', width: 1, style: 'solid' },
   };
 
-  const balance = chart.series.add('Portfolio');
-  balance.xValuesSource = 'Report_Data!$A$2:$A$127';
-  balance.valuesSource = 'Report_Data!$B$2:$B$127';
+  series(chart, 'Base projection', 'AE');
   chart.applySeriesStyle(0, {
-    stroke: { fill: '#182C42', width: 2.5, style: 'solid' },
+    stroke: { fill: '#344D64', width: 2, style: 'dashed' },
+    marker: { symbol: 'none' },
+  });
+  series(chart, 'Simulated median', 'AH');
+  chart.applySeriesStyle(1, {
+    stroke: { fill: '#126761', width: 2.5, style: 'solid' },
     marker: { symbol: 'none' },
   });
 
-  const milestones = [
-    ['Retirement', 'AA', 'AB', '#126761'],
-    ['First shortfall', 'AC', 'AD', '#9E3534'],
-  ];
-  for (const [index, [label, ages, balances, color]] of milestones.entries()) {
-    const guide = chart.series.add(label);
-    guide.xValuesSource = `Report_Data!$${ages}$2:$${ages}$3`;
-    guide.valuesSource = `Report_Data!$${balances}$2:$${balances}$3`;
-    chart.applySeriesStyle(index + 1, {
-      stroke: { fill: color, width: 1.5, style: 'dashed' },
-      marker: { symbol: 'none' },
-    });
-  }
+  const range = summary.charts.add('area', {
+    from: { row: 13, col: 1 },
+    extent: { widthPx: 610, heightPx: 300 },
+  });
+  series(range, '10th percentile', 'AF');
+  series(range, 'Middle 80% of balances', 'AG').fill = '#C7E6DF';
 }

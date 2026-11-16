@@ -36,6 +36,12 @@ Each case runs on a temporary copy in LibreOffice. The runner applies test input
 
 Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
 
+Check that a market risk refresh preserves the workbook and that changed assumptions hide saved results. This check uses fictional inputs and recalculates disposable copies.
+
+```sh
+python3 tests/risk_workbook_acceptance.py workbook/retirement-model.xlsx
+```
+
 When changing the Phase 2 cases, generate a candidate file in scratch and compare it before updating the tracked copy.
 
 ```sh
@@ -46,7 +52,7 @@ diff -u tests/phase2-fixtures.json scratch/phase2-fixtures.json
 
 ## Pull request checks
 
-GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. It also requires all review threads to be resolved. Workbook checks run on PRs and after changes merge. They include the release and privacy checks, the risk and review tests, and seven representative recalculation cases. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. It also requires all review threads to be resolved. Workbook checks run on PRs and after changes merge. They include release and privacy checks, simulator and review tests, representative recalculation cases, and a workbook risk refresh. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
 Gemini posts each finding on the relevant line of a ready PR. Fix the issue or explain why the finding does not apply, then resolve the thread. Critical or high-severity findings and incomplete reviews fail the required check. Address every open thread before merging, including findings from a review that passed. Gemini reviews source and workflow changes and records a pass when the PR contains neither.
 
@@ -67,8 +73,9 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 
 1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
 2. Verify the saved copy with the command below. On a second copy, change the active scenario’s end age and check that the projection and balance chart reach the new final year.
-3. Preview **Inputs** and **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show two pages of input decisions and three pages of results. Check **Annual Detail** for repeating headers and the correct last age. Save a PDF and inspect the chart, table, figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
-4. Record the Excel versions, checks run, results and any pending platform checks in the release record.
+3. Refresh market risk on a copy with fictional inputs. Verify the success rate, shaded range, and funding examples in Excel. Change an active assumption and check that the figures and chart range clear. Restore the assumption and check that they return. [Risk refresh instructions](../docs/risk-analysis.md#refresh-the-workbook)
+4. Preview **Inputs** and **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show two pages of input decisions and three pages of results. Check **Annual Detail** for repeating headers and the correct last age. Save a PDF and inspect the chart, table, figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
+5. Record the Excel versions, checks run, results and any pending platform checks in the release record.
 
 ```sh
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"

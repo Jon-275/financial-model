@@ -19,7 +19,7 @@ SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
 from model_acceptance import check_release_package
-from xlsx_read import Workbook
+from xlsx_read import Workbook, address_parts
 
 
 def git(*args):
@@ -39,6 +39,16 @@ def check_sample_workbook(path):
             cell = workbook['Income_Targeting'][address]
             if cell.formula is not None or type(cell.value) is bool or cell.value != expected:
                 raise ValueError(f'Income_Targeting!{address} differs from the example settings.')
+        if 'Risk Results' in workbook.parts:
+            risk = workbook['Risk Results']
+            if risk['Z1'].value != 'missing':
+                raise ValueError('Publish the workbook with market risk results empty.')
+            for cells in risk.iter_rows():
+                for cell in cells:
+                    row, column = address_parts(cell.coordinate)
+                    is_snapshot = cell.coordinate == 'Z3' or (row > 1 and (column == 29 or 32 <= column <= 50))
+                    if is_snapshot and (cell.value not in (None, '') or cell.formula is not None):
+                        raise ValueError(f'Risk Results!{cell.coordinate} contains private run data.')
 
 
 def main():

@@ -24,9 +24,17 @@ Matrix = tuple[tuple[float, ...], ...]
 _OPENING_YEAR = 2026
 _FIRST_ROW = 5
 _LAST_ROW = 130
-_INPUT_ROWS = (*range(7, 17), *range(25, 63), 67, 68, 69,
-               *range(86, 99), *range(101, 125), 126, 127, 128)
-_CACHED_INPUT_ROWS = (*range(17, 25), *range(63, 67), 70, 71, 99, 125, 129)
+SCENARIO_INPUT_ROWS = (*range(7, 17), *range(25, 63), 67, 68, 69,
+                       *range(86, 99), *range(101, 125), 126, 127, 128)
+CACHED_INPUT_ROWS = (*range(17, 25), *range(63, 67), 70, 71, 99, 125, 129)
+ONE_TIME_EXPENSE_ROWS = range(75, 83)
+ASSET_ROWS = range(6, 11)
+CORRELATION_HEADER_ROW = 15
+CORRELATION_ROWS = range(16, 21)
+TAX_TABLE_LAST_ROW = 265
+RISK_CONTROL_ROWS = range(5, 9)
+RISK_RETURN_BASIS_ROW = 9
+RISK_STRESS_ROWS = range(14, 27)
 _MODEL_RANGES = {'Projection': 84, 'Cash_Flow': 29, 'Healthcare': 32,
                  'Roth_Access': 42, 'Checks': 13}
 _MODEL_TEXT = {'Projection': frozenset(('E', 'F')), 'Cash_Flow': frozenset(('L',)),
@@ -135,7 +143,9 @@ def _one_offs(raw) -> dict[int, float]:
         _invalid('Inputs!B83:C83', 'move one-time expenses to rows 75–82')
     entries: dict[int, float] = {}
     for row, (_, year_cell, amount_cell) in enumerate(
-        inputs.iter_rows(min_row=75, max_row=82, max_col=3), 75
+        inputs.iter_rows(min_row=ONE_TIME_EXPENSE_ROWS.start,
+                         max_row=ONE_TIME_EXPENSE_ROWS.stop - 1, max_col=3),
+        ONE_TIME_EXPENSE_ROWS.start,
     ):
         year = _cell(year_cell, f'Inputs!B{row}')
         amount = _cell(amount_cell, f'Inputs!C{row}')
@@ -160,7 +170,7 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
     # The planning-fields validation formula identifies workbooks with the
     # opening-year, fee and healthcare-inflation settings regardless of labels.
     modern = raw['Inputs']['B133'].data_type == 'f'
-    for row in _INPUT_ROWS:
+    for row in SCENARIO_INPUT_ROWS:
         location = f'Inputs!{selected_col}{row}'
         value = _cell(source[row - 4][selected + 2], location)
         if row == 7:
@@ -178,7 +188,7 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
         _matches(data[row]['B'], value, f'Inputs!B{row}')
         inputs[row] = value
 
-    for row in _CACHED_INPUT_ROWS:
+    for row in CACHED_INPUT_ROWS:
         value = data[row]['B']
         if row in (71, 99, 125, 129):
             if value != 'OK':
@@ -244,26 +254,31 @@ def _validate_assumptions(inputs: Mapping[int, Cell]) -> None:
         _invalid('Inputs!B25/B51', 'taxable basis requires an opening taxable account')
 
 
+def asset_profile_start(number: int) -> int:
+    return 26 + 9 * (number - 1)
+
+
 def _allocation(raw, inputs) -> Allocation:
     sheet = raw['Asset_Allocation']
-    rows = _grid(sheet, 6, 10, 5) | _grid(sheet, 15, 20, 6)
+    rows = _grid(sheet, ASSET_ROWS.start, ASSET_ROWS.stop - 1, 5) | _grid(
+        sheet, CORRELATION_HEADER_ROW, CORRELATION_ROWS.stop - 1, 6)
     for number in {int(inputs[15]), int(inputs[16])}:
-        start = 26 + 9 * (number - 1)
+        start = asset_profile_start(number)
         rows.update(_grid(sheet, start, start + 4, 5))
 
     def numbers(col, indexes):
         return tuple(_number(rows[row][col], f'Asset_Allocation!{col}{row}') for row in indexes)
 
-    asset_rows = range(6, 11)
+    asset_rows = ASSET_ROWS
     names = tuple(rows[row]['A'] for row in asset_rows)
     if any(not isinstance(name, str) or not name.strip() for name in names) or len(set(names)) != 5:
         _invalid('Asset_Allocation!A6:A10', 'expected five distinct asset labels')
     means, vols, ordinary, qualified = (numbers(col, asset_rows) for col in 'BCDE')
     if min(means) <= -1 or min(*vols, *ordinary, *qualified) < 0:
         _invalid('Asset_Allocation!B6:E10', 'return, volatility or yield is outside the supported range')
-    corr = tuple(tuple(numbers(col, (row,))[0] for col in 'BCDEF') for row in range(16, 21))
-    if any(rows[row]['A'] != name or rows[15][col] != name
-           for row, col, name in zip(range(16, 21), 'BCDEF', names)):
+    corr = tuple(tuple(numbers(col, (row,))[0] for col in 'BCDEF') for row in CORRELATION_ROWS)
+    if any(rows[row]['A'] != name or rows[CORRELATION_HEADER_ROW][col] != name
+           for row, col, name in zip(CORRELATION_ROWS, 'BCDEF', names)):
         _invalid('Asset_Allocation!A15:F20', 'correlation labels differ from the asset order')
     for i, values in enumerate(corr):
         if not math.isclose(values[i], 1, abs_tol=1e-10) or any(
@@ -273,7 +288,7 @@ def _allocation(raw, inputs) -> Allocation:
             _invalid('Asset_Allocation!B16:F20', 'correlations must be symmetric with unit diagonals')
 
     def profile(number):
-        start = 26 + 9 * (int(number) - 1)
+        start = asset_profile_start(int(number))
         profile_rows = range(start, start + 5)
         if tuple(rows[row]['A'] for row in profile_rows) != names:
             _invalid('Asset_Allocation', 'profile labels differ from the asset order')
@@ -299,7 +314,7 @@ def _allocation(raw, inputs) -> Allocation:
 
 
 def _tax_tables(raw, cached) -> tuple[dict[str, Cell], dict[str, Cell]]:
-    last = 265 if raw['Tax_Tables']['A253'].value == 'DIRECT ROTH IRA CONTRIBUTIONS' else 252
+    last = TAX_TABLE_LAST_ROW if raw['Tax_Tables']['A253'].value == 'DIRECT ROTH IRA CONTRIBUTIONS' else 252
     rows = _grid(cached['Tax_Tables'], 1, last, 8)
     cached_values = {f'{col}{row}': value for row, cells in rows.items() for col, value in cells.items()
                      if value not in (None, '')}
@@ -422,17 +437,17 @@ def _risk_inputs(raw) -> tuple[dict[int, float], tuple[float, ...], int]:
     current_layout = 'Risk_Settings' in raw.sheetnames
     sequence_sheet = raw['Risk_Settings' if current_layout else 'Sequence_Risk']
     name = sequence_sheet.title
-    settings = _grid(sequence_sheet, 5, 8, 2)
-    sequence = {row: _number(settings[row]['B'], f'{name}!B{row}') for row in range(5, 9)}
+    settings = _grid(sequence_sheet, RISK_CONTROL_ROWS.start, RISK_CONTROL_ROWS.stop - 1, 2)
+    sequence = {row: _number(settings[row]['B'], f'{name}!B{row}') for row in RISK_CONTROL_ROWS}
     sequence[5] = _integer(sequence[5], f'{name}!B5', 0, 125)
     for row in range(6, 9):
         if not 0 <= sequence[row] <= 1:
             _invalid(f'{name}!B{row}', 'expected a fraction from zero to one')
     if current_layout:
-        returns = _grid(sequence_sheet, 14, 26, 2)
-        stress_returns = tuple(_number(returns[row]['B'], f'{name}!B{row}') for row in range(14, 27))
+        returns = _grid(sequence_sheet, RISK_STRESS_ROWS.start, RISK_STRESS_ROWS.stop - 1, 2)
+        stress_returns = tuple(_number(returns[row]['B'], f'{name}!B{row}') for row in RISK_STRESS_ROWS)
         stress_range = f'{name}!B14:B26'
-        basis_sheet, basis_row = sequence_sheet, 9
+        basis_sheet, basis_row = sequence_sheet, RISK_RETURN_BASIS_ROW
     else:
         headings = _grid(sequence_sheet, 13, 13, 19)[13]
         columns = [get_column_letter(i) for i in range(7, 20)]
@@ -449,7 +464,7 @@ def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_
     # Numeric cells are canonicalized across engines that distinguish 1 and 1.0.
     payload = {
         'schema': 'risk-scenario-v1',
-        'inputs': {row: float(inputs[row]) for row in (4, *_INPUT_ROWS) if row != 7},
+        'inputs': {row: float(inputs[row]) for row in (4, *SCENARIO_INPUT_ROWS) if row != 7},
         'one_offs': one_offs,
         'tax': {coordinate: float(value) for coordinate, value in tax.items()},
         'allocation': [allocation.means, allocation.volatilities, allocation.ordinary_yields,

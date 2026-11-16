@@ -6,6 +6,7 @@ from lxml import etree as E
 from dashboard import SHEET as REPORT_DATA
 from dashboard_package import install_dashboard
 import risk_cleanup
+import risk_workbook
 import report_layout
 from plan_report import APPENDIX, INDEX
 import workbook_layout
@@ -148,7 +149,7 @@ def main():
             for r,row in rows.items():
                 row[:]=sorted(row,key=lambda c:column_index_from_string(coordinate_from_string(c.get('r'))[0])); row.attrib.pop('spans',None)
             data[:]=[rows[r] for r in sorted(rows)]
-            if new and n not in {'Funding_Calc','Targeting_Calc',REPORT_DATA,APPENDIX,INDEX}:
+            if new and n not in {'Funding_Calc','Targeting_Calc',REPORT_DATA,APPENDIX,INDEX,risk_workbook.SHEET}:
                 merged=E.SubElement(root,x('mergeCells'),count='1')
                 E.SubElement(merged,x('mergeCell'),ref='A2:C2' if n == 'Risk_Settings' else 'A2:I2')
             if n=='Projection':

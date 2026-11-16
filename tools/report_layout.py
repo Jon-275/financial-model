@@ -6,7 +6,8 @@ from lxml import etree as E
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
 import input_record
-from plan_report import APPENDIX, DETAIL_GROUPS, INDEX, index_rows
+from plan_report import APPENDIX, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, TODAY_DOLLARS, index_rows
+import risk_presentation as risk
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 INK = '182C42'
@@ -17,7 +18,7 @@ PALE = 'E9F2F8'
 LINE = 'C9D9E4'
 TAB_COLORS = {
     'README': ACCENT, 'Inputs': BLUE, 'Summary': INK,
-    APPENDIX: '48617A', INDEX: '718090',
+    APPENDIX: '48617A', INDEX: '718090', risk.SHEET: '3E686A',
 }
 DETAIL_SHEETS = {name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules}
 FORMATS = {
@@ -27,6 +28,7 @@ FORMATS = {
     'report_result': (16, INK, True, 'EDF4F7', None),
     'report_section': (13, INK, True, None, None),
     'report_amount': (19, INK, True, None, "report_currency"),
+    'report_percent_amount': (19, ACCENT, True, None, 10),
     'report_body': (11, INK, False, None, None),
     'report_caption': (10, MUTED, False, None, None),
     'report_kicker': (10, ACCENT, True, None, None),
@@ -34,10 +36,13 @@ FORMATS = {
     'report_table_head': (10, 'FFFFFF', True, INK, None),
     'report_row': (11, INK, False, None, 1),
     'report_row_alt': (11, INK, False, 'F2F6F9', 1),
+    'report_case_age': (11, INK, False, None, 1),
+    'report_case_age_alt': (11, INK, False, 'F2F6F9', 1),
     'report_money': (11, INK, False, None, "report_currency"),
     'report_money_alt': (11, INK, False, 'F2F6F9', 'report_currency'),
+    'report_cost': (11, INK, False, None, 'report_currency_cents'),
+    'report_cost_alt': (11, INK, False, 'F2F6F9', 'report_currency_cents'),
     'report_percent': (11, INK, False, None, 10),
-    'report_body_gutter': (11, INK, False, None, None),
     'report_caption_gutter': (10, MUTED, False, None, None),
     'report_section_gutter': (13, INK, True, None, None),
     'report_write_in': (11, BLUE, False, None, None),
@@ -69,6 +74,7 @@ def install_styles(root, style_ids):
     num_formats = root.find(X + 'numFmts')
     currency = max(163, *(int(item.get('numFmtId')) for item in num_formats)) + 1
     E.SubElement(num_formats, X + 'numFmt', numFmtId=str(currency), formatCode='"$"#,##0')
+    E.SubElement(num_formats, X + 'numFmt', numFmtId=str(currency + 1), formatCode='"$"#,##0.00')
     num_formats.set('count', str(len(num_formats)))
     fonts, fills, borders, xfs = (root.find(X + key) for key in ('fonts', 'fills', 'borders', 'cellXfs'))
     # Keep the Normal style's font metrics for the template's column widths.
@@ -92,9 +98,11 @@ def install_styles(root, style_ids):
             side.set('style', 'thin')
             E.SubElement(side, X + 'color', rgb='FF' + LINE)
     rule_border = len(borders) - 1
+    format_ids = {'report_currency': currency, 'report_currency_cents': currency + 1}
     for name, (size, color, bold, fill, code) in FORMATS.items():
         style_ids[name] = str(len(xfs))
-        xf = E.SubElement(xfs, X + 'xf', xfId='0', numFmtId=str(currency if code == 'report_currency' else code or 0),
+        code = format_ids.get(code, code)
+        xf = E.SubElement(xfs, X + 'xf', xfId='0', numFmtId=str(code or 0),
                           fontId=str(_font(fonts, size, color, bold, name == 'report_link')),
                           fillId=str(_fill(fills, fill) if fill else 0),
                           borderId=str(rule_border if name == 'report_write_in' else 0),
@@ -107,9 +115,11 @@ def install_styles(root, style_ids):
             align.set('horizontal', 'left')
             align.set('indent', '1')
             align.set('wrapText', '1')
-        if name == 'report_amount':
+        if name in ('report_amount', 'report_percent_amount'):
             align.set('horizontal', 'left')
-        if name == 'report_table_head':
+        if name in ('report_money', 'report_money_alt'):
+            align.set('horizontal', 'right')
+        if name in ('report_table_head', 'report_case_age', 'report_case_age_alt'):
             align.set('horizontal', 'center')
 
     # Replace the template's shared presentation styles in one place.
@@ -344,27 +354,43 @@ def apply(name, root, style_ids, numbers, active_fill):
     elif name == 'Summary':
         _columns(root, (3, 8, 7, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 3, 28))
         _rows(root, 97, 18, {3: 37, 8: 30, 9: 28, 12: 32, 34: 37, 40: 31, 55: 27,
-                            58: 28, 66: 37, **dict.fromkeys(range(72, 77), 24), 77: 25, 80: 26, 84: 33, 94: 28})
-        single = (2, 3, 5, 6, 8, 9, 29, 30, 33, 34, 36, 38, 39, 55, 56, 57, 58, 59,
-                  65, 66, 68, 70, 77, 79, 80, 81, 83, 84, 94)
-        paired = (11, 12)
-        assumption_rows = range(72, 77)
+                            58: 28, 66: 37, 70: 36, **dict.fromkeys(range(71, 74), 22),
+                            74: 25, 79: 24, 82: 31, 84: 22, 87: 31, 94: 28})
+        single = (2, 3, 5, 6, 8, 9, 29, 30, 31, 33, 34, 36, 38, 39, 55, 56, 57, 58, 59,
+                  65, 66, 68, 69, 74, 75, 76, 77, 78, 79, 81, 82, 84, 86, 87, 94)
+        paired = (11, 12, 13)
+        funding_rows = range(70, 74)
         _merges(root, [f'B{row}:I{row}' for row in single]
                 + [f'{left}{row}:{right}{row}' for row in paired for left, right in (('B', 'E'), ('F', 'I'))]
-                + [f'{left}{row}:{right}{row}' for row in assumption_rows for left, right in (('B', 'D'), ('F', 'H'))]
-                + [f'{left}{row}:{right}{row}' for row in (86, 88, 90)
-                   for left, right in (('B', 'C'), ('D', 'I'))])
+                + [f'{left}{row}:{right}{row}' for row in funding_rows
+                   for left, right in (('B', 'D'), ('E', 'F'), ('H', 'I'))]
+                + ['B90:C90', 'D90:I90'])
+        for row in range(71, 74):
+            suffix = '_alt' if row % 2 else ''
+            for column, style in (('G', 'report_case_age'), ('H', 'report_money')):
+                cell = root.find(f"{X}sheetData/{X}row[@r='{row}']/{X}c[@r='{column}{row}']")
+                cell.set('s', style_ids[style + suffix])
         _link(root, {
             'K5': 'Inputs!A1', 'K6': 'Summary!B34', 'K7': 'Summary!B66',
             'K8': 'Summary!B94', 'K10': "'Annual Detail'!B2",
-            'K11': 'Appendix!B3', 'K12': 'Risk_Settings!A1',
+            'K11': 'Appendix!B3', 'K12': "'Risk Results'!B2",
             'K13': 'Cash_Flow!A1', 'K14': 'Roth_Access!A1',
+            'K15': 'Risk_Settings!A1',
         })
         alert = E.Element(X + 'conditionalFormatting', sqref='B8:I8')
         rule = E.SubElement(alert, X + 'cfRule', type='expression', priority='1',
                             dxfId=str(active_fill + 1))
         E.SubElement(rule, X + 'formula').text = 'LEFT($B$8,LEN("First shortfall"))="First shortfall"'
-        root.find(X + 'hyperlinks').addprevious(alert)
+        validations = root.find(X + 'dataValidations')
+        if validations is None:
+            validations = E.Element(X + 'dataValidations')
+            root.find(X + 'hyperlinks').addprevious(validations)
+        validations.addprevious(alert)
+        dollar_view = E.SubElement(validations, X + 'dataValidation', type='list', sqref=DOLLAR_VIEW_CELL,
+                                   showErrorMessage='1', errorTitle='Choose a dollar view',
+                                   error='Select Today’s dollars or Future dollars.')
+        E.SubElement(dollar_view, X + 'formula1').text = f'"{TODAY_DOLLARS},{FUTURE_DOLLARS}"'
+        validations.set('count', str(len(validations)))
         _select_top(root, 'B3')
         _print(root, (32, 64))
     elif name == APPENDIX:
@@ -375,17 +401,30 @@ def apply(name, root, style_ids, numbers, active_fill):
         _print(root, appendix=True)
     elif name == INDEX:
         _columns(root, (3, 13, 13, 13, 13, 13, 13, 13, 13))
-        _rows(root, 28, 23, {3: 39, 5: 27})
+        _rows(root, INDEX_LINK_ROW, 23, {3: 39, 5: 27})
         sections, items = [], []
         for row, _, schedules in index_rows():
             sections.append(row)
             items.extend((row + offset, name) for offset, (name, _, _) in enumerate(schedules, 1))
         _merges(root, [f'B{row}:I{row}' for row in (3, 5, 6, *sections)]
-                + [f'{left}{row}:{right}{row}' for row in (28, *(row for row, _ in items))
+                + [f'{left}{row}:{right}{row}' for row in (INDEX_LINK_ROW, *(row for row, _ in items))
                    for left, right in (('B', 'D'), ('E', 'I'))])
-        _link(root, {**{f'B{row}': f"'{sheet}'!A1" for row, sheet in items},
-                     'B28': 'Summary!B3', 'E28': "'Annual Detail'!B2"})
+        _link(root, {**{f'B{row}': f"'{sheet}'!{'B2' if sheet == risk.SHEET else 'A1'}" for row, sheet in items},
+                     f'B{INDEX_LINK_ROW}': 'Summary!B3', f'E{INDEX_LINK_ROW}': "'Annual Detail'!B2"})
         _select_top(root, 'B3')
+    elif name == risk.SHEET:
+        _columns(root, (3, 15, 9, 15, 9, 15, 9, 15, 9, 15, 12, 20))
+        _rows(root, risk.LAST_BALANCE_ROW, 21, {2: 39, 3: 25, 4: 27, 7: 32, 12: 27,
+                                               25: 29, 27: 29, 34: 31, 39: 35, 57: 28})
+        _merges(root, [f'B{row}:I{row}' for row in (2, 3, 4, 5, 10, 11, 30, 32, 33, 34, 36, 37, 54, 55)]
+                + [f'{left}{row}:{right}{row}' for row in (6, 7, 8)
+                   for left, right in (('B', 'E'), ('F', 'I'))]
+                + [f'{left}{row}:{right}{row}' for row in range(12, 30)
+                   for left, right in (('B', 'E'), ('F', 'G'), ('H', 'I'), ('J', 'K'))]
+                + [f'{left}{row}:{right}{row}' for row in (*range(39, 53), *range(57, risk.LAST_BALANCE_ROW + 1))
+                   for left, right in (('B', 'C'), ('D', 'E'), ('F', 'G'), ('H', 'I'), ('J', 'K'))])
+        _link(root, {'K2': 'Summary!B3', 'K3': 'Risk_Settings!A1'})
+        _select_top(root, 'B2')
     elif name in DETAIL_SHEETS:
         if view.find(X + 'pane') is None:
             _select_top(root, 'A1')

@@ -9,7 +9,7 @@ Build a retirement plan in Excel and see whether your household can pay its bill
 **Appendix** marks the start of the supporting sheets and links to the calculations and advanced tools. All workbook sheets are visible.
 
 - Enter your assumptions and read the results. [Model guide](docs/model-guide.md)
-- See how the plan handles different market returns. [Risk guide](docs/risk-analysis.md)
+- Refresh the market risk results in your private workbook, then review the success rate and funding examples on **Summary**. [Market risk guide](docs/risk-analysis.md)
 - Review tax loss and gain harvesting. [Portfolio guide](docs/portfolio-management.md)
 
 ## Contribute

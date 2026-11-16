@@ -14,18 +14,17 @@ _CHART_PREFIX = "'retirement-model.xlsx'!"
 # Chart authoring uses fixed placeholders, which become dynamic names here.
 _SERIES = {
     "RMChartPortfolioAge": ("A", "K2", 127),
-    "RMChartPortfolioBalance": ("B", "K2", 127),
+    "RMChartPortfolioBalance": ("AE", "K2", 127),
 }
-_GUIDES = {
-    "RMChartRetirementAge": "AA",
-    "RMChartRetirementBalance": "AB",
-    "RMChartShortfallAge": "AC",
-    "RMChartShortfallBalance": "AD",
+_RISK_SERIES = {
+    "RMChartRiskFloor": "AF",
+    "RMChartRiskBand": "AG",
+    "RMChartRiskMedian": "AH",
 }
 _PLACEHOLDERS = {
     **{f"${column}$2:${column}${last}": name
        for name, (column, _, last) in _SERIES.items()},
-    **{f"${column}$2:${column}$3": name for name, column in _GUIDES.items()},
+    **{f"${column}$2:${column}$127": name for name, column in _RISK_SERIES.items()},
 }
 
 
@@ -65,7 +64,7 @@ def _add_names(workbook):
     names = workbook.find(X + "definedNames")
     for item in list(names):
         name = item.get("name", "")
-        if name.startswith("RMPlan") or name in _SERIES or name in _GUIDES:
+        if name.startswith(("RMPlan", "RMChart")):
             names.remove(item)
     sheet = "Report_Data!"
     for name, (column, count, last) in _SERIES.items():
@@ -75,15 +74,14 @@ def _add_names(workbook):
         E.SubElement(names, X + "definedName", name=name).text = (
             f"{first}:INDEX({source},MAX(1,{c}))"
         )
-    for name, column in _GUIDES.items():
-        row = 5 if name.startswith("RMChartRetirement") else 6
-        position = f"{sheet}$K${row}"
-        active = f"AND({position}>0,{position}<={sheet}$K$2)"
-        # Excel may plot formulas returning empty text as zeros. Use the
-        # physically empty range in rows 4–5 when a guide is inactive.
-        source = f"{sheet}${column}$2:${column}$5"
+    for name, column in _RISK_SERIES.items():
+        start = f'IF(\'Risk Results\'!$Z$1="current",1,127)'
+        length = f'MAX(1,{sheet}$K$2)'
+        # The second half is physically empty. It keeps risks off the chart
+        # while preserving the length of the common category axis.
+        source = f"{sheet}${column}$2:${column}$253"
         E.SubElement(names, X + "definedName", name=name).text = (
-            f"INDEX({source},IF({active},1,3)):INDEX({source},IF({active},2,4))"
+            f"INDEX({source},{start}):INDEX({source},{start}+{length}-1)"
         )
 
 
@@ -102,6 +100,61 @@ def _bind_chart(root, expected):
     root.find(".//" + C + "plotVisOnly").set("val", "0")
 
 
+def rebind_dashboard_workbook(root, filename):
+    """Point recognized workbook-local dashboard names to the published filename."""
+    prefix = "'" + filename.replace("'", "''") + "'!"
+    names = _SERIES.keys() | _RISK_SERIES.keys()
+    updated = False
+    for formula in root.iter(C + "f"):
+        qualifier, separator, name = (formula.text or "").rpartition("!")
+        local = separator and qualifier.strip("'").lower().endswith(".xlsx")
+        if local and not any(character in qualifier for character in "/\\") and name in names:
+            reference = prefix + name
+            if formula.text != reference:
+                formula.text = reference
+                updated = True
+    return updated
+
+
+def _combine_charts(line_chart, area_chart):
+    """Use the area series and line series on the same pair of Excel axes."""
+    area = deepcopy(area_chart.find(f".//{C}plotArea/{C}areaChart"))
+    line = line_chart.find(f".//{C}plotArea/{C}lineChart")
+    grouping = area.find(C + "grouping")
+    if grouping is None:
+        grouping = E.Element(C + "grouping")
+        area.insert(0, grouping)
+    grouping.set("val", "stacked")
+    for source, axis in zip(area.findall(C + "axId"), line.findall(C + "axId"), strict=True):
+        source.set("val", axis.get("val"))
+    line.addprevious(area)
+    for index, series in enumerate(area.findall(C + "ser") + line.findall(C + "ser")):
+        series.find(C + "idx").set("val", str(index))
+        series.find(C + "order").set("val", str(index))
+
+    # The transparent area starts the visible band at the 10th percentile.
+    first = area.find(C + "ser")
+    fill = first.find(C + "spPr")
+    if fill is None:
+        fill = E.Element(C + "spPr")
+        first.find(C + "tx").addnext(fill)
+    fill.clear()
+    drawing_ns = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+    E.SubElement(fill, drawing_ns + "noFill")
+    E.SubElement(E.SubElement(fill, drawing_ns + "ln"), drawing_ns + "noFill")
+    legend = line_chart.find(f".//{C}chart/{C}legend")
+    hidden = E.Element(C + "legendEntry")
+    E.SubElement(hidden, C + "idx", val="0")
+    E.SubElement(hidden, C + "delete", val="1")
+    legend.find(C + "legendPos").addnext(hidden)
+
+    # Each age is a category. A decade between labels keeps long plans legible.
+    age_axis = line_chart.find(f".//{C}plotArea/{C}catAx")
+    if (gridlines := age_axis.find(C + "majorGridlines")) is not None:
+        age_axis.remove(gridlines)
+    E.SubElement(age_axis, C + "tickLblSkip", val="10")
+
+
 def install_dashboard(src, authored, workbook, changes, summary_part, authored_summary_part):
     """Replace the old Summary chart with the editable portfolio chart from Artifact Tool."""
     drawing_part, drawing, relationships = _drawing(src, summary_part)
@@ -111,10 +164,11 @@ def install_dashboard(src, authored, workbook, changes, summary_part, authored_s
     original_chart_part = _target(drawing_part, old_rel)
     drawing.remove(old_anchor)
     relationships.remove(old_rel)
-    [(anchor, chart)] = _chart_anchors(authored_drawing)
-    part = _target(authored_part, _relationship(authored_rels, chart.get(R + "id")))
-    root = _read(authored, part)
-    _bind_chart(root, _SERIES.keys() | _GUIDES.keys())
+    [(anchor, chart), (_, area_chart)] = _chart_anchors(authored_drawing)
+    root = _read(authored, _target(authored_part, _relationship(authored_rels, chart.get(R + "id"))))
+    area = _read(authored, _target(authored_part, _relationship(authored_rels, area_chart.get(R + "id"))))
+    _combine_charts(root, area)
+    _bind_chart(root, _SERIES.keys() | _RISK_SERIES.keys())
     changes[original_chart_part] = _pack(root)
     frame = deepcopy(anchor)
     frame.find(".//" + C + "chart").set(R + "id", old_rel.get("Id"))
@@ -130,15 +184,16 @@ def install_dashboard(src, authored, workbook, changes, summary_part, authored_s
 
 def dashboard_chart_data(formula, workbook):
     """Return calculated points for a dashboard reference, or None for another chart."""
-    if not formula.startswith(_CHART_PREFIX):
-        return None
-    name = formula.removeprefix(_CHART_PREFIX)
+    name = formula.rsplit("!", 1)[-1]
     if name in _SERIES:
         column, count, _ = _SERIES[name]
         sheet = workbook["Report_Data"]
         return [sheet[f"{column}{row}"].value for row in range(2, 2 + max(1, int(sheet[count].value or 0)))]
-    if name in _GUIDES:
-        column = _GUIDES[name]
+    if name in _RISK_SERIES:
+        column = _RISK_SERIES[name]
         sheet = workbook["Report_Data"]
-        return [sheet[f"{column}{row}"].value for row in (2, 3)]
+        count = max(1, int(sheet["K2"].value or 0))
+        if workbook["Risk Results"]["Z1"].value != "current":
+            return [None] * count
+        return [sheet[f"{column}{row}"].value for row in range(2, 2 + count)]
     return None
