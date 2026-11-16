@@ -157,7 +157,9 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
     detailed_cell = source[101 - 4][selected + 2]
     detailed = _integer(_cell(detailed_cell, f'Inputs!{selected_col}101'), 'Inputs!B101', 0, 1)
     inputs = {4: selected}
-    modern = raw['Inputs']['A130'].value == 'Opening balance year'
+    # The planning-fields validation formula identifies workbooks with the
+    # opening-year, fee and healthcare-inflation settings regardless of labels.
+    modern = raw['Inputs']['B133'].data_type == 'f'
     for row in _INPUT_ROWS:
         location = f'Inputs!{selected_col}{row}'
         value = _cell(source[row - 4][selected + 2], location)

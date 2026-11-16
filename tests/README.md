@@ -14,7 +14,7 @@ PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
 node --test tests/gemini_review.test.mjs
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the Summary, charts, worksheet visibility and workbook metadata. The risk tests check the simulator against the workbook. The Node tests cover when Gemini should pass or fail a pull request.
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the Summary, annual appendix, chart, worksheet visibility and workbook metadata. The risk tests check the simulator against the workbook. The Node tests cover when Gemini should pass or fail a pull request.
 
 For a newly built workbook, use its path in the release and scenario commands. Set the same path for the risk tests.
 
@@ -46,7 +46,7 @@ diff -u tests/phase2-fixtures.json scratch/phase2-fixtures.json
 
 ## Pull request checks
 
-GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. Workbook checks run on PRs and after changes merge. They include the release and privacy checks, the risk and review tests, and six representative recalculation cases. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. Workbook checks run on PRs and after changes merge. They include the release and privacy checks, the risk and review tests, and seven representative recalculation cases. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
 Gemini posts its findings on ready PRs. Critical or high-severity findings and incomplete reviews block merging. Gemini checks source code and workflows. It records a pass when neither changed. A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
 
@@ -63,7 +63,8 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 
 1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
 2. Verify the saved copy with the command below. On a second copy, change the active scenario’s end age and check that the projection and balance chart reach the new final year.
-3. Record the Excel version, checks run and results in the release record.
+3. Preview **Inputs** and **Summary** with **Active Sheets** selected. Check Letter and A4 for two pages of input decisions and three pages of results. Check the annual appendix for repeated headers and the correct last age. Save the plan as PDF and inspect the chart, table, figures and page breaks.
+4. Record the Excel version, checks run and results in the release record.
 
 ```sh
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"

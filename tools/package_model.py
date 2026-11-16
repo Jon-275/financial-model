@@ -6,6 +6,8 @@ from lxml import etree as E
 from dashboard import SHEET as REPORT_DATA
 from dashboard_package import install_dashboard
 import risk_cleanup
+import report_layout
+from plan_report import APPENDIX, INDEX
 import workbook_layout
 import workbook_metadata
 from openpyxl.formula.translate import Translator
@@ -23,6 +25,11 @@ def x(t): return q(X,t)
 def read(z,p): return E.fromstring(z.read(p))
 def pack(tree): return E.tostring(tree,encoding='UTF-8',xml_declaration=True,standalone=True)
 
+def shared_strings(archive):
+    part = 'xl/sharedStrings.xml'
+    return [''.join(item.itertext()) for item in read(archive, part)] if part in archive.namelist() else []
+
+
 def paths(z):
     ws=read(z,'xl/workbook.xml'); rel=read(z,'xl/_rels/workbook.xml.rels'); by_id={r.get('Id'):r.get('Target') for r in rel}
     return {s.get('name'):(lambda p:p[1:] if p.startswith('/') else 'xl/'+p)(by_id[s.get(q(R,'id'))]) for s in ws.find(x('sheets'))}
@@ -37,7 +44,7 @@ def main():
         next_rel=max(int(s.get('Id')[3:]) for s in rel if re.fullmatch(r'rId\d+',s.get('Id')))+1
         next_part=max(int(re.search(r'sheet(\d+).xml',p)[1]) for p in sp.values())+1
         skip = risk_cleanup.retire_legacy(src, wb, rel, ct)
-        sst=[''.join(t.itertext()) for t in read(authored,'xl/sharedStrings.xml')] if 'xl/sharedStrings.xml' in authored.namelist() else []
+        sst = shared_strings(authored)
         orig={n:{c.get('r'):c for c in read(src,sp[n]).iter(x('c'))} for n in ('Inputs','Summary','Projection')}
         styles={'title':('Summary','A1'),'band':('Inputs','A73'),'header':('Inputs','A74'),'note':('Inputs','G53'),
                 'label':('Inputs','A53'),'money':('Projection','AW6'),'whole':('Projection','C6'),
@@ -52,10 +59,13 @@ def main():
         for name,source,fmt in [('input','input',1),('input_active','input_active',1),('whole','whole',1),('cents','money',cent_fmt),('published_percent','percent_active',10)]:
             xf=deepcopy(xfs[int(style_ids[source] or 0)]); xf.set('numFmtId',str(fmt)); xf.set('applyNumberFormat','1')
             style_ids[name]=str(len(xfs)); xfs.append(xf)
-        xfs.set('count',str(len(xfs))); changes['xl/styles.xml']=pack(style_root)
+        active_fill, number_formats = report_layout.install_styles(style_root, style_ids)
+        changes['xl/styles.xml']=pack(style_root)
         overlay = {}
+        revised_sst = []
         if len(sys.argv)>5:
             with zipfile.ZipFile(sys.argv[5]) as revised:
+                revised_sst = shared_strings(revised)
                 for n,p in paths(revised).items():
                     overlay[n]={c.get('r'):c for c in read(revised,p).iter(x('c'))}
         for n,edits in plan['cells'].items():
@@ -70,7 +80,7 @@ def main():
                 E.SubElement(ct,q(CT,'Override'),PartName='/'+part,ContentType='application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml')
                 root=E.Element(x('worksheet'),nsmap={None:X,'r':R}); E.SubElement(root,x('dimension'),ref='A1')
                 views=E.SubElement(root,x('sheetViews')); view=E.SubElement(views,x('sheetView'),workbookViewId='0',showGridLines='0',zoomScale='90')
-                fr='1' if n in {'Funding_Calc','Targeting_Calc',REPORT_DATA} else '4'
+                fr='1' if n in {'Funding_Calc','Targeting_Calc',REPORT_DATA} else '5' if n == APPENDIX else '4'
                 E.SubElement(view,x('pane'),ySplit=fr,topLeftCell='A'+str(int(fr)+1),activePane='bottomLeft',state='frozen')
                 E.SubElement(view,x('selection'),pane='bottomLeft',activeCell='A'+str(int(fr)+1),sqref='A'+str(int(fr)+1))
                 E.SubElement(root,x('sheetFormatPr'),defaultRowHeight='16')
@@ -83,8 +93,11 @@ def main():
                         cols[-1].set('hidden', '1')
                 E.SubElement(root,x('sheetData'))
             else: part=sp[n]; root=read(src,part)
+            if n == 'Summary':
+                report_layout.prepare_summary(root)
             data=root.find(x('sheetData')); sr=read(authored,ap[n]); staged={c.get('r'):c for c in sr.iter(x('c'))}
-            staged.update(overlay.get(n,{}))
+            revised_cells = overlay.get(n, {})
+            staged.update(revised_cells)
             old={c.get('r'):c for c in data.iter(x('c'))}; rows={int(r.get('r')):r for r in data}; sequence=0
             def obtain(a):
                 if a in old: return old[a]
@@ -100,7 +113,6 @@ def main():
                 if new and style=='money' and (col in ('A','B') or n=='Roth_Access' and col in ('C','N','O')): style='whole'
                 if n=='Checks' and r>=5 and col in 'CDEFGHKLM': style='cents'
                 if n=='Cash_Flow' and r>=5 and col in ('U','Z'): style='cents'
-                if n=='Summary' and a=='B34': style='summary_money'
                 if n=='Tax_Tables' and col in ('C','D') and (204<=r<=209 or 221<=r<=226): style='published_percent'
                 if style and style_ids[style] is not None: dst.set('s',style_ids[style])
                 for ch in list(dst):
@@ -126,7 +138,8 @@ def main():
                             sequence+=1
                 elif isinstance(val,str):
                     t=sc.get('t'); value=sc.findtext(x('v')); inline=sc.find(x('is'))
-                    actual=sst[int(value)] if t=='s' else ''.join(inline.itertext()) if inline is not None else value
+                    strings = revised_sst if a in revised_cells else sst
+                    actual=strings[int(value)] if t=='s' else ''.join(inline.itertext()) if inline is not None else value
                     if actual!=val: raise ValueError((n,a,actual,val))
                     dst.set('t','inlineStr'); E.SubElement(E.SubElement(dst,x('is')),x('t')).text=actual
                 else:
@@ -135,7 +148,7 @@ def main():
             for r,row in rows.items():
                 row[:]=sorted(row,key=lambda c:column_index_from_string(coordinate_from_string(c.get('r'))[0])); row.attrib.pop('spans',None)
             data[:]=[rows[r] for r in sorted(rows)]
-            if new and n not in {'Funding_Calc','Targeting_Calc',REPORT_DATA}:
+            if new and n not in {'Funding_Calc','Targeting_Calc',REPORT_DATA,APPENDIX,INDEX}:
                 merged=E.SubElement(root,x('mergeCells'),count='1')
                 E.SubElement(merged,x('mergeCell'),ref='A2:C2' if n == 'Risk_Settings' else 'A2:I2')
             if n=='Projection':
@@ -144,19 +157,14 @@ def main():
                     E.SubElement(cols,x('col'),min='72',max='84',width='19',customWidth='1')
             max_col=max((coordinate_from_string(a)[0] for a in old),key=column_index_from_string)
             root.find(x('dimension')).set('ref',f'A1:{max_col}{max(rows)}')
-            if n == 'Summary':
-                root.find(f'.//{x("sheetView")}').set('showGridLines', '0')
-                for row_number in (25, 26, 29):
-                    rows[row_number].set('hidden', '1')
-                for row_number, height in ((3, 23), (4, 19), (5, 22), (8, 27), (18, 27)):
-                    rows[row_number].set('ht', str(height))
-                    rows[row_number].set('customHeight', '1')
             workbook_layout.apply_sheet_layout(n, root)
+            report_layout.apply(n, root, style_ids, number_formats, active_fill)
             workbook_metadata.clear_revision_ids(root)
             changes[part]=pack(root); print(n,len(edits),flush=True)
         app = read(src, 'docProps/app.xml')
         workbook_layout.apply_tab_order(wb, app)
-        install_dashboard(src, authored, wb, ct, changes, sp['Summary'], ap['Summary'])
+        report_layout.install_print_names(wb)
+        install_dashboard(src, authored, wb, changes, sp['Summary'], ap['Summary'])
         # Use the open space beside the conversion controls, above the full sweep.
         part = 'xl/drawings/drawing2.xml'
         drawing = read(src, part)

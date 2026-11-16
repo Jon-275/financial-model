@@ -3,15 +3,15 @@
 from lxml import etree
 
 from example_inputs import example_cells
+from plan_report import APPENDIX, DETAIL_GROUPS, INDEX
 from workbook_metadata import make_sheets_visible
 
 _MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 _PROPS = '{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}'
 _VT = '{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}'
 _TAB_ORDER = (
-    'Start Here', 'Inputs', 'Summary', 'Cash_Flow', 'Projection', 'Roth_Access',
-    'Healthcare', 'Asset_Allocation', 'Income_Targeting', 'Risk_Settings',
-    'Tax_Tables', 'Checks', 'Report_Data', 'Funding_Calc', 'Targeting_Calc',
+    'Start Here', 'Inputs', 'Summary', APPENDIX, INDEX,
+    *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules),
 )
 _INPUT_GROUPS = ((17, 24), (55, 57), (59, 60), (102, 124))
 
@@ -108,13 +108,8 @@ def apply_sheet_layout(name, root):
     if views is None:
         return
     view = views.find(_MAIN + 'sheetView')
-    if name in {'README', 'Inputs', 'Summary'}:
-        view.set('zoomScale', '100')
-        view.set('zoomScaleNormal', '100')
-    if name in {'README', 'Summary'}:
-        view.set('showGridLines', '0')
     if name == 'Inputs':
-        _freeze(view, columns=3, rows=6)
+        _freeze(view, columns=2, rows=6)
         _group_inputs(root)
         _validate_inputs(root)
     if name in {'Cash_Flow', 'Roth_Access'}:

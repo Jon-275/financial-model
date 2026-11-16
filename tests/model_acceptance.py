@@ -64,9 +64,10 @@ def require_blank(sheet, coordinates) -> None:
 def check_chart_structure(workbook: Path) -> None:
     # The cached charts should still be present; this is not a visual Excel check.
     with ZipFile(workbook) as archive:
-        modern = "Risk_Settings" in sheet_parts(archive)
+        parts = sheet_parts(archive)
+        modern = "Risk_Settings" in parts
         charts = sorted(name for name in archive.namelist() if name.startswith("xl/charts/chart") and name.endswith(".xml"))
-        expected = 4 if modern else 5
+        expected = 3 if "Annual Detail" in parts else 4 if modern else 5
         if len(charts) != expected:
             raise AssertionError(f"Expected {expected} chart objects, found {len(charts)}")
         for path in charts:
@@ -103,6 +104,31 @@ def check_release_package(workbook: Path) -> None:
                     raise AssertionError(f"Release workbook still references removed metadata in {part}.")
         if len(ET.fromstring(archive.read("docProps/core.xml"))) or book.find("{*}revisionPtr") is not None:
             raise AssertionError("Release workbook contains document history or author properties.")
+
+
+def check_plan_print_layout(workbook: Path) -> None:
+    with ZipFile(workbook) as archive:
+        parts = sheet_parts(archive)
+        if 'Annual Detail' not in parts:
+            return
+        book = ET.fromstring(archive.read('xl/workbook.xml'))
+        tabs = [sheet.get('name') for sheet in book.find(q('sheets'))]
+        names = {(tabs[int(name.get('localSheetId'))], name.get('name')): name.text
+                 for name in book.find(q('definedNames')) if name.get('localSheetId') is not None}
+        assert tabs[:5] == ['Start Here', 'Inputs', 'Summary', 'Annual Detail', 'Appendix']
+        for sheet, part in parts.items():
+            view = ET.fromstring(archive.read(part)).find(f'{q("sheetViews")}/{q("sheetView")}')
+            assert view.get('zoomScale') == '100' and view.get('showGridLines') == '0', sheet
+        assert {sheet for sheet, name in names if name == '_xlnm.Print_Area'} == {'Inputs', 'Summary', 'Annual Detail'}
+        assert names.get(('Inputs', '_xlnm.Print_Area')) == 'Inputs!$L$136:$S$194'
+        input_breaks = ET.fromstring(archive.read(parts['Inputs'])).find(q('rowBreaks'))
+        assert [(point.get('id'), point.get('man')) for point in input_breaks] == [('162', '1')]
+        assert names.get(('Summary', '_xlnm.Print_Area')) == 'Summary!$B$2:$I$92'
+        assert names.get(('Annual Detail', '_xlnm.Print_Titles')) == "'Annual Detail'!$5:$5"
+        root = ET.fromstring(archive.read(parts['Summary']))
+        breaks = root.find(q('rowBreaks'))
+        assert [(point.get('id'), point.get('man')) for point in breaks] == [('32', '1'), ('64', '1')]
+        assert root.find(q('pageSetup')).get('orientation') == 'portrait'
 
 
 def check_probe_formula_encoding(workbook: Path) -> None:
@@ -145,7 +171,14 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
         from dashboard_acceptance import validate_dashboard
         validate_dashboard(wb, tolerance)
 
-    inputs, projection, cash, summary, roth, checks = (wb[name] for name in ("Inputs", "Projection", "Cash_Flow", "Summary", "Roth_Access", "Checks"))
+    inputs, projection, cash, roth, checks = (
+        wb[name] for name in ("Inputs", "Projection", "Cash_Flow", "Roth_Access", "Checks")
+    )
+    report = "Annual Detail" in wb.parts
+    summary = wb["Report_Data" if report else "Summary"]
+    status_address, first_gap, max_gap, bridge_value = (
+        f'{"N" if report else "B"}{row}' for row in (25, 26, 27, 19)
+    )
     cols = sheet_columns(cash, 4, REQUIRED_CASH_HEADERS)
     has_health = "Healthcare" in wb.parts
     health = wb['Healthcare'] if has_health else None
@@ -158,7 +191,7 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
     years = int(years)
     if years == 0:
         require_blank(projection, ("C5", "C6"))
-        if summary["B25"].value == "YES":
+        if summary[status_address].value == "YES":
             raise AssertionError("Invalid horizon displayed as a funded plan")
         return {"modeled_years": 0}
 
@@ -269,22 +302,22 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
             first_shortfall = p("B")
         max_shortfall = max(max_shortfall, shortfall)
 
-    equal("Summary maximum shortfall", expect_number(summary, "B27"), max_shortfall, tolerance)
+    equal("Summary maximum shortfall", expect_number(summary, max_gap), max_shortfall, tolerance)
     if healthcare_review:
-        if summary['B25'].value != 'Check healthcare inputs':
+        if summary[status_address].value != 'Check healthcare inputs':
             raise AssertionError('Incomplete healthcare assumptions did not block a funded headline')
     elif first_shortfall is not None:
-        if not str(summary["B25"].value).startswith("NO"):
+        if not str(summary[status_address].value).startswith("NO"):
             raise AssertionError("Summary shows survival despite unpaid required cash")
-        equal("Summary first shortfall year", expect_number(summary, "B26"), first_shortfall, 0)
-    elif summary["B25"].value != "YES":
-        raise AssertionError(f"Summary does not show a funded plan: {summary['B25'].value!r}")
+        equal("Summary first shortfall year", expect_number(summary, first_gap), first_shortfall, 0)
+    elif summary[status_address].value != "YES":
+        raise AssertionError(f"Summary does not show a funded plan: {summary[status_address].value!r}")
     if first_retirement_row is not None and expect_number(projection, f"C{first_retirement_row}") < 60:
         row = first_retirement_row
         bridge = expect_number(projection, f"BC{row - 1}") + expect_number(projection, f"X{row}")
-        equal("Summary bridge funds", expect_number(summary, "B19"), bridge, tolerance)
+        equal("Summary bridge funds", expect_number(summary, bridge_value), bridge, tolerance)
     else:
-        require_blank(summary, ("B19",))
+        require_blank(summary, (bridge_value,))
     return {"modeled_years": years - 1, "end_age": end_age, "largest_shortfall": max_shortfall, "ending_tax_payable": previous_tax_payable}
 
 
@@ -296,6 +329,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.release:
         check_release_package(args.workbook)
+        check_plan_print_layout(args.workbook)
     from xlsx_acceptance import scan_errors
     with Workbook(args.workbook) as wb:
         scan_errors(wb)

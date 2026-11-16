@@ -3,9 +3,9 @@
 ## Run your first plan
 
 1. **Save a private copy.** The saved scenarios use fictional figures.
-2. **Pick a scenario.** On **Inputs**, enter 1 in B4 for the example plan, 2 to retire later or 3 to test 10% lower retirement spending. Edit the blue-text cells in the matching column, D, E or F.
-3. **Review your figures.** Check ages, wages, savings and spending. Enter the last age to show in row 53, up to 125. Use today’s dollars unless a note says otherwise. Open optional settings with the **+** signs beside the rows.
-4. **Read Summary.** It shows whether the plan covers its costs, the first year it falls short and the ending balance in today’s dollars. Use **Cash_Flow** to see which bills went unpaid.
+2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
+3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Use the **+** signs beside the rows to open optional settings.
+4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
 
 Set the year your starting ages and balances apply to in **Inputs B130**. The first full forecast year is the following year.
 
@@ -34,12 +34,19 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 
 ## Read the results
 
-- **Summary** shows the plan result first. The balance chart marks retirement and uses today’s dollars. The spending chart shows how income and withdrawals pay bills around retirement. A shortfall means at least one cent of required spending or tax goes unpaid. If you see **CHECK PLAN**, follow the note beside it.
-- **Cash_Flow** shows tax, spending and withdrawals by year. Start with the first year shown on Summary and look at unpaid spending and unpaid tax.
-- **Roth_Access** shows what each person can withdraw. For an early retirement, check withdrawals year by year. The amount available at retirement is a starting balance. Later income, taxes and the age when each account becomes available also affect funding.
-- **Checks** compares the model’s cash, tax and account totals. A year can pass those checks and still have unpaid bills. **Funding_Calc** shows the withdrawal trials, **Targeting_Calc** shows the conversion trials and **Report_Data** supplies the Summary charts.
+- **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The chart marks retirement and the first shortfall if one occurs. The retirement cash-flow table shows income, savings used and annual costs in today’s dollars.
+- **Annual Detail** shows the same cash measures and portfolio balance over the full plan. The opening row gives the starting balance.
+- **Appendix** links to the supporting sheets and tools. The tabs to its right are for inspecting the model and running advanced analysis.
+- **Cash_Flow** shows tax, spending and withdrawals by year. Use the first shortfall year on Summary to find the unpaid amounts.
+- **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
+- **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Funding_Calc** shows the withdrawal trials, **Targeting_Calc** shows the conversion trials, and **Report_Data** holds the detailed results used in Summary.
 
-The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. The savings target is an estimate based on spending after the mortgage ends and the withdrawal rate in row 41. Use the funding answer to see whether the plan pays its actual bills.
+The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. The savings target uses annual spending after the mortgage ends, healthcare, and the withdrawal rate in row 41. Use the funding result to answer whether the scenario pays its modeled bills.
+
+### Print your plan
+
+In desktop Excel, select **Inputs**, then hold **Shift** and select **Summary**. Choose **File → Print → Active Sheets**. The package includes two pages of input decisions and three pages of results. **Print input decisions** on Inputs opens the record on screen. You can also print each sheet individually. Add **Annual Detail** when you need the full timeline. Check the scenario and opening year before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
+
 
 ## Enter healthcare costs
 

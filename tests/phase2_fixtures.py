@@ -1,5 +1,6 @@
 """Generate the combined regression and independently calculated Phase 2 cases."""
 import json
+import re
 
 from fixtures import COMMON, CASES as LEGACY, by_age, case, out, survives
 from health_fixtures import CASES as HEALTH
@@ -57,6 +58,17 @@ PUBLISHED=[
 ]
 
 
+REPORT = [
+    case('report_explains_missing_retirement_age', {'D10': None},
+         checks=(out('Inputs!B70', 0),
+                 out('Summary!B8', 'Review the plan inputs or calculation'),
+                 out('Summary!B9', 'Enter your retirement age on Inputs'),
+                 {'cell': 'Summary!B12', 'blank': True})),
+    case('report_explains_missing_retirement_spending', {'D37': None},
+         checks=(out('Inputs!B70', 0),
+                 out('Summary!B9', 'Enter retirement spending on Inputs'))),
+]
+
 def dashboard_case(existing):
     """Carry the saved-horizon and late-shortfall cases to the new report."""
     replacements = {
@@ -81,6 +93,14 @@ def dashboard_case(existing):
     return {'name': name, 'overrides': overrides, 'expects': [*expects, *assertions]}
 
 
+def report_addresses(existing):
+    """Use the visible report data schedule for legacy calculation assertions."""
+    for rule in existing['expects']:
+        if match := re.fullmatch(r'Summary!([ABC])(\d+)', rule.get('cell', '')):
+            rule['cell'] = 'Report_Data!' + dict(zip('ABC', 'MNO'))[match[1]] + match[2]
+    return existing
+
+
 if __name__=='__main__':
     synthetic = {
         **COMMON,
@@ -88,4 +108,5 @@ if __name__=='__main__':
         'Tax_Tables': {**COMMON['Tax_Tables'], 'B219': 0},
     }
     print(json.dumps({'common_overrides':synthetic,
-                      'cases':[dashboard_case(existing) for existing in LEGACY]+HEALTH+TARGETING+TAX+PUBLISHED},indent=2))
+                      'cases':[report_addresses(existing) for existing in
+                               [dashboard_case(case) for case in LEGACY] + HEALTH + TARGETING + TAX + PUBLISHED] + REPORT},indent=2))

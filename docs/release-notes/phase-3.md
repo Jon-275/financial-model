@@ -65,3 +65,13 @@ The model uses an editable opening year and keeps published tax figures tied to 
 Planned direct Roth IRA contributions use income limits for joint and single filers, including the published 2027 amounts. The model directs remaining savings to the taxable account when the Roth limit reduces the planned contribution. [IRS Notice 2026-66](https://www.irs.gov/pub/irs-drop/n-26-66.pdf)
 
 The revised workbook restores the generated tax-table layout so the companion risk report can run. The report reconciled all 6,570 annual values and completed 1,000 paired simulations. The repository workbook uses fictional assumptions and exposes all 15 worksheet tabs. The build removes inherited document properties, sensitivity labels and revision identifiers.
+
+## Printable retirement plan
+
+**Start Here** links to setup and results. **Inputs** highlights the selected scenario and links to groups of assumptions. **Summary** reports whether the plan pays its bills, identifies the first shortfall when one occurs, and explains what to do if an input is missing.
+
+The print package includes two pages of input decisions and three pages covering the outlook, retirement cash flow, and next decisions. **Annual Detail** prints the full selected timeline as a separate appendix. The funding result and the savings benchmark appear in different parts of the report.
+
+The workbook generator writes the layout, report links, chart and print settings. **Appendix** marks where the supporting sheets begin and provides an index to the calculations and advanced tools. The published workbook uses fictional figures and all 17 sheets are visible.
+
+Excel for Mac 16.115 opened the workbook and recalculated a scenario through age 125. The combined Inputs and Summary report exported as five pages on US Letter and A4. Annual Detail printed through the selected ending age with repeating headers. All 80 workbook scenarios and 29 risk tests passed during the redesign.

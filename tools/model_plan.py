@@ -5,7 +5,8 @@ import json, sys
 from openpyxl import load_workbook
 from openpyxl.utils.cell import get_column_letter as L, coordinate_from_string, column_index_from_string
 import dashboard
-from example_inputs import EXAMPLE_NOTICE
+import plan_report
+import input_record
 import funding_search
 import risk_cleanup
 import roth_contributions
@@ -17,7 +18,7 @@ import targeting
 
 END = 130
 FUNDING_ROWS = STEPS = funding_search.ROWS
-MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',dashboard.SHEET]
+MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',dashboard.SHEET,plan_report.APPENDIX,plan_report.INDEX]
 cells = defaultdict(dict)
 styles = defaultdict(dict)
 shared = defaultdict(dict)
@@ -80,7 +81,7 @@ def inputs(wb):
     put('Inputs','A83',"Use today's dollars. Shared by all scenarios.", 'note')
     put('Inputs','A84','One-time expense check','label')
     put('Inputs','B84','=IF(COUNTA(B83:C83)=0,"OK","Move one-time expenses to Inputs rows 75–82")','note')
-    put('Inputs','A130','Opening balance year','label')
+    put('Inputs','A130','Opening year for plan and balances','label')
     put('Inputs','B130',2026,'input')
     put('Inputs','A131','Annual investment fee','label')
     put('Inputs','B131',0,'percent_input')
@@ -88,6 +89,25 @@ def inputs(wb):
     put('Inputs','B132','','percent_input')
     put('Inputs','A133','Year, fee and healthcare check','label')
     put('Inputs','B133','=IFERROR(IF(AND(ISNUMBER(B130),B130=INT(B130),B130>=2026,B130<=9999-125,ISNUMBER(B131),B131>=0,B131<1,OR(B132="",AND(ISNUMBER(B132),B132>-1))),"OK","Check opening year, fees and healthcare inflation"),"Check opening year, fees and healthcare inflation")','note')
+    selector = 'AND(ISNUMBER(B4),B4=INT(B4),B4>=1,B4<=3)'
+    age_checks = []
+    for number, label in ((8, 'your current age'), (10, 'your retirement age'), (53, 'the last age to show')):
+        source = f'INDEX(D{number}:F{number},1,B4)'
+        age_checks.append((f'COUNT({source})<>1', f'Enter {label} on Inputs'))
+        age_checks.append((f'OR(B{number}<>INT(B{number}),B{number}<0,B{number}>125)',
+                           f'Enter {label} as a whole number from 0 to 125'))
+    working = 'AND(B53>B8,B10>B8+1)'
+    retired = 'B53>=MAX(B10,B8+1)'
+    required = [
+        ('B53<B8', 'The last age to show must be at least your current age'),
+        (f'AND({working},COUNT(INDEX(D12:F12,1,B4))<>1)', 'Enter annual pay on Inputs'),
+        (f'AND({working},COUNT(INDEX(D36:F36,1,B4))<>1)', 'Enter annual spending now on Inputs'),
+        (f'AND({retired},COUNT(INDEX(D37:F37,1,B4))<>1)', 'Enter retirement spending on Inputs'),
+    ]
+    readiness = '"OK"'
+    for condition, message in reversed(age_checks + required):
+        readiness = f'IF({condition},"{message}",{readiness})'
+    put('Inputs', 'B71', f'=IFERROR(IF({selector},{readiness},"Choose scenario 1, 2 or 3"),"Check scenario and ages")')
     put('Inputs','B70','=IF(AND(B71="OK",B84="OK",B99="OK",B125="OK",B129="OK",B133="OK"),B53-B8+1,0)')
     for r in range(17,23):
         rate = original(wb['Inputs'], f'B{r}')
@@ -317,31 +337,33 @@ def reconciliation():
 def guidance(start_sheet):
     """Replace the template's long introduction and explain editable inputs."""
     quick_start = {
-        'A1': 'RETIREMENT PLAN',
-        'A3': 'QUICK START',
-        'A4': '1. ' + EXAMPLE_NOTICE,
-        'A5': '2. Pick a scenario in Inputs B4. Edit the blue-text cells in that scenario’s column.',
-        'A6': '3. Check ages, pay, balances and spending. Set the last age to show in row 53, up to 125.',
-        'A7': '4. Open Summary for the result. If costs went unpaid, find the first year in Cash_Flow.',
-        'A10': 'INPUT TIPS',
-        'A11': 'Use today’s dollars unless a note says otherwise. Enter the full annual pay raise, including inflation.',
-        'A12': 'Use the + signs on Inputs for optional settings. Column B shows the selected values.',
-        'A13': 'Row 55 sets the survivor’s share of combined Social Security.',
-        'A15': 'MORE HELP',
-        'A16': 'Open the Model guide in the financial-model repository for help with taxes, healthcare and Roth conversions.',
+        'B3': ('Retirement planner', 'report_title'),
+        'B5': ('See whether your income and savings can cover spending and taxes through the age you choose.', 'report_body'),
+        'B7': ('1. Save a private copy', 'report_section'),
+        'B8': ('The example uses fictional figures. Save a copy before entering yours.', 'report_body'),
+        'B10': ('2. Set up your scenario', 'report_section'),
+        'B11': ('Choose the scenario to edit, then enter ages, income, savings and spending.', 'report_body'),
+        'B12': ('Open Inputs', 'report_link'),
+        'B14': ('3. Review your plan', 'report_section'),
+        'B15': ('Read the funding result, see how retirement is paid for, and print the plan from Excel.', 'report_body'),
+        'B16': ('Open Summary', 'report_link'),
+        'B19': ('=HYPERLINK("https://github.com/Jon-275/financial-model/blob/main/docs/model-guide.md","Read the model guide")', 'report_link'),
     }
+    for address, (value, style) in quick_start.items():
+        put('README', address, value, style)
     for (cell,) in start_sheet.iter_rows(max_col=1):
         if cell.value is not None and cell.coordinate not in quick_start:
             put('README', cell.coordinate, '')
 
     styles['Inputs'].update({f'G{row}': 'note' for row in (14, 55, 130, 131, 132)})
     notes = {
-        'README': quick_start,
         'Inputs': {
-            'A1': 'PLAN INPUTS',
-            'A2': 'Pick a scenario in B4. Edit the blue-text cells in its column. Column B shows the selected values.',
-            'C4': '',
-            'G4': '“Varies” marks inputs that differ across scenarios.',
+            'A1': 'Set up your plan',
+            'A2': 'Choose a scenario. Edit its shaded input cells. Open Summary when your figures are ready.',
+            'A3': '=IF(B71="OK","",B71)',
+            'A4': 'Scenario to edit (1–3)',
+            'C4': '=IFERROR(B7,"Choose a scenario")',
+            'G4': 'Open Summary',
             'G7': 'Rename the scenario if you change its purpose.',
             'G8': 'Enter your age at the start of the opening year.',
             'G9': 'Enter your spouse’s age at the start of the opening year.',
@@ -382,7 +404,7 @@ def guidance(start_sheet):
             'G50': 'Enter the account owner’s last age for Roth conversions.',
             'G51': 'Enter your cost basis from your brokerage records.',
             'G52': 'Enter annual taxable income apart from wages. See rows 86–88.',
-            'G53': 'Enter the last age to show in the plan, up to 125.',
+            'G53': 'Enter the last age to show, up to 125.',
             'G54': 'Enter your age at first death. Use 999 for a two-person plan.',
             'G55': 'Enter the share of both benefits the survivor receives.',
             'G56': 'Enter the share of the couple’s spending the survivor needs.',
@@ -433,6 +455,21 @@ def guidance(start_sheet):
             'A2': 'Enter an age and a conversion amount to compare costs for one retirement year.',
         },
     }
+    for address, value in {
+        'J4': 'Jump to',
+        'J5': 'Ages and pay',
+        'J6': 'Savings and contributions',
+        'J7': 'Spending and healthcare',
+        'J8': 'Social Security and income',
+        'J9': 'End age and later-life costs',
+        'J10': 'One-time expenses · all scenarios',
+        'J11': 'Account access and taxes',
+        'J12': 'Healthcare details',
+        'J13': 'Settings for all scenarios',
+        'J15': 'Review your result',
+        'J16': 'Print input decisions',
+    }.items():
+        put('Inputs', address, value, 'report_section' if address == 'J4' else 'report_link')
     for sheet, cells_by_address in notes.items():
         for address, text in cells_by_address.items():
             put(sheet, address, text)
@@ -470,6 +507,10 @@ def main():
     put('Income_Targeting','C39','Counts requests limited by cash, balances or the withdrawal policy.','note')
     guidance(wb['README'])
     dashboard.configure(put)
+    plan_report.move_details(wb['Summary'], cells['Summary'], styles['Summary'], put)
+    plan_report.configure(put)
+    plan_report.configure_index(put)
+    input_record.configure(put)
     workbook_layout.write_scenarios(put)
     order = workbook_layout.sheet_order([s for s in wb.sheetnames if s not in risk_cleanup.LEGACY_SHEETS] + MODULES)
     out.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared},separators=(',',':')))

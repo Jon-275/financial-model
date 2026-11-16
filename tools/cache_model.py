@@ -18,7 +18,7 @@ final.parent.mkdir(parents=True,exist_ok=True)
 calc=load_workbook(checked,data_only=True)
 count=calc['Inputs']['B70'].value
 assert isinstance(count,int) and count>0
-risk_count=count if calc['Summary']['B25'].value=='YES' else 1
+risk_count=count if calc['Report_Data']['N25'].value=='YES' else 1
 updates={}
 with zipfile.ZipFile(template) as src:
     wb=E.fromstring(src.read('xl/workbook.xml')); rr=E.fromstring(src.read('xl/_rels/workbook.xml.rels'))
@@ -71,7 +71,7 @@ with zipfile.ZipFile(template) as src:
 
 out=load_workbook(final,data_only=True)
 assert all(c.data_type!='e' for ws in out for c in ws._cells.values())
-assert out['Summary']['B29'].value==calc['Summary']['B29'].value
+assert out['Summary']['B12'].value==calc['Summary']['B12'].value
 if 'Monte_Carlo' in out.sheetnames:
     assert out['Monte_Carlo']['B15'].value==calc['Monte_Carlo']['B15'].value
 for name,first,last in [('Projection',5,130),('Monte_Carlo',25,150),('Sequence_Risk',15,140),('Cash_Flow',5,130)]:

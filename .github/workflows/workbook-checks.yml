@@ -60,6 +60,7 @@ jobs:
           python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase2-fixtures.json --compact --ledger \
             --case full_horizon_to125_dashboard \
             --case late_shortfall_reaches_dashboard \
+            --case report_explains_missing_retirement_age \
             --case invalid_age126 \
             --case targeting_aca_cliff_preserves_earliest_fundable_branch \
             --case wage_growth_includes_inflation_and_stops_at_retirement
