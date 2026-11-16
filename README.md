@@ -4,7 +4,7 @@ Build a retirement plan in Excel and see whether your household can pay its bill
 
 1. Save a private copy before entering personal figures. The workbook contains a fictional example.
 2. Open the copy in desktop Excel. Follow **Start Here** and choose a scenario on **Inputs**.
-3. Open **Summary** to review the result, see how you pay for retirement, and print your plan with the input decisions.
+3. Open **Summary** to see whether you can cover your costs and how you’ll pay for retirement. [Print your plan with the input decisions](docs/model-guide.md#print-your-plan)
 
 **Appendix** marks the start of the supporting sheets and links to the calculations and advanced tools. All workbook sheets are visible.
 

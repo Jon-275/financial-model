@@ -50,7 +50,9 @@ GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** b
 
 Gemini posts each finding on the relevant line of a ready PR. Fix the issue or explain why the finding does not apply, then resolve the thread. Critical or high-severity findings and incomplete reviews fail the required check. Address every open thread before merging, including findings from a review that passed. Gemini reviews source and workflow changes and records a pass when the PR contains neither.
 
-A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. Changing the PR base to `main` starts a review. Title and description edits can show a skipped job because they do not change the code under review. [Gemini workflow](../.github/workflows/gemini-review.yml)
+**Run Gemini reviewer** is the GitHub Actions job. **Gemini Review** is the result it posts on the PR commit and the check GitHub requires. A title or description edit can create a skipped job entry. Changing the PR base to `main` starts a review.
+
+A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
 
 ## Microsoft Excel release check
 
@@ -65,8 +67,8 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 
 1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
 2. Verify the saved copy with the command below. On a second copy, change the active scenario’s end age and check that the projection and balance chart reach the new final year.
-3. Preview **Inputs** and **Summary** with **Active Sheets** selected. Check Letter and A4 for two pages of input decisions and three pages of results. Check the annual appendix for repeated headers and the correct last age. Save the plan as PDF and inspect the chart, table, figures and page breaks.
-4. Record the Excel version, checks run and results in the release record.
+3. Preview **Inputs** and **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show two pages of input decisions and three pages of results. Check **Annual Detail** for repeating headers and the correct last age. Save a PDF and inspect the chart, table, figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
+4. Record the Excel versions, checks run, results and any pending platform checks in the release record.
 
 ```sh
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"

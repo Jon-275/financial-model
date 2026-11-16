@@ -2,11 +2,25 @@
 
 ## Published workbook
 
+**Start Here** links to setup and results. **Inputs** highlights the selected scenario and links to groups of assumptions. **Summary** reports whether the plan pays its bills, identifies the first shortfall when one occurs, and explains what to do if an input is missing.
+
+The print package includes two pages of input decisions and three pages covering the outlook, retirement cash flow, and next decisions. Print **Annual Detail** separately for a year-by-year view of the plan. The funding result and the savings benchmark appear in different parts of the report.
+
+The workbook generator writes the layout, report links, chart and print settings. **Appendix** marks where the supporting sheets begin and provides an index to the calculations and advanced tools. The published workbook uses fictional figures and all 17 sheets are visible.
+
+Excel for Mac 16.115 opened the workbook and recalculated a scenario through age 125. The combined Inputs and Summary report exported as five pages on US Letter and A4. Annual Detail printed through the selected ending age with repeating headers. All 80 workbook scenarios and 29 risk tests passed during the redesign. Windows print verification remains open. [Workbook redesign](https://github.com/Jon-275/financial-model/pull/8)
+
+## Current review and maintenance rules
+
+GitHub requires Workbook checks, Greptile Review and Gemini Review on PRs into `main`. Gemini posts each finding on the relevant line, and all review threads must be resolved before merging. Critical or high-severity findings and incomplete Gemini reviews fail the required check. [Review workflow update](https://github.com/Jon-275/financial-model/pull/9)
+
+Use the [test and release guide](../../tests/README.md) before publishing a workbook and the [annual tax data review](../annual-tax-review.md) to keep published figures current.
+
+## Workbook guidance update
+
 On November 15, 2026, the workbook’s quick start changed to four steps on one screen. The input notes use shorter instructions, and the model guide explains healthcare setup and the detailed withdrawal and tax rules. The survivor note now matches the share of combined Social Security entered in row 55.
 
 The rebuilt workbook opened in desktop Excel. All 750,314 formulas and their saved results matched the previous workbook. The survivor benefit and mixed Medicare and Marketplace test cases passed, along with all required pull request checks. [Published workbook update](https://github.com/Jon-275/financial-model/pull/6)
-
-GitHub requires Workbook checks, Greptile Review and Gemini Review on PRs into `main`. See the [test and release guide](../../tests/README.md) for the current checks and the [annual tax data review](../annual-tax-review.md) for maintenance steps.
 
 ## Phase 3 launch
 
@@ -44,9 +58,9 @@ The README, Inputs and Summary layouts were checked in Excel. All 883,201 formul
 
 ## Workbook layout and reports
 
-The workbook opens on **Start Here**. **Inputs** keeps the scenario selector and headings visible while scrolling, with optional details grouped under the plus signs. Each comparison scenario changes one input. One delays retirement by five years. The other cuts retirement spending by 10%.
+The workbook opened on **Start Here**. **Inputs** kept the scenario selector and headings visible while scrolling, with optional details grouped under the plus signs. Each comparison scenario changed one input. One delayed retirement by five years. The other cut retirement spending by 10%.
 
-**Summary** shows whether modeled spending and tax are paid, the first year with unpaid costs, and the ending portfolio in today’s dollars. It shows the savings target separately. Two charts show the portfolio by age and how income, withdrawals and health savings cover bills around retirement. **Risk_Settings** replaces the old market simulation tabs and keeps their report inputs. The regenerated companion risk report reproduces the prior simulation results for the same assumptions and seed.
+**Summary** showed whether modeled spending and tax were paid, the first year with unpaid costs, and the ending portfolio in today’s dollars. It showed the savings target separately. Two charts showed the portfolio by age and how income, withdrawals and health savings covered bills around retirement. **Risk_Settings** replaced the old market simulation tabs and kept their report inputs. The regenerated companion risk report reproduces the prior simulation results for the same assumptions and seed.
 
 The rebuilt workbook opened in Excel for Mac and passed the accounting checks after recalculation from blank caches. The 6,570 annual values across 73 years reconciled to within one cent. Switching to the later retirement scenario moved the retirement marker and changed the ages shown on the bills chart. Changing the end age to 125 extended the portfolio chart to age 125. The age-125 and late-shortfall fixtures also passed in LibreOffice.
 
@@ -54,7 +68,7 @@ All 66 workbook regression fixtures and 29 risk tests passed. Both saved compari
 
 ## Reconciliation warning and one-cent shortfalls
 
-Summary shows **CHECK PLAN** and directs readers to **Checks** when an active year’s reconciliation has not passed. Both sheets use the same reconciliation result from the cash-flow calculation. The acceptance tests use the workbook’s inclusive one-cent threshold for unpaid costs.
+That version of Summary showed **CHECK PLAN** and directed readers to **Checks** when an active year’s reconciliation had failed. Both sheets use the same reconciliation result from the cash-flow calculation. The acceptance tests use the workbook’s inclusive one-cent threshold for unpaid costs.
 
 Excel for Mac recalculated the release from blank caches. A test difference switched the Summary headline from **YES** to **CHECK PLAN**. Separate cases checked the opening and final plan rows, a missing reconciliation result, and the amounts immediately below and at one cent. The base projection reconciled all 6,570 annual values.
 
@@ -64,14 +78,4 @@ The model uses an editable opening year and keeps published tax figures tied to 
 
 Planned direct Roth IRA contributions use income limits for joint and single filers, including the published 2027 amounts. The model directs remaining savings to the taxable account when the Roth limit reduces the planned contribution. [IRS Notice 2026-66](https://www.irs.gov/pub/irs-drop/n-26-66.pdf)
 
-The revised workbook restores the generated tax-table layout so the companion risk report can run. The report reconciled all 6,570 annual values and completed 1,000 paired simulations. The repository workbook uses fictional assumptions and exposes all 15 worksheet tabs. The build removes inherited document properties, sensitivity labels and revision identifiers.
-
-## Printable retirement plan
-
-**Start Here** links to setup and results. **Inputs** highlights the selected scenario and links to groups of assumptions. **Summary** reports whether the plan pays its bills, identifies the first shortfall when one occurs, and explains what to do if an input is missing.
-
-The print package includes two pages of input decisions and three pages covering the outlook, retirement cash flow, and next decisions. **Annual Detail** prints the full selected timeline as a separate appendix. The funding result and the savings benchmark appear in different parts of the report.
-
-The workbook generator writes the layout, report links, chart and print settings. **Appendix** marks where the supporting sheets begin and provides an index to the calculations and advanced tools. The published workbook uses fictional figures and all 17 sheets are visible.
-
-Excel for Mac 16.115 opened the workbook and recalculated a scenario through age 125. The combined Inputs and Summary report exported as five pages on US Letter and A4. Annual Detail printed through the selected ending age with repeating headers. All 80 workbook scenarios and 29 risk tests passed during the redesign.
+The revised workbook restores the generated tax-table layout so the companion risk report can run. The report reconciled all 6,570 annual values and completed 1,000 paired simulations. That release used fictional assumptions and exposed all 15 worksheet tabs. The build removes inherited document properties, sensitivity labels and revision identifiers.
