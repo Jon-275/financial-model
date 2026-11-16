@@ -107,7 +107,7 @@ def report_addresses(existing):
     """Use the visible report data schedule for legacy calculation assertions."""
     for rule in existing['expects']:
         if match := re.fullmatch(r'Summary!([ABC])(\d+)', rule.get('cell', '')):
-            rule['cell'] = 'Report_Data!' + dict(zip('ABC', 'MNO'))[match[1]] + match[2]
+            rule['cell'] = 'Summary!' + dict(zip('ABC', 'MNO'))[match[1]] + match[2]
     return existing
 
 

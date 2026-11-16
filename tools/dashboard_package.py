@@ -15,8 +15,8 @@ D = "{http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing}"
 _CHART_PREFIX = "'retirement-model.xlsx'!"
 # Chart authoring uses fixed placeholders, which become dynamic names here.
 _SERIES = {
-    "RMChartPortfolioAge": ("A", "K2", 127),
-    "RMChartPortfolioBalance": ("AE", "K2", 127),
+    "RMChartPortfolioAge": ("A", "Q2", 127),
+    "RMChartPortfolioBalance": ("AE", "Q2", 127),
 }
 _RISK_SERIES = {
     "RMChartRiskFloor": "AF",
@@ -78,7 +78,7 @@ def _add_names(workbook):
         )
     for name, column in _RISK_SERIES.items():
         start = f'IF({CURRENT},1,127)'
-        length = f'MAX(1,{sheet}$K$2)'
+        length = f'MAX(1,{sheet}$Q$2)'
         # The second half is physically empty. It keeps risks off the chart
         # while preserving the length of the common category axis.
         source = f"{sheet}${column}$2:${column}$253"
@@ -194,7 +194,7 @@ def dashboard_chart_data(formula, workbook):
     if name in _RISK_SERIES:
         column = _RISK_SERIES[name]
         sheet = workbook["Report_Data"]
-        count = max(1, int(sheet["K2"].value or 0))
+        count = max(1, int(sheet["Q2"].value or 0))
         risk_sheet = DATA_SHEET if DATA_SHEET in workbook.sheetnames else SHEET
         if workbook[risk_sheet]["Z1"].value != "current":
             return [None] * count

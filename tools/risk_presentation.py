@@ -1,5 +1,7 @@
 """Lay out the market-risk results and provide formulas for the printed plan."""
 
+import re
+
 SHEET = 'Risk Results'
 DATA_SHEET = 'Risk_Data'
 STATUS = f'{DATA_SHEET}!$Z$1'
@@ -11,8 +13,23 @@ SUCCESS_PERCENT = '"0.00%"'
 CENTS = '"$#,##0.00"'
 
 
+def snapshot_address(address):
+    """Place saved annual, stress and representative path results in contiguous tables."""
+    match = re.fullmatch(r'(A[F-X])(\d+)', address)
+    if match is None:
+        return address
+    column, row = match[1][1], int(match[2])
+    if row >= 46:
+        return f'{chr(ord(column) - ord("F") + ord("A"))}{row - 41}'
+    if row >= 28:
+        return f'{chr(ord(column) - ord("F") + ord("K"))}{row - 23}'
+    if row >= 21:
+        return f'{match[1]}{row - 16}'
+    return f'BB{row}'
+
+
 def result(address):
-    return f'{DATA_SHEET}!{address}'
+    return f'{DATA_SHEET}!{snapshot_address(address)}'
 
 
 def display(value, fallback='""'):
@@ -65,6 +82,20 @@ def configure(put, display_dollars, price_index_at, future_view):
     cell('K2', 'Back to Summary', 'report_link')
     cell('K3', 'Market risk settings', 'report_link')
     cell('K4', 'Open saved risk data', 'report_link')
+    cell('M2', 'Simulation settings', 'report_section')
+    for row, label, reference, style in (
+        (3, 'Scenario', 'AF3', 'report_body'),
+        (4, 'End age', 'AF4', 'report_case_age'),
+        (5, 'Run date', 'AF2', 'report_body'),
+        (6, 'Simulated paths', 'AF5', 'report_row'),
+        (7, 'Seed', 'AF6', 'report_body'),
+        (8, 'Engine version', 'AF7', 'report_body'),
+        (9, 'Balance trigger', 'AF12', 'report_percent'),
+        (10, 'Cut to flexible costs', 'AF13', 'report_percent'),
+        (11, 'Flexible share', 'AF14', 'report_percent'),
+    ):
+        cell(f'M{row}', label, 'report_caption')
+        cell(f'N{row}', display(result(reference)), style)
 
     for col, name, rate in (('B', 'Fixed spending', 'AF8'), ('F', 'Flexible spending', 'AF9')):
         cell(f'{col}6', display(f'"{name}"'), 'report_caption')
@@ -161,8 +192,6 @@ def configure(put, display_dollars, price_index_at, future_view):
         age = result(f'AG{source_row}')
         for col, source in zip(('B', 'D', 'F', 'H', 'J'), ('AG', 'AH', 'AI', 'AJ', 'AK')):
             style = 'report_row' if col == 'B' else 'report_money'
-            if row % 2:
-                style += '_alt'
             value = result(f'{source}{source_row}')
             if col != 'B':
                 value = dollars_at(value, age)

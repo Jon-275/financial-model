@@ -116,7 +116,11 @@ def check_plan_print_layout(workbook: Path) -> None:
         names = {(tabs[int(name.get('localSheetId'))], name.get('name')): name.text
                  for name in book.find(q('definedNames')) if name.get('localSheetId') is not None}
         consolidated = 'Risk_Data' in parts
-        if consolidated:
+        if 'Conversion Detail' in parts:
+            assert tabs[:10] == ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
+                                 'Risk_Settings', 'Risk Results', 'Tax_Tables', 'Annual Detail', 'Appendix']
+            assert all(tabs.index(name) > tabs.index('Appendix') for name in ('Conversion Detail', 'Risk_Data'))
+        elif consolidated:
             assert tabs[:9] == ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
                                  'Risk_Settings', 'Risk Results', 'Annual Detail', 'Appendix']
             assert tabs.index('Risk_Data') > tabs.index('Appendix')
@@ -142,6 +146,31 @@ def check_plan_print_layout(workbook: Path) -> None:
             views = root.find(f"{q('dataValidations')}/{q('dataValidation')}[@sqref='K18']")
             assert views is not None and views.get('type') == 'list'
             assert views.findtext(q('formula1')) == '"Today’s dollars,Future dollars"'
+        if 'Conversion Detail' in parts:
+            check_schedule_layout(archive, parts)
+
+
+def check_schedule_layout(archive, parts):
+    sheets = {
+        'Annual Detail': ('B6:J131', '$B6', 'D131'), 'Risk Results': ('B58:K183', '$B58', 'F183'),
+        'Projection': ('A5:CF130', '$A5', 'B130'), 'Roth_Access': ('A5:AP130', '$A5', 'E130'),
+        'Cash_Flow': ('A5:AQ130', '$A5', 'C130'), 'Healthcare': ('A5:AF130', '$A5', 'C130'),
+        'Checks': ('A5:M130', '$A5', 'C130'), 'Conversion Detail': ('A5:V55', '$A5', 'D55'),
+        'Report_Data': ('A2:N127', '$A2', 'A127'), 'Risk_Data': ('A5:I130', '$A5', 'C130'),
+        'Funding_Calc': ('A2:AO15376', '$A2', 'D15376'),
+        'Targeting_Calc': ('A2:AP6397', '$A2', 'D6397'),
+    }
+    styles = ET.fromstring(archive.read('xl/styles.xml')).find(q('cellXfs'))
+    for sheet, (area, key, address) in sheets.items():
+        raw = ET.fromstring(archive.read(parts[sheet]))
+        fmt = raw.find(f"{q('conditionalFormatting')}[@sqref='{area}']/{q('cfRule')}/{q('formula')}")
+        assert fmt is not None and fmt.text == f'AND({key}<>"",MOD(ROW(),2)=1)', sheet
+        if sheet in ('Funding_Calc', 'Targeting_Calc'):
+            assert raw.find(q('autoFilter')).get('ref') == area.replace('A2:', 'A1:'), sheet
+        cell = raw.find(f".//{q('c')}[@r='{address}']")
+        assert cell is not None, (sheet, address)
+        style = styles[int(cell.get('s', '0'))]
+        assert style.get('fillId', '0') == style.get('borderId', '0') == '0', (sheet, address)
 
 
 def check_probe_formula_encoding(workbook: Path) -> None:
@@ -188,7 +217,7 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
         wb[name] for name in ("Inputs", "Projection", "Cash_Flow", "Roth_Access", "Checks")
     )
     report = "Annual Detail" in wb.parts
-    summary = wb["Report_Data" if report else "Summary"]
+    summary = wb["Report_Data" if report and "Conversion Detail" not in wb.parts else "Summary"]
     status_address, first_gap, max_gap, bridge_value = (
         f'{"N" if report else "B"}{row}' for row in (25, 26, 27, 19)
     )

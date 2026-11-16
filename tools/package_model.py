@@ -9,7 +9,8 @@ import risk_cleanup
 import risk_presentation
 import risk_workbook
 import report_layout
-from plan_report import APPENDIX, INDEX
+from plan_report import APPENDIX, CONVERSION_DETAIL, INDEX
+from targeting import FIRST_TRIAL, LAST_TRIAL
 import workbook_layout
 import workbook_metadata
 from openpyxl.formula.translate import Translator
@@ -97,7 +98,13 @@ def main():
             else: part=sp[n]; root=read(src,part)
             if n == 'Summary':
                 report_layout.prepare_summary(root)
-            data=root.find(x('sheetData')); sr=read(authored,ap[n]); staged={c.get('r'):c for c in sr.iter(x('c'))}
+            data=root.find(x('sheetData'))
+            if n == 'Income_Targeting':
+                # The template's former sweep is now authored on Conversion Detail.
+                for row in list(data):
+                    if int(row.get('r')) >= 41:
+                        data.remove(row)
+            sr=read(authored,ap[n]); staged={c.get('r'):c for c in sr.iter(x('c'))}
             revised_cells = overlay.get(n, {})
             staged.update(revised_cells)
             old={c.get('r'):c for c in data.iter(x('c'))}; rows={int(r.get('r')):r for r in data}; sequence=0
@@ -150,7 +157,7 @@ def main():
             for r,row in rows.items():
                 row[:]=sorted(row,key=lambda c:column_index_from_string(coordinate_from_string(c.get('r'))[0])); row.attrib.pop('spans',None)
             data[:]=[rows[r] for r in sorted(rows)]
-            if new and n not in {'Funding_Calc','Targeting_Calc',REPORT_DATA,APPENDIX,INDEX,risk_workbook.SHEET,risk_presentation.SHEET}:
+            if new and n not in {'Funding_Calc','Targeting_Calc',REPORT_DATA,APPENDIX,INDEX,CONVERSION_DETAIL,risk_workbook.SHEET,risk_presentation.SHEET}:
                 merged=E.SubElement(root,x('mergeCells'),count='1')
                 E.SubElement(merged,x('mergeCell'),ref='A2:C2' if n == 'Risk_Settings' else 'A2:I2')
             if n=='Projection':
@@ -183,6 +190,12 @@ def main():
         changes.update({'xl/workbook.xml':pack(wb),'xl/_rels/workbook.xml.rels':pack(rel),'[Content_Types].xml':pack(ct)})
         for index, title in [(2,'Incremental tax and healthcare cost per dollar converted'),(3,'Current-year tax and healthcare costs')]:
             part=f'xl/charts/chart{index}.xml'; chart=read(src,part)
+            for formula in chart.iter(q(C, 'f')):
+                sheet, sep, address = (formula.text or '').partition('!')
+                if sep and sheet.strip("'") == 'Income_Targeting':
+                    rows = {41: FIRST_TRIAL - 1, 42: FIRST_TRIAL, 92: LAST_TRIAL}
+                    address = re.sub(r'\$(41|42|92)\b', lambda match: f'${rows[int(match[1])]}', address)
+                    formula.text = f"'{CONVERSION_DETAIL}'!{address}"
             title_node=chart.find(f'.//{q(C,"chart")}/{q(C,"title")}')
             if title_node is not None:
                 runs=list(title_node.iter(q(A,'t')))

@@ -7,18 +7,18 @@ TABLE_GUIDES = {
     'Report_Data': ('AK', 'Report data', (
         'These values feed the Summary chart and cash-flow table.',
         'The source values use opening-year dollars. Chart values follow the Dollar view.',
-        'Series end at the selected age. Blank cells are outside the active report.',
+        'Each modeled year has one row, including the opening year.',
     ), 'Summary!B3'),
-    'Funding_Calc': ('AN', 'Withdrawal calculation', (
+    'Funding_Calc': ('AR', 'Withdrawal calculation', (
         'The model tries different withdrawal amounts each year.',
         'A trial includes the tax and Marketplace credit it would produce.',
-        'Blank rows are unused trials or years beyond the end age.',
+        'Skipped means the model did not need that trial. See Selected draw for the result.',
         'Cash_Flow shows the chosen result for each year.',
     ), 'Cash_Flow!A1'),
-    'Targeting_Calc': ('AN', 'Conversion calculation', (
+    'Targeting_Calc': ('AR', 'Conversion calculation', (
         'These are the withdrawal and tax trials for one retirement year.',
         'Each run uses the same starting balances and tests a different conversion.',
-        'Unused trials and amounts outside the conversion range are blank.',
+        'Skipped means the model did not need that trial. The last column identifies the conversion request.',
     ), 'Income_Targeting!A1'),
 }
 

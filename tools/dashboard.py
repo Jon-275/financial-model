@@ -1,11 +1,10 @@
 """Build the detailed measures and the data that feed the retirement plan."""
 
-from plan_report import add_transition_values, display_dollars
-from risk_presentation import CURRENT, DATA_SHEET
+from plan_report import display_dollars
+from risk_presentation import CURRENT, result
 
 SHEET = 'Report_Data'
 LAST_PORTFOLIO_ROW = 127
-LAST_CASH_ROW = 14
 
 
 def configure(put):
@@ -58,72 +57,65 @@ def configure(put):
 
     for cell, label in {
         'A1': 'Age', 'B1': 'Portfolio balance', 'C1': 'Retirement starts', 'D1': 'First shortfall',
-        'E1': 'Age', 'F1': 'Income used', 'G1': 'Withdrawals used',
-        'H1': 'Health savings used', 'I1': 'Unpaid',
-        'J1': 'Projection position', 'K1': 'Report positions',
-        'U1': 'Year', 'V1': 'Savings used', 'W1': 'Other spending',
-        'X1': 'Healthcare', 'Y1': 'Tax due',
+        'E1': 'Year', 'F1': 'Income used', 'G1': 'Withdrawals used',
+        'H1': 'Health savings used', 'I1': 'Unpaid', 'J1': 'Projection position',
+        'K1': 'Savings used', 'L1': 'Other spending', 'M1': 'Healthcare', 'N1': 'Tax due',
+        'P1': 'Report controls', 'Q1': 'Position or count',
     }.items():
         put(SHEET, cell, label, 'header')
+    for row, label in enumerate(('Modeled years', 'First cash flow position', 'Cash flow rows',
+                                 'Retirement position', 'First shortfall position'), 2):
+        put(SHEET, f'P{row}', label, 'report_caption')
     for cell, formula in {
-        'K2': '=IF(OR(N25="YES",N25="NO - cash shortfall"),Inputs!$B$70,0)',
-        'K3': '=MAX(2,K5-2)',
-        'K4': '=IF(OR(K2<2,K5>K2),0,MIN(K2,K5+10)-K3+1)',
-        'K5': '=IF(K2=0,2,MAX(2,Inputs!$B$10-Inputs!$B$8+1))',
-        'K6': '=IF(ISNUMBER(N26),MATCH(N26,Projection!$B$5:$B$130,0),0)',
+        'Q2': '=IF(OR(Summary!N25="YES",Summary!N25="NO - cash shortfall"),Inputs!$B$70,0)',
+        'Q3': '=MAX(2,Q5-2)',
+        'Q4': '=IF(OR(Q2<2,Q5>Q2),0,MIN(Q2,Q5+10)-Q3+1)',
+        'Q5': '=IF(Q2=0,2,MAX(2,Inputs!$B$10-Inputs!$B$8+1))',
+        'Q6': '=IF(ISNUMBER(Summary!N26),MATCH(Summary!N26,Projection!$B$5:$B$130,0),0)',
     }.items():
         put(SHEET, cell, formula, 'whole')
 
     for row in range(2, LAST_PORTFOLIO_ROW + 1):
         pos, src = row - 1, row + 3
-        put(SHEET, f'A{row}', f'=IF({pos}<=$K$2,Projection!C{src},"")', 'whole')
-        put(SHEET, f'B{row}', f'=IF({pos}<=$K$2,Projection!BN{src},"")', 'money')
-        put(SHEET, f'AE{row}', f'=IF({pos}<=$K$2,{display_dollars(f"$B{row}", f"Projection!G{src}")},"")', 'money')
-        put(SHEET, f'C{row}', f'=IF(AND({pos}<=$K$2,{pos}=$K$5),B{row},"")', 'money')
-
-        put(SHEET, f'D{row}', f'=IF(AND({pos}<=$K$2,{pos}=$K$6),B{row},"")', 'money')
+        cpi, healthcare = f'Projection!G{src}', f'Projection!BA{src}'
+        cash = lambda column: f'Cash_Flow!{column}{src}'
+        paid = f'({cash("N")}+{cash("P")})'
+        values = {
+            'A': f'Projection!C{src}', 'B': f'Projection!BN{src}',
+            'C': f'IF({pos}=$Q$5,B{row},"")', 'D': f'IF({pos}=$Q$6,B{row},"")',
+            'E': cash('A'), 'F': f'MIN({cash("C")},{paid})/{cpi}',
+            'G': f'MAX(0,{paid}-{cash("C")})/{cpi}', 'H': f'{cash("E")}/{cpi}',
+            'I': f'{cash("V")}/{cpi}', 'J': str(pos), 'K': f'G{row}+H{row}',
+            'L': f'({cash("D")}-{healthcare})/{cpi}', 'M': f'{healthcare}/{cpi}',
+            'N': f'({cash("F")}+{cash("M")})/{cpi}',
+            'AE': display_dollars(f"$B{row}", cpi),
+        }
+        for column, expression in values.items():
+            style = 'whole' if column in ('A', 'E', 'J') else 'money'
+            put(SHEET, f'{column}{row}', f'=IF({pos}<=$Q$2,{expression},"")', style)
 
     risk_current = CURRENT
     for column, heading in zip(('AE', 'AF', 'AG', 'AH'),
                                ('Base projection', '10th percentile', 'Width of middle 80%', 'Simulated median')):
         put(SHEET, f'{column}1', heading, 'header')
     for row in range(2, LAST_PORTFOLIO_ROW + 1):
-        result = f'{DATA_SHEET}!'
         source = row + 44
-        current_year = f'AND({risk_current},{row - 1}<=$K$2)'
+        current_year = f'AND({risk_current},{row - 1}<=$Q$2)'
         cpi = f'Projection!G{row + 3}'
         for column, expression in {
-            'AF': f'{result}AI{source}',
-            'AG': f'{result}AK{source}-{result}AI{source}', 'AH': f'{result}AJ{source}',
+            'AF': result(f'AI{source}'),
+            'AG': f'{result(f"AK{source}")}-{result(f"AI{source}")}', 'AH': result(f'AJ{source}'),
         }.items():
             put(SHEET, f'{column}{row}', f'=IF({current_year},{display_dollars(expression, cpi)},"")', 'money')
 
     # Two-point guide lines survive Excel's PDF export and also mark a
     # shortfall when the portfolio is already depleted.
     for age, balance, position, label in (
-        ('AA', 'AB', '$K$5', 'Retirement'), ('AC', 'AD', '$K$6', 'First shortfall'),
+        ('AA', 'AB', '$Q$5', 'Retirement'), ('AC', 'AD', '$Q$6', 'First shortfall'),
     ):
-        valid = f'AND({position}>0,{position}<=$K$2)'
+        valid = f'AND({position}>0,{position}<=$Q$2)'
         put(SHEET, f'{age}1', f'{label} age', 'header')
         put(SHEET, f'{balance}1', f'{label} guide', 'header')
         for row, height in ((2, '0'), (3, 'MAX(1,MAX($B$2:$B$127))')):
             put(SHEET, f'{age}{row}', f'=IF({valid},INDEX($A$2:$A$127,{position}),"")', 'whole')
             put(SHEET, f'{balance}{row}', f'=IF({valid},{height},"")', 'money')
-
-    for row in range(2, LAST_CASH_ROW + 1):
-        pos = f'$J{row}'
-        put(SHEET, f'J{row}', f'=IF({row - 1}<=$K$4,$K$3+{row - 2},"")', 'whole')
-        cash = lambda c: f'INDEX(Cash_Flow!${c}$5:${c}$130,{pos})'
-        cpi = f'INDEX(Projection!$G$5:$G$130,{pos})'
-        paid = f'({cash("N")}+{cash("P")})'
-        values = {
-            'E': f'INDEX(Projection!$C$5:$C$130,{pos})',
-            'F': f'MIN({cash("C")},{paid})/{cpi}',
-            'G': f'MAX(0,{paid}-{cash("C")})/{cpi}',
-            'H': f'{cash("E")}/{cpi}',
-            'I': f'{cash("V")}/{cpi}',
-        }
-        for col, formula in values.items():
-            style = 'whole' if col == 'E' else 'money'
-            put(SHEET, f'{col}{row}', f'=IF({pos}="","",{formula})', style)
-        add_transition_values(put, row, cash, cpi)

@@ -9,7 +9,9 @@ def validate_dashboard(wb, tolerance):
         wb[name] for name in ('Inputs', 'Summary', 'Projection', 'Cash_Flow', 'Report_Data')
     )
     report = 'Annual Detail' in wb.parts
-    status = (data['N25'] if report else summary['B25']).value
+    arranged = 'Conversion Detail' in wb.parts
+    metrics = summary if arranged else data
+    status = (metrics['N25'] if report else summary['B25']).value
     has_result = status in ('YES', 'NO - cash shortfall')
     horizon = inputs['B70'].value if has_result else 0
     checks = wb['Checks']
@@ -37,7 +39,7 @@ def validate_dashboard(wb, tolerance):
         if 'Risk Results' in wb.parts:
             risk = wb['Risk Results']
             snapshot = wb['Risk_Data'] if 'Risk_Data' in wb.parts else risk
-            _validate_risk_report(risk, snapshot, inputs, projection, data, summary, horizon, tolerance)
+            _validate_risk_report(risk, snapshot, inputs, projection, data, summary, horizon, tolerance, arranged)
     else:
         expected_headline = 'YES' if status == 'YES' else 'NO' if has_result else 'CHECK PLAN'
         assert summary['B3'].value == expected_headline, 'Summary headline differs from the funding result.'
@@ -46,12 +48,13 @@ def validate_dashboard(wb, tolerance):
             assert summary['B5'].value == summary['B29'].value, 'Summary ending balance differs.'
         else:
             assert summary['B4'].value in (None, '') and summary['B5'].value in (None, '')
-    equal('K2', horizon)
-    equal('K4', cash_count)
+    controls = 'Q' if arranged else 'K'
+    equal(f'{controls}2', horizon)
+    equal(f'{controls}4', cash_count)
     if report:
-        gap = data['K6'].value
-        expected_gap = data['N26'].value - projection['B5'].value + 1 if status == 'NO - cash shortfall' else 0
-        equal('K6', expected_gap)
+        gap = data[f'{controls}6'].value
+        expected_gap = metrics['N26'].value - projection['B5'].value + 1 if status == 'NO - cash shortfall' else 0
+        equal(f'{controls}6', expected_gap)
         upper = max([1, *(projection[f'BN{5 + row}'].value for row in range(horizon))])
         for age_col, balance_col, position in (('AA', 'AB', retirement), ('AC', 'AD', gap)):
             age = projection[f'C{position + 4}'].value if 0 < position <= horizon else None
@@ -73,29 +76,35 @@ def validate_dashboard(wb, tolerance):
         if report:
             equal(f'D{row}', value if position == gap else None)
 
-    for row in range(2, 15):
-        if row - 1 > cash_count:
-            for column in 'EFGHIJ':
+    for row in range(2, 128 if arranged else 15):
+        if row - 1 > (horizon if arranged else cash_count):
+            for column in ('EFGHIJKLMN' if arranged else 'EFGHIJ'):
                 equal(f'{column}{row}', None)
             continue
-        position = cash_start + row - 2
+        position = row - 1 if arranged else cash_start + row - 2
         source = position + 4
         cpi = projection[f'G{source}'].value
         amounts = {column: cash[f'{column}{source}'].value for column in ('C', 'D', 'E', 'F', 'M', 'N', 'P', 'V')}
         paid = amounts['N'] + amounts['P']
-        equal(f'E{row}', projection[f'C{source}'].value)
+        equal(f'E{row}', projection[f'{"B" if arranged else "C"}{source}'].value)
         equal(f'F{row}', min(paid, amounts['C']) / cpi)
         equal(f'G{row}', max(0, paid - amounts['C']) / cpi)
         equal(f'H{row}', amounts['E'] / cpi)
         equal(f'I{row}', amounts['V'] / cpi)
         equal(f'J{row}', position)
+        if arranged:
+            equal(f'K{row}', (max(0, paid - amounts['C']) + amounts['E']) / cpi)
+            healthcare = projection[f'BA{source}'].value
+            equal(f'L{row}', (amounts['D'] - healthcare) / cpi)
+            equal(f'M{row}', healthcare / cpi)
+            equal(f'N{row}', (amounts['F'] + amounts['M']) / cpi)
         total = sum(data[f'{column}{row}'].value for column in 'FGHI')
         due = (amounts['D'] + amounts['F'] + amounts['M']) / cpi
         assert isclose(total, due, rel_tol=1e-13, abs_tol=tolerance), f'Chart bills do not reconcile in row {row}.'
 
 
 
-def _validate_risk_report(results, risk, inputs, projection, data, summary, horizon, tolerance):
+def _validate_risk_report(results, risk, inputs, projection, data, summary, horizon, tolerance, arranged):
     status = risk['Z1'].value
     assert status in ('current', 'stale', 'missing'), 'Unknown market risk result status.'
     future_view = summary['K18'].value == 'Future dollars'
@@ -130,23 +139,23 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
             assert all(summary[f'E{row}'].value in (None, '') for row in range(71, 74))
         return
 
-    fixed, flexible = risk['AF8'].value, risk['AF9'].value
-    trials = risk['AF5'].value
+    fixed, flexible = risk['BB8' if arranged else 'AF8'].value, risk['BB9' if arranged else 'AF9'].value
+    trials = risk['BB5' if arranged else 'AF5'].value
     assert horizon >= 2 and 0 <= fixed <= 1 and 0 <= flexible <= 1 and trials >= 1
     assert isclose(summary['F12'].value, fixed, abs_tol=1e-14)
     assert isclose(results['B7'].value, fixed, abs_tol=1e-14)
     assert isclose(results['F7'].value, flexible, abs_tol=1e-14)
     assert summary['F13'].value == f'{round(fixed * trials):,} of {trials:,} paths paid all costs'
     for printed, source in zip(range(71, 74), range(21, 24)):
-        assert isclose(summary[f'E{printed}'].value, risk[f'AG{source}'].value * factor(horizon - 1),
+        assert isclose(summary[f'E{printed}'].value, risk[f'AG{source - 16 if arranged else source}'].value * factor(horizon - 1),
                        rel_tol=1e-13, abs_tol=tolerance)
-        first_age = risk[f'AH{source}'].value
+        first_age = risk[f'AH{source - 16 if arranged else source}'].value
         if first_age is None:
             assert summary[f'G{printed}'].value == 'None'
             assert summary[f'H{printed}'].value in (None, '')
         else:
             assert summary[f'G{printed}'].value == first_age
-            amount = risk[f'AI{source}'].value * factor(first_age - inputs['B8'].value)
+            amount = risk[f'AI{source - 16 if arranged else source}'].value * factor(first_age - inputs['B8'].value)
             expected = 'Less than $0.01' if amount < 0.01 else f'${amount:,.2f}'
             assert summary[f'H{printed}'].value == expected
     for offset in range(126):
@@ -155,9 +164,11 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
             assert all(data[f'{col}{chart_row}'].value in (None, '') for col in ('AF', 'AG', 'AH'))
             assert results[f'B{table_row}'].value in (None, '')
             continue
-        low, median, high = (risk[f'{col}{source_row}'].value for col in ('AI', 'AJ', 'AK'))
+        balance_cols = ('D', 'E', 'F') if arranged else ('AI', 'AJ', 'AK')
+        balance_row = source_row - 41 if arranged else source_row
+        low, median, high = (risk[f'{column}{balance_row}'].value for column in balance_cols)
         assert 0 <= low <= median <= high, 'Risk interval points are out of order.'
-        assert results[f'B{table_row}'].value == risk[f'AG{source_row}'].value == data[f'A{chart_row}'].value
+        assert results[f'B{table_row}'].value == risk[f'B{source_row - 41}' if arranged else f'AG{source_row}'].value == data[f'A{chart_row}'].value
         assert isclose(data[f'AF{chart_row}'].value, low * factor(offset), abs_tol=tolerance)
         assert isclose(data[f'AG{chart_row}'].value, (high - low) * factor(offset), abs_tol=tolerance)
         assert isclose(data[f'AH{chart_row}'].value, median * factor(offset), abs_tol=tolerance)
@@ -189,7 +200,8 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
     if status == 'YES':
         assert headline == f"Projected spending and taxes are covered through age {wb['Inputs']['B53'].value}."
     elif status == 'NO - cash shortfall':
-        row = data['N26'].value - projection['B5'].value + 5
+        metrics = summary if 'Conversion Detail' in wb.parts else data
+        row = metrics['N26'].value - projection['B5'].value + 5
         assert headline == f"First shortfall at age {cash[f'B{row}'].value} ({cash[f'A{row}'].value})."
         tax, spending = (cash[f'{col}{row}'].value for col in ('O', 'Q'))
         kind = 'spending and taxes' if tax > 0 and spending > 0 else 'taxes' if tax > 0 else 'spending'

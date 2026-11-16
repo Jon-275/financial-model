@@ -3,7 +3,10 @@
 Probe both conversion policies, choose the earliest feasible cash interval,
 then refine to a cent. Every evaluated draw has its own tax and ACA credit.
 """
-from openpyxl.utils.cell import get_column_letter as L
+import re
+
+from openpyxl.formula.tokenizer import Tokenizer
+from openpyxl.utils.cell import column_index_from_string, coordinate_from_string, get_column_letter as L
 
 POINTS = 9
 CLIFF_PROBES = 27
@@ -23,8 +26,28 @@ BASE_HEADERS = ['Requested draw','Lower draw','Upper draw','Allow conversion','T
 def columns(tax):
     return {**BASE_COLUMNS,**{key:L(i) for i,key in enumerate(tax.EXTRA_HEADERS,27)}}
 
+
+def detail_column(column):
+    return L(column_index_from_string(column) + 3)
+
+
+def detail_address(address):
+    column, row = coordinate_from_string(address)
+    return f'{detail_column(column)}{row}'
+
+
+def _detail_formula(formula):
+    """Shift local references past the worksheet’s audit columns."""
+    tokens = Tokenizer('=' + formula)
+    for token in tokens.items:
+        if token.subtype == 'RANGE' and '!' not in token.value:
+            token.value = re.sub(r'([A-Z]+)(?=\$?\d+)', lambda match: detail_column(match[1]), token.value)
+    return tokens.render()
+
+
 def headers(m,sheet,tax):
-    m.row(sheet,1,[*BASE_HEADERS,*tax.EXTRA_HEADERS.values()],'header')
+    m.row(sheet, 1, ['Year', 'Age', 'Calculation step', *BASE_HEADERS, *tax.EXTRA_HEADERS.values(),
+                    'Candidate point or lower bound', 'Best funding margin', 'Best available draw'], 'header')
 
 def emit(m,sheet,first,c,request,tax,health):
     col=columns(tax)
@@ -43,12 +66,41 @@ def emit(m,sheet,first,c,request,tax,health):
     scratch=L(27+len(tax.EXTRA_HEADERS))
     best=L(28+len(tax.EXTRA_HEADERS))
     scratch_cell=lambda t:f'${scratch}${t}'
-    def put(addr,value): m.put(sheet,addr,'='+value)
+    def put(addr,value):
+        m.put(sheet, detail_address(addr), _detail_formula(value))
     def on(guard,formula): return f'IF({guard},{formula},"")'
     def at(letter,t): return f'${letter}${t}'
     def shared(letter,lo,hi,formula):
         put(f'{letter}{lo}',formula)
-        if hi>lo: m.shared[sheet][f'{letter}{lo}']=f'{letter}{lo}:{letter}{hi}'
+        if hi>lo:
+            column = detail_column(letter)
+            m.shared[sheet][f'{column}{lo}'] = f'{column}{lo}:{column}{hi}'
+
+    for column, value in zip('AB', (p('B'), p('C'))):
+        m.put(sheet, f'{column}{first}', _detail_formula(on(enabled, value)), 'whole')
+        following = f'{column}{first + 1}'
+        m.put(sheet, following, f'=IF(ISNUMBER($A${first}),${column}${first},"")', 'whole')
+        m.shared[sheet][following] = f'{following}:{column}{final}'
+
+    grid_end = first + GRID - 1
+    for start, stop, label in (
+        (first, grid_end, 'Test with conversion'),
+        (grid_end + 1, control - 1, 'Test without conversion'),
+        (control, control, 'Choose search range'),
+        (search, final - 1, 'Refine draw'),
+        (final, final, 'Selected draw'),
+    ):
+        row = f'C{start}'
+        m.put(sheet, row, f'=IF(ISNUMBER($A{start}),IF(ISNUMBER($D{start}),"{label}","Skipped"),"")', 'label')
+        if stop > start:
+            m.shared[sheet][row] = f'{row}:C{stop}'
+
+    if request is not None:
+        m.put(sheet, 'AP1', 'Conversion request', 'header')
+        m.put(sheet, f'AP{first}', f'=IF(ISNUMBER($A{first}),{request},"")', 'cents')
+        following = f'AP{first + 1}'
+        m.put(sheet, following, f'=IF(ISNUMBER($A${first}),$AP${first},"")', 'cents')
+        m.shared[sheet][following] = f'{following}:AP{final}'
 
     # Structural nodes partition gross draw into traditional, brokerage and
     # Roth sections, and partition the capped conversion and loss formulas.

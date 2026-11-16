@@ -1,11 +1,13 @@
 """Selected-year Roth conversion comparison using the shared annual funding engine."""
 
 from openpyxl.utils.cell import get_column_letter as col_letter
+from funding_search import detail_column
 
 VIEW = 'Income_Targeting'
 CALC = 'Targeting_Calc'
-FIRST_TRIAL = 42
-LAST_TRIAL = 92
+DETAIL = 'Conversion Detail'
+FIRST_TRIAL = 5
+LAST_TRIAL = 55
 INTERVALS = LAST_TRIAL - FIRST_TRIAL
 BASE_INDEX = '$B$6'
 HEALTH_READY = 'OR($F$5="OK",$F$5="Legacy budget")'
@@ -17,22 +19,24 @@ def _index(sheet, col, prior=False, selector=BASE_INDEX):
     return f'INDEX({sheet}!${col}$5:${col}$130,{position})'
 
 
-def _context(m, start):
-    """Cache the common selected-year inputs once, below the trial schedules."""
+def _context(m):
+    """Cache the common selected-year inputs beside the trial schedule."""
     position = f'{VIEW}!$B$6'
     refs = {}
 
     def ref(sheet, col, prior=False):
         key = (sheet, col, prior)
         if key not in refs:
-            rr = start + len(refs) + 1
-            address = f'$B${rr}'
+            rr = 3 + len(refs)
+            address = f'$AV${rr}'  # The solver adds three leading audit columns.
             refs[key] = address
-            m.put(CALC, f'A{rr}', f'{sheet} {col}' + (' (opening)' if prior else ''))
-            m.put(CALC, f'B{rr}', f'=IF({position}=0,0,{_index(sheet,col,prior,position)})')
+            m.put(CALC, f'AX{rr}', f'{sheet} {col}' + (' (opening)' if prior else ''), 'report_caption')
+            m.put(CALC, f'AY{rr}', f'=IF({position}=0,"",{_index(sheet,col,prior,position)})')
         return refs[key]
 
-    m.put(CALC, f'A{start}', 'Selected-year context shared by all trials')
+    m.put(CALC, 'AX1', 'Selected-year inputs', 'report_section')
+    m.put(CALC, 'AX2', 'Source', 'header')
+    m.put(CALC, 'AY2', 'Value', 'header')
     p = lambda col: ref('Projection', col)
     prior = lambda col: ref('Projection', col, True)
     return {
@@ -51,7 +55,7 @@ def _trial(m, start, context, requested):
     final, columns = m.emit_funding_group(CALC, start, {**context, 'active': active}, requested)
 
     def result(key):
-        return f'{CALC}!${columns[key]}${final}'
+        return f'{CALC}!${detail_column(columns[key])}${final}'
 
     return result
 
@@ -59,8 +63,7 @@ def _trial(m, start, context, requested):
 def configure(m, wb):
     """Replace the frozen sweep, preserving its chart ranges and worksheet."""
     del wb  # All selected-year data is drawn from the compiled workbook.
-    if CALC not in m.MODULES:
-        m.MODULES.append(CALC)
+    m.MODULES.append(DETAIL)
 
     def put(address, value, style=None):
         m.put(VIEW, address, value, style)
@@ -130,7 +133,7 @@ def configure(m, wb):
     for col,title in zip('ABCD',('Selected-year result','Active plan','Requested scenario','Change')):
         put(f'{col}23',title,'header')
     m.funding_headers(CALC)
-    context = _context(m, 2 + (INTERVALS+2)*m.FUNDING_ROWS + 2)
+    context = _context(m)
     custom = _trial(m, 2, context, f'{VIEW}!$B$21')
     put('A31', 'Funding result', 'label')
     selected('B31', f'IF({HEALTH_READY},{cash("L")},"Check healthcare")', 'label')
@@ -166,10 +169,19 @@ def configure(m, wb):
     label(38, 'Rows funding the requested amount')
     label(39, 'Requests the plan did not fully fund')
     label(40, 'Baseline used for cost changes', 'Changes use a funded $0 request. Rates compare adjacent funded rows.')
-    put('B38', '=IF(NOT(ISNUMBER($B$35)),"",COUNTIF($C$42:$C$92,"Funded"))','whole')
-    put('B39', '=IF(NOT(ISNUMBER($B$35)),"",COUNT($A$42:$A$92)-B38)','whole')
-    put('B40', '=IF(NOT(ISNUMBER($B$35)),"",IF($C$42="Funded",$S$42,"Unavailable"))','money')
+    detail_ref = f"'{DETAIL}'!"
+    put('B38', f'=IF(NOT(ISNUMBER($B$35)),"",COUNTIF({detail_ref}$C$5:$C$55,"Funded"))', 'whole')
+    put('B39', f'=IF(NOT(ISNUMBER($B$35)),"",COUNT({detail_ref}$A$5:$A$55)-B38)', 'whole')
+    put('B40', f'=IF(NOT(ISNUMBER($B$35)),"",IF({detail_ref}$C$5="Funded",{detail_ref}$S$5,"Unavailable"))', 'money')
+    put('A41', 'Open conversion detail', 'report_link')
 
+    def detail(address, value, style=None):
+        m.put(DETAIL, address, value, style)
+
+    detail('A1', 'Roth conversion detail', 'detail_title')
+    detail('A2', 'Costs and withdrawals for each request in the selected retirement year. Amounts use that year’s dollars.', 'report_caption')
+    detail('A3', 'Back to Roth conversion comparison', 'report_link')
+    detail('D3', f'=IF({VIEW}!$B$6=0,"Choose a retirement age on Income_Targeting","Age "&{VIEW}!$B$9&" in "&{VIEW}!$B$8)', 'report_caption')
     headers = [
         'Requested conversion','Modeled conversion','Funding result','Federal AGI','ACA MAGI',
         'Income as % of poverty guideline','Taxable Social Security','Taxable account draw',
@@ -178,35 +190,36 @@ def configure(m, wb):
         'Required cash shortfall','Tax and net healthcare','Cost change vs no conversion',
         'Incremental cost per dollar','Traditional balance before growth',
     ]
-    for i,title in enumerate(headers,1): put(f'{col_letter(i)}41',title,'header')
+    for i,title in enumerate(headers,1): detail(f'{col_letter(i)}4',title,'header')
 
+    p = lambda column: _index('Projection', column, selector=f'{VIEW}!{BASE_INDEX}')
     for rr in range(FIRST_TRIAL,LAST_TRIAL+1):
         step = rr-FIRST_TRIAL
         if step == 0:
-            put(f'A{rr}', '=IF(AND($B$6>0,ISNUMBER($B$35)),0,"")', 'money')
+            detail(f'A{rr}', f'=IF(AND({VIEW}!$B$6>0,ISNUMBER({VIEW}!$B$35)),0,"")', 'money')
         else:
-            small = '$B$35' if step == 1 else '""'
-            put(f'A{rr}',f'=IF(OR($B$6=0,NOT(ISNUMBER($B$35)),$B$35=0),"",IF($B$35<0.50,{small},ROUND({step}*$B$35/{INTERVALS},2)))','money')
-        requested = f'{VIEW}!$A${rr}'
+            small = f'{VIEW}!$B$35' if step == 1 else '""'
+            detail(f'A{rr}',f'=IF(OR({VIEW}!$B$6=0,NOT(ISNUMBER({VIEW}!$B$35)),{VIEW}!$B$35=0),"",IF({VIEW}!$B$35<0.50,{small},ROUND({step}*{VIEW}!$B$35/{INTERVALS},2)))','money')
+        requested = f'{detail_ref}$A${rr}'
         get = _trial(m,2+(step+1)*m.FUNDING_ROWS,context,requested)
-        put(f'C{rr}',f'=IF(ISNUMBER(A{rr}),{_status(get,f"A{rr}")},"")','label')
+        detail(f'C{rr}',f'=IF(ISNUMBER(A{rr}),{_status(get,f"A{rr}")},"")','label')
         social_security = p('N')
         credit = get('PremiumCredit')
         magi = f'{get("AK")}+{p("AG")}+MAX(0,{social_security}-{get("AI")})'
-        net_health = f'$B$32-{credit}'
+        net_health = f'{VIEW}!$B$32-{credit}'
         values = {
-            'B':get('AA'),'D':get('AK'),'E':magi,'F':f'IF($B$20>0,E{rr}/$B$20,"")','G':get('AI'),
+            'B':get('AA'),'D':get('AK'),'E':magi,'F':f'IF({VIEW}!$B$20>0,E{rr}/{VIEW}!$B$20,"")','G':get('AI'),
             'H':get('V'),'I':get('W'),'J':get('Y'),'K':credit,'L':net_health,
             'M':f'{get("AN")}+{get("AO")}','N':get('AQ'),'O':get('AP'),'P':get('AT'),'Q':get('AV'),
             'R':f'MAX(0,-{get("FundingMargin")})','S':f'Q{rr}+L{rr}',
-            'V':f'MAX(0,$B$10-I{rr}-B{rr})',
+            'V':f'MAX(0,{VIEW}!$B$10-I{rr}-B{rr})',
         }
         for col,expr in values.items():
             guard = f'C{rr}="Funded"' if col in ('L','S') else f'AND(ISNUMBER(A{rr}),C{rr}<>"Check funding calculation")'
-            put(f'{col}{rr}', f'=IF({guard},{expr},"")', 'percent_active' if col=='F' else 'money')
-        put(f'T{rr}',f'=IF(AND(C{rr}="Funded",$C$42="Funded"),S{rr}-$S$42,"")','money')
+            detail(f'{col}{rr}', f'=IF({guard},{expr},"")', 'percent_active' if col=='F' else 'money')
+        detail(f'T{rr}',f'=IF(AND(C{rr}="Funded",$C$5="Funded"),S{rr}-$S$5,"")','money')
         rate = '""' if step==0 else f'IF(AND(C{rr}="Funded",C{rr-1}="Funded"),IF(B{rr}>B{rr-1},(S{rr}-S{rr-1})/(B{rr}-B{rr-1}),""),"")'
-        put(f'U{rr}',f'={rate}','percent_active')
+        detail(f'U{rr}',f'={rate}','percent_active')
 
 
 def _status(result, requested):

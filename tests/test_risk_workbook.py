@@ -33,7 +33,7 @@ class RiskWorkbookTests(unittest.TestCase):
             sheet = book.create_sheet(risk_workbook.SHEET)
             risk_workbook.configure_freshness(
                 lambda name, address, value, *_: book[name].__setitem__(address, value))
-            sheet['AF171'] = 9999
+            sheet['A130'] = 9999
             book.save(source)
             risk_workbook.validate_source(source)
 
@@ -58,13 +58,13 @@ class RiskWorkbookTests(unittest.TestCase):
                 self.assertEqual(sheet['AC3'].value, '=literal, not a formula')
                 self.assertEqual(sheet['AC3'].data_type, 's')
                 self.assertIsNone(sheet['AC4'].value)
-                self.assertEqual(sheet['AF6'].value, str(2**64 - 1))
-                self.assertEqual(sheet['AF2'].value, '2026-01-01')
-                self.assertEqual(sheet['AF19'].value, self.report['provenance']['workbook_sha256'])
-                self.assertEqual(sheet['AG46'].value, self.report['timeline']['opening_age'])
-                self.assertEqual(sheet['AI46'].value, self.report['baseline']['opening_balance_real'])
-                self.assertEqual(sheet['AG47'].value, self.report['annual'][0]['age'])
-                self.assertIsNone(sheet['AF171'].value)
+                self.assertEqual(sheet['BB6'].value, str(2**64 - 1))
+                self.assertEqual(sheet['BB2'].value, '2026-01-01')
+                self.assertEqual(sheet['BB19'].value, self.report['provenance']['workbook_sha256'])
+                self.assertEqual(sheet['B5'].value, self.report['timeline']['opening_age'])
+                self.assertEqual(sheet['D5'].value, self.report['baseline']['opening_balance_real'])
+                self.assertEqual(sheet['B6'].value, self.report['annual'][0]['age'])
+                self.assertIsNone(sheet['A130'].value)
             finally:
                 written.close()
 

@@ -9,6 +9,14 @@ def blank(cell):
     return {'cell': f'Income_Targeting!{cell}', 'blank': True}
 
 
+def detail(cell, value):
+    return {'cell': f'Conversion Detail!{cell}', 'equals': value}
+
+
+def blank_detail(cell):
+    return {'cell': f'Conversion Detail!{cell}', 'blank': True}
+
+
 def case(name, inputs, request=0, age=0, tax=None, checks=()):
     overrides = {
         'Inputs': inputs,
@@ -52,17 +60,17 @@ CASES = [
         'D8': 74, 'D9': 72, 'D10': 75, 'D53': 75, 'D26': 24600, 'D25': 50000, 'D51': 50000,
     }, request=24600, checks=(
         result('B11', 1000), result('B34', 23600), result('C24', 23600), result('C25', 4920),
-        result('C29', 4920), result('C31', 'Request not fully funded'), result('A92', 23600),
-        result('B92', 23600), result('C92', 'Funded'), blank('D24'),
+        result('C29', 4920), result('C31', 'Request not fully funded'), detail('A55', 23600),
+        detail('B55', 23600), detail('C55', 'Funded'), blank('D24'),
     )),
     case('targeting_rejects_age_after_end_of_plan', {}, age=56, checks=(
-        result('B6', 0), result('B7', 'Check retirement age'), blank('C24'), blank('A42'), blank('S42'),
+        result('B6', 0), result('B7', 'Check retirement age'), blank('C24'), blank_detail('A5'), blank_detail('S5'),
     )),
     case('targeting_unavailable_with_missing_healthcare_quote', {
         'D101': 1, 'D102': 1, 'D106': 6000, 'D116': 1, 'D119': 0,
     }, request=5000, checks=(
         result('F5', 'Missing ACA quote'), result('C31', 'Check healthcare'),
-        blank('C24'), blank('A42'), blank('S42'),
+        blank('C24'), blank_detail('A5'), blank_detail('S5'),
     )),
     case('targeting_aca_cliff_preserves_earliest_fundable_branch', {
         # $70k taxable noncash + $12k sale = $82k of MAGI, under 400% FPL
@@ -76,6 +84,6 @@ CASES = [
         result('B26', 10000), result('B28', 0), result('B29', 12000),
         result('C24', 5000), result('C26', 10000), result('C28', 440),
         result('C29', 11560), result('C31', 'Cash shortfall'),
-        result('C42', 'Funded'), result('K42', 10000), result('H42', 12000),
+        detail('C5', 'Funded'), detail('K5', 10000), detail('H5', 12000),
     )),
 ]

@@ -13,7 +13,7 @@ python3 tools/run_risk.py private/my-plan.xlsx \
   --output private/my-plan-with-risk.xlsx
 ```
 
-Open the refreshed plan in Excel and review **Summary**. Print the plan from that same tab. **Risk Results** shows the details, and **Risk_Data** holds the saved figures behind **Appendix**. Before simulating returns, the runner checks that its baseline matches the workbook. By default it uses 1,000 market paths and seed `2026`. The files and calculations stay on your computer.
+Open the refreshed plan in Excel and review **Summary**. Print the plan from that same tab. **Risk Results** shows the outcomes and settings before **Appendix**. **Risk_Data** holds the saved balances by year, early-loss tests, funding examples and comparisons with the current assumptions. Before simulating returns, the runner checks that its baseline matches the workbook. By default it uses 1,000 market paths and seed `2026`. The files and calculations stay on your computer.
 
 Keep Excel’s calculation setting on **Automatic** so changes update the base plan and risk status before you print. When **Summary** says **Refresh market risk**, save and close your plan, then run the command again with a new output name. The risk figures return when you refresh or restore the assumptions used in the saved run.
 

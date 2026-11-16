@@ -36,11 +36,11 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 
 - **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The five-page report includes the outlook, retirement cash flow, risk and decisions, and two pages that record your inputs.
 - **Annual Detail** shows the same cash measures and portfolio balance over the full plan. It uses the dollar view on Summary. The opening row gives the starting balance.
-- **Asset_Allocation**, **Income_Targeting**, **Risk_Settings** and **Risk Results** are next to the plan. Use them to review investment, conversion and spending decisions.
+- **Asset_Allocation**, **Income_Targeting**, **Risk_Settings**, **Risk Results** and **Tax_Tables** come before Appendix. Use them to review decisions and the tax rates the model uses.
 - **Appendix** links to the schedules, reference tables and calculation details that support the report.
 - **Cash_Flow** shows tax, spending and withdrawals by year. Use the first shortfall year on Summary to find the unpaid amounts.
 - **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
-- **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Funding_Calc** shows the withdrawal trials, **Targeting_Calc** shows the conversion trials, and **Report_Data** holds the detailed results used in Summary.
+- **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Conversion Detail** shows the results for each conversion amount. **Targeting_Calc** and **Funding_Calc** show the steps behind the results. **Report_Data** holds the annual values used in Summary.
 
 The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. The savings target uses annual spending after the mortgage ends, healthcare, and the withdrawal rate in row 41. Use the funding result to answer whether the scenario pays its modeled bills.
 

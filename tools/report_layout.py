@@ -7,7 +7,7 @@ from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
 import input_record
 from workbook_guide import TABLE_GUIDES, TAX_LINKS
-from plan_report import APPENDIX, DECISION_TABS, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, TODAY_DOLLARS, index_rows
+from plan_report import APPENDIX, CONVERSION_DETAIL, DECISION_TABS, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, TODAY_DOLLARS, index_rows
 import risk_presentation as risk
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -20,9 +20,12 @@ LINE = 'C9D9E4'
 TAB_COLORS = {
     'README': ACCENT, 'Inputs': BLUE, 'Summary': INK,
     APPENDIX: '48617A', INDEX: '718090', risk.SHEET: '3E686A',
-    **dict.fromkeys(DECISION_TABS[:3], '3E686A'),
+    **dict.fromkeys(DECISION_TABS, '3E686A'),
 }
 DETAIL_SHEETS = {*DECISION_TABS, *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules)}
+SOLVERS = {'Funding_Calc', 'Targeting_Calc'}
+ANNUAL_TABLES = {'Cash_Flow': 'AQ', 'Projection': 'CF', 'Roth_Access': 'AP',
+                 'Healthcare': 'AF', 'Checks': 'M'}
 FORMATS = {
     'detail_title': (17, INK, True, None, None),
     'detail_band': (11, INK, True, 'EDF4F7', None),
@@ -161,17 +164,68 @@ def install_styles(root, style_ids):
             style_ids[('advanced_input', str(index))] = style_ids[('input_value', base_code)]
     for group in (fonts, fills, borders, xfs):
         group.set('count', str(len(group)))
+    schedule_font = xfs[int(style_ids['report_row'])].get('fontId')
+    for code in sorted({xf.get('numFmtId', '0') for xf in xfs}, key=int):
+        style_ids['schedule', code] = str(len(xfs))
+        xf = E.SubElement(xfs, X + 'xf', xfId='0', numFmtId=code, fontId=schedule_font,
+                          fillId='0', borderId='0', applyNumberFormat='1', applyFont='1',
+                          applyFill='1', applyBorder='1', applyAlignment='1')
+        E.SubElement(xf, X + 'alignment', vertical='center')
+    xfs.set('count', str(len(xfs)))
     dxfs = root.find(X + 'dxfs')
     if dxfs is None:
         dxfs = E.Element(X + 'dxfs', count='0')
         xfs.addnext(dxfs)
     active = len(dxfs)
-    for color in ('DCEAF5', 'FAE7E3'):
+    for color in ('DCEAF5', 'FAE7E3', 'F2F6F9'):
         differential = E.SubElement(dxfs, X + 'dxf')
         pattern = E.SubElement(E.SubElement(differential, X + 'fill'), X + 'patternFill')
         E.SubElement(pattern, X + 'bgColor', rgb='FF' + color)
     dxfs.set('count', str(len(dxfs)))
     return active, [xf.get('numFmtId', '0') for xf in xfs]
+
+
+def _stripe(root, area, key, fill):
+    """Shade populated alternate rows. Reserved future rows use the Normal fill."""
+    rules = root.findall(X + 'conditionalFormatting')
+    priority = max((int(rule.get('priority')) for block in rules for rule in block), default=0) + 1
+    block = E.Element(X + 'conditionalFormatting', sqref=area)
+    rule = E.SubElement(block, X + 'cfRule', type='expression', priority=str(priority), dxfId=str(fill))
+    E.SubElement(rule, X + 'formula').text = f'AND({key}<>"",MOD(ROW(),2)=1)'
+    _replace_or_insert_format(root, block)
+
+
+def _replace_or_insert_format(root, block):
+    following = next((node for node in root if E.QName(node).localname in _AFTER_MERGES[2:]), None)
+    if following is None:
+        root.append(block)
+    else:
+        following.addprevious(block)
+
+
+def _style_table(root, first_row, last_column, styles, numbers, *, cents=None):
+    last = column_index_from_string(last_column)
+    for row in root.find(X + 'sheetData'):
+        if int(row.get('r')) < first_row:
+            continue
+        for attribute in ('s', 'customFormat', 'ht', 'customHeight', 'thickTop', 'thickBot'):
+            row.attrib.pop(attribute, None)
+        for cell in row:
+            column, _ = coordinate_from_string(cell.get('r'))
+            if column_index_from_string(column) > last:
+                continue
+            if cents and column_index_from_string(column) >= 4 and column not in ('G', 'AC'):
+                cell.set('s', cents)
+            else:
+                code = numbers[int(cell.get('s', '0'))]
+                cell.set('s', styles['schedule', code])
+    for column in root.find(X + 'cols'):
+        column.attrib.pop('style', None)
+
+
+def install_solver_filter(root, last_column, last_row):
+    _replace(root, 'autoFilter', ('sortState', 'dataConsolidate', 'customSheetViews', 'mergeCells',
+                                  *_AFTER_MERGES), ref=f'A1:{last_column}{last_row}')
 
 
 def _replace(root, key, before, **attributes):
@@ -350,7 +404,7 @@ def apply(name, root, style_ids, numbers, active_fill):
     elif name == 'Inputs':
         _style_inputs(root, style_ids, numbers, active_fill)
     elif name == 'Summary':
-        _columns(root, (3, 8, 7, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 3, 28))
+        _columns(root, (3, 8, 7, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 3, 28, 3, 47, 22, 75))
         _rows(root, input_record.LAST_ROW, 18, {3: 37, 8: 30, 9: 28, 12: 32, 34: 37, 40: 31, 55: 27,
                             58: 28, 66: 37, 70: 36, **dict.fromkeys(range(71, 74), 22),
                             74: 25, 79: 24, 82: 31, 84: 22, 87: 31,
@@ -378,6 +432,7 @@ def apply(name, root, style_ids, numbers, active_fill):
             'K15': 'Risk_Settings!A1', 'K30': f'Summary!B{input_record.FIRST_ROW+1}',
             'K31': f'Summary!B{input_record.SECOND_ROW+1}',
             'K32': 'Asset_Allocation!A1', 'K33': 'Income_Targeting!A1',
+            'K34': 'Summary!M1', 'K35': 'Tax_Tables!A1',
         })
         alert = E.Element(X + 'conditionalFormatting', sqref='B8:I8')
         rule = E.SubElement(alert, X + 'cfRule', type='expression', priority='1',
@@ -397,8 +452,9 @@ def apply(name, root, style_ids, numbers, active_fill):
         _print(root, (32, 64, *input_record.PAGE_BREAKS))
     elif name == APPENDIX:
         _columns(root, (3, 8, 7, 12, 12, 12, 12, 12, 12, 15, 3, 25))
-        _rows(root, 131, 18, {2: 37, 4: 26, 5: 30})
+        _rows(root, 5, 18, {2: 37, 4: 26, 5: 30})
         _merges(root, [f'B{row}:J{row}' for row in (2, 3, 4)])
+        _stripe(root, 'B6:J131', '$B6', active_fill + 2)
         _link(root, {'L2': 'Summary!B3'})
         _print(root, appendix=True)
     elif name == INDEX:
@@ -415,8 +471,8 @@ def apply(name, root, style_ids, numbers, active_fill):
                      f'B{INDEX_LINK_ROW}': 'Summary!B3', f'E{INDEX_LINK_ROW}': "'Annual Detail'!B2"})
         _select_top(root, 'B3')
     elif name == risk.SHEET:
-        _columns(root, (3, 15, 9, 15, 9, 15, 9, 15, 9, 15, 12, 20))
-        _rows(root, risk.LAST_BALANCE_ROW, 21, {2: 39, 3: 25, 4: 27, 7: 32, 12: 27,
+        _columns(root, (3, 15, 9, 15, 9, 15, 9, 15, 9, 15, 12, 4, 23, 20))
+        _rows(root, 57, 21, {2: 39, 3: 25, 4: 27, 7: 32, 12: 27,
                                                25: 29, 27: 29, 34: 31, 39: 35, 57: 28})
         _merges(root, [f'B{row}:I{row}' for row in (2, 3, 4, 5, 10, 11, 30, 32, 33, 34, 36, 37, 54, 55)]
                 + [f'{left}{row}:{right}{row}' for row in (6, 7, 8)
@@ -435,13 +491,22 @@ def apply(name, root, style_ids, numbers, active_fill):
                 if (style := styles.get(cell.get('r').rstrip('0123456789'))) is not None:
                     cell.set('s', style_ids[style + suffix])
         _link(root, {'K2': 'Summary!B3', 'K3': 'Risk_Settings!A1', 'K4': 'Risk_Data!A1'})
+        _stripe(root, f'B58:K{risk.LAST_BALANCE_ROW}', '$B58', active_fill + 2)
         _select_top(root, 'B2')
     elif name == risk.DATA_SHEET:
-        _columns(root, (*((15,) * 6), *((2,) * 19), 14, 39, 22, 22, 14, 32, *((20,) * 19)))
-        _merges(root, ['A1:F1', 'A2:F2', 'A3:F3', 'A5:C5', 'A6:C6', 'A7:C7'])
-        _rows(root, 7, 20, {1: 33, 2: 26, 3: 26})
-        _link(root, {'A5': "'Risk Results'!B2", 'A6': 'Risk_Data!AE1', 'A7': 'Risk_Data!AA1'})
-        _select_top(root, 'A1')
+        widths = [18] * 54
+        widths[:2] = (11, 9)
+        widths[15:25] = [3] * 10
+        widths[26:30] = (36, 24, 24, 12)
+        widths[52:54] = (29, 59)
+        _columns(root, widths)
+        _merges(root, ['A1:I1', 'A2:I2', 'A3:C3', 'D3:E3', 'F3:G3', 'H3:I3', 'K1:O1', 'AF1:AX1'])
+        _rows(root, 4, 20, {1: 33, 2: 26, 3: 24, 4: 37})
+        _link(root, {'A3': "'Risk Results'!B2", 'D3': 'Risk_Data!K1',
+                     'F3': 'Risk_Data!AA1', 'H3': 'Risk_Data!AF1'})
+        for area, key in (('A5:I130', '$A5'), ('K5:O17', '$K5'),
+                          ('AF5:AX7', '$AG5'), ('AA2:AD2476', '$AD2')):
+            _stripe(root, area, key, active_fill + 2)
     elif name in DETAIL_SHEETS:
         if view.find(X + 'pane') is None:
             _select_top(root, 'A1')
@@ -452,12 +517,13 @@ def apply(name, root, style_ids, numbers, active_fill):
             style_ids['header']: 40, style_ids['report_table_head']: 40,
             style_ids['band']: 24, style_ids['detail_band']: 26,
         }
-        tables_without_title = {'Funding_Calc', 'Targeting_Calc', 'Report_Data'}
+        tables_without_title = SOLVERS | {'Report_Data'}
         header_rows = {1} if name in tables_without_title else {
             'Projection': {4}, 'Cash_Flow': {4}, 'Roth_Access': {4}, 'Healthcare': {4},
             'Checks': {4}, 'Risk_Settings': {4, 13},
             'Asset_Allocation': {5, 15, 25, 34, 43},
-            'Income_Targeting': {23, 41},
+            'Income_Targeting': {23},
+            CONVERSION_DETAIL: {4},
             'Tax_Tables': {5, 16, 29, 143, 152, 159, 204, 220},
         }.get(name, set())
         for row in data[:8] if name in tables_without_title else data:
@@ -480,21 +546,36 @@ def apply(name, root, style_ids, numbers, active_fill):
                 if style and cell.find(X + 'f') is None and cell.find(X + 'v') is not None:
                     cell.set('s', style)
         if name == 'Report_Data':
-            cols = root.find(X + 'cols')
-            for col, width in ((13, 47), (14, 19), (15, 86)):
-                cols[col - 1].set('width', str(width))
+            root.find(X + 'cols')[15].set('width', '32')
+            _stripe(root, 'A2:N127', '$A2', active_fill + 2)
+            _stripe(root, 'AE2:AH127', '$AE2', active_fill + 2)
         if name in TABLE_GUIDES:
             first, _, notes, results = TABLE_GUIDES[name]
             start = column_index_from_string(first)
             end = get_column_letter(start + 4)
             _merges(root, [f'{first}{row}:{end}{row}' for row in (1, *range(2, len(notes) + 2), 7, 8)])
             _link(root, {f'{first}7': results, f'{first}8': f'{name}!A1'})
-            root.find(X + 'dimension').set('ref', f'A1:{end}{int(data[-1].get("r"))}')
-        if name in {'Funding_Calc', 'Targeting_Calc'}:
-            for row in data[1:]:
-                for cell in row:
-                    if cell.find(X + 'f') is not None and cell.get('r').rstrip('0123456789') not in {'D', 'Z'}:
-                        cell.set('s', style_ids['cents'])
+            root.find(X + 'dimension').set('ref', f'A1:{"AY" if name == "Targeting_Calc" else end}{int(data[-1].get("r"))}')
+        if name in SOLVERS:
+            cols = root.find(X + 'cols')
+            for index, width in ((0, 11), (1, 9), (2, 24), (28, 28)):
+                cols[index].set('width', str(width))
+            last = int(data[-1].get('r'))
+            end_column = 'AP' if name == 'Targeting_Calc' else 'AO'
+            _style_table(root, 2, end_column, style_ids, numbers, cents=style_ids['schedule', numbers[int(style_ids['cents'])]])
+            _stripe(root, f'A2:{end_column}{last}', '$A2', active_fill + 2)
+            install_solver_filter(root, end_column, last)
+        if name in ANNUAL_TABLES:
+            column = ANNUAL_TABLES[name]
+            _style_table(root, 5, column, style_ids, numbers)
+            _stripe(root, f'A5:{column}130', '$A5', active_fill + 2)
+        if name == CONVERSION_DETAIL:
+            _merges(root, ['A1:H1', 'A2:H2', 'A3:C3', 'D3:H3'])
+            _link(root, {'A3': 'Income_Targeting!A1'})
+            _style_table(root, 5, 'V', style_ids, numbers)
+            _stripe(root, 'A5:V55', '$A5', active_fill + 2)
+        if name == 'Income_Targeting':
+            _link(root, {'A41': "'Conversion Detail'!A1"})
         if name == 'Cash_Flow':
             _merges(root, ['A2:I2', 'AN1:AQ1', 'AN2:AQ2'])
             _link(root, {'A3': 'Cash_Flow!AN1', 'AN3': 'Cash_Flow!A1'})
@@ -510,7 +591,7 @@ def install_print_names(workbook):
     print_metadata = {
         'Summary': {'_xlnm.Print_Area': f'Summary!$B$2:$I${input_record.LAST_ROW}'},
         APPENDIX: {
-            '_xlnm.Print_Area': "'Annual Detail'!$B$2:INDEX('Annual Detail'!$J$5:$J$131,MAX(1,Report_Data!$K$2+1))",
+            '_xlnm.Print_Area': "'Annual Detail'!$B$2:INDEX('Annual Detail'!$J$5:$J$131,MAX(1,Report_Data!$Q$2+1))",
             '_xlnm.Print_Titles': "'Annual Detail'!$5:$5",
         },
     }

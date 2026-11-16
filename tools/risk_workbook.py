@@ -12,7 +12,7 @@ from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.utils.exceptions import InvalidFileException
 
 from dashboard_package import rebind_dashboard_workbook
-from risk_presentation import DATA_SHEET
+from risk_presentation import DATA_SHEET, snapshot_address
 from risk_engine import __version__
 from risk_engine.scenario import (
     ASSET_ROWS, CACHED_INPUT_ROWS, CORRELATION_HEADER_ROW, CORRELATION_ROWS, HSA_RETURN_ROWS,
@@ -21,7 +21,7 @@ from risk_engine.scenario import (
 )
 
 SHEET = DATA_SHEET
-SCHEMA = 'retirement-risk-workbook-v2'
+SCHEMA = 'retirement-risk-workbook-v3'
 STATUS = 'Z1'
 SCHEMA_CELL = 'Z2'
 SNAPSHOT_CELL = 'Z3'
@@ -86,24 +86,46 @@ _LAST_CHECK_ROW = _FIRST_CHECK_ROW + len(_MANIFEST) - 1
 def configure_freshness(put, *, is_tax_formula=None):
     """Author the visible snapshot audit and the status used by Summary formulas."""
     for address, text, style in (
-        ('A1', 'Market risk data', 'detail_title'),
-        ('A2', 'The local risk runner saves results here. Review the results on Risk Results.', 'report_caption'),
-        ('A3', 'Compare the saved assumptions with the current plan. A match is shown as 1.', 'report_caption'),
-        ('A5', 'Back to risk results', 'report_link'),
-        ('A6', 'Open saved data', 'report_link'),
-        ('A7', 'Open assumption comparison', 'report_link'),
+        ('A1', 'Saved market balances', 'detail_title'),
+        ('A2', 'Balances use opening-year dollars from the saved run. See Risk Results for the active dollar view.', 'report_caption'),
+        ('A3', 'Back to risk results', 'report_link'),
+        ('D3', 'Open early-loss tests', 'report_link'),
+        ('F3', 'Open saved inputs', 'report_link'),
+        ('H3', 'Open funding examples', 'report_link'),
+        ('K1', 'Saved early-loss tests', 'detail_title'),
+        ('AF1', 'Saved funding examples', 'detail_title'),
+        ('BA1', 'Run field', 'header'),
+        ('BB1', 'Saved value', 'header'),
     ):
         put(SHEET, address, text, style)
+    for columns, labels in (
+        ('ABCDEFGHI', ('Year', 'Age', 'Base balance', 'Fixed 10th percentile', 'Fixed median',
+                       'Fixed 90th percentile', 'Flexible 10th percentile', 'Flexible median',
+                       'Flexible 90th percentile')),
+        ('KLMNO', ('Stock return', 'Fixed shortfall age', 'Fixed unpaid costs',
+                   'Flexible shortfall age', 'Flexible unpaid costs')),
+        (('AF', 'AG', 'AH', 'AI', *_FUNDING_COLUMNS, 'AX'),
+         ('Path', 'Ending balance', 'Shortfall age', 'Total unpaid',
+          *(key.removesuffix('_real').replace('_', ' ').capitalize() for key in _FUNDING_KEYS), 'Trial')),
+    ):
+        for column, label in zip(columns, labels, strict=True):
+            put(SHEET, f'{column}4', label, 'header')
+    for columns, first, last in (
+        (dict.fromkeys('ABCDEFGHI', 'report_money') | {'A': 'whole', 'B': 'whole'}, 5, 130),
+        ({'K': 'report_percent', 'L': 'whole', 'M': 'report_money', 'N': 'whole', 'O': 'report_money'}, 5, 17),
+        (dict.fromkeys(('AG', 'AI', *_FUNDING_COLUMNS), 'report_money') | {'AH': 'whole', 'AX': 'whole'}, 5, 7),
+    ):
+        for row in range(first, last + 1):
+            for column, style in columns.items():
+                put(SHEET, f'{column}{row}', '', style)
     for row, label in enumerate((
         'Run date', 'Scenario', 'End age', 'Trials', 'Seed', 'Engine version',
         'Fixed success rate', 'Flexible success rate', 'Runs with cuts', 'Median years with cuts',
         'Spending cut trigger', 'Cut of flexible budget', 'Flexible share', 'Opening year',
         'Market variation multiplier', 'Early-loss years', 'Median first shortfall age',
-        'Source checksum', 'Input checksum', 'Representative runs',
+        'Source checksum', 'Input checksum',
     ), 2):
-        put(SHEET, f'AE{row}', label, 'report_caption')
-    put(SHEET, 'AE28', 'Early-loss test cases', 'report_section')
-    put(SHEET, 'AE46', 'Balances by age', 'report_section')
+        put(SHEET, f'BA{row}', label, 'report_caption')
     put(SHEET, SCHEMA_CELL, SCHEMA)
     put(SHEET, ENGINE_CELL, __version__)
     for column, title in zip(('AA', 'AB', 'AC', 'AD'),
@@ -122,9 +144,9 @@ def configure_freshness(put, *, is_tax_formula=None):
         put(SHEET, f'AD{row}', f'=IFERROR(IF({current}="",--({saved}=""),'
             f'IF(ISNUMBER({current}),--AND(ISNUMBER({saved}),{numeric}),'
             f'--AND(ISTEXT({current}),ISTEXT({saved}),EXACT({current},{saved})))),0)')
-    valid = (f'AND($Z$2=$Z$3,$Z$4=$AF$7,Report_Data!$K$2>=2,'
+    valid = (f'AND($Z$2=$Z$3,$Z$4=$BB$7,Report_Data!$Q$2>=2,'
              f'COUNTIF($AD$2:$AD${_LAST_CHECK_ROW},1)={len(_MANIFEST)},'
-             f'ISNUMBER($AF$5),$AF$5>=1,COUNT($AF$8:$AF$9)=2)')
+             f'ISNUMBER($BB$5),$BB$5>=1,COUNT($BB$8:$BB$9)=2)')
     put(SHEET, STATUS,
         f'=IF($Z$3="","missing",IF(IFERROR({valid},FALSE),"current","stale"))')
 
@@ -173,7 +195,7 @@ def _assumption_values(calculated_source):
 
 
 def runtime_addresses():
-    """Identify cells that must be empty in the shared workbook."""
+    """List the snapshot fields that are replaced on every refresh."""
     yield SNAPSHOT_CELL
     for row in range(_FIRST_CHECK_ROW, _LAST_CHECK_ROW + 1):
         yield f'AC{row}'
@@ -232,7 +254,7 @@ def _report_values(report, scenario_name, run_date):
         columns = ('AF', 'AG', 'AH', 'AI', 'AJ', 'AK', 'AL', 'AM', 'AN')
         for col, value in zip(columns, fields, strict=True):
             values[f'{col}{row}'] = value
-    return values
+    return {snapshot_address(address): value for address, value in values.items()}
 
 
 def _parse(data):
@@ -334,10 +356,10 @@ def verify_snapshot(calculated_source, report):
                 if match != 1:
                     raise ValueError(f'The risk assumption check disagreed at {label}.')
             raise ValueError('The calculated workbook did not validate its new risk results.')
-        if sheet['AF5'].value != report['provenance']['trials']:
+        if sheet['BB5'].value != report['provenance']['trials']:
             raise ValueError('The calculated workbook contains an unexpected risk trial count.')
-        if (sheet['AF19'].value != report['provenance']['workbook_sha256']
-                or sheet['AF20'].value != report['provenance']['inputs_sha256']):
+        if (sheet['BB19'].value != report['provenance']['workbook_sha256']
+                or sheet['BB20'].value != report['provenance']['inputs_sha256']):
             raise ValueError('The calculated workbook contains unexpected risk run provenance.')
     finally:
         book.close()

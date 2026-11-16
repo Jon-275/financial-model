@@ -18,7 +18,7 @@ final.parent.mkdir(parents=True,exist_ok=True)
 calc=load_workbook(checked,data_only=True)
 count=calc['Inputs']['B70'].value
 assert isinstance(count,int) and count>0
-risk_count=count if calc['Report_Data']['N25'].value=='YES' else 1
+risk_count=count if calc['Summary']['N25'].value=='YES' else 1
 updates={}
 with zipfile.ZipFile(template) as src:
     wb=E.fromstring(src.read('xl/workbook.xml')); rr=E.fromstring(src.read('xl/_rels/workbook.xml.rels'))

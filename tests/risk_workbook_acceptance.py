@@ -39,9 +39,9 @@ def check_refresh(workbook, office, timeout):
         disability_rate = book['Tax_Tables']['B251'].value
         profile_start = 26 + 9 * (inputs['B15'].value - 1)
         profile_weight = book['Asset_Allocation'][f'B{profile_start}'].value
-        assert book[RISK]['AF3'].value == inputs['B7'].value
-        assert book[RISK]['AF5'].value == 1000
-        assert book['Summary']['F12'].value == book[RISK]['AF8'].value
+        assert book[RISK]['BB3'].value == inputs['B7'].value
+        assert book[RISK]['BB5'].value == 1000
+        assert book['Summary']['F12'].value == book[RISK]['BB8'].value
 
     with TemporaryDirectory(prefix='retirement-risk-acceptance-') as temp:
         work = Path(temp)
@@ -60,14 +60,14 @@ def check_refresh(workbook, office, timeout):
         check_state(refreshed, 'current')
         with Workbook(refreshed) as book:
             risk, projection = book[RISK], book['Projection']
-            assert risk['AF4'].value == 125
-            assert risk['AF5'].value == 3
-            assert risk['AF19'].value == sha256(original).hexdigest()
-            assert risk['AG46'].value == projection['C5'].value
-            end_row = 46 + 125 - risk['AG46'].value
-            assert risk[f'AG{end_row}'].value == 125
-            assert risk[f'AG{end_row + 1}'].value is None
-            for row in (21, 22, 23):
+            assert risk['BB4'].value == 125
+            assert risk['BB5'].value == 3
+            assert risk['BB19'].value == sha256(original).hexdigest()
+            assert risk['B5'].value == projection['C5'].value
+            end_row = 5 + 125 - risk['B5'].value
+            assert risk[f'B{end_row}'].value == 125
+            assert risk[f'B{end_row + 1}'].value is None
+            for row in (5, 6, 7):
                 assert type(risk[f'AG{row}'].value) in (int, float)
         with ZipFile(source) as before, ZipFile(refreshed) as after:
             assert set(before.namelist()) == set(after.namelist())

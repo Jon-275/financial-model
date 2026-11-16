@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsx'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = '8c07a8d5d6d58feb90b6dc4feceef95129acb89eb2393337fcb5b80900b53af1'
-EXAMPLE_RISK_SHA256 = 'ca0f21b06be77a78912be69fb1aeb123eda41db95e080f5072c795ddbd675050'
+EXAMPLE_RISK_SHA256 = '009c64e6fec232274abfe687ca64dba4f6a7849dad94520b5a503a3e859cc72e'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
@@ -34,7 +34,8 @@ def risk_snapshot_digest(workbook):
     for cells in workbook['Risk_Data'].iter_rows():
         for cell in cells:
             row, column = address_parts(cell.coordinate)
-            if cell.coordinate == 'Z3' or (row > 1 and (column == 29 or 32 <= column <= 50)):
+            if (cell.coordinate == 'Z3' or (row > 1 and column in (29, 54))
+                    or (row >= 5 and (1 <= column <= 9 or 11 <= column <= 15 or 32 <= column <= 50))):
                 if cell.formula is not None or cell.value not in (None, ''):
                     entries.append((cell.coordinate, cell.formula, cell.value))
     return sha256(json.dumps(sorted(entries), separators=(',', ':')).encode('utf-8')).hexdigest()

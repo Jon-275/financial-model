@@ -41,7 +41,7 @@ def pj(col,r): return f'Projection!${col}${r}'
 def cf(col,r): return f'Cash_Flow!${col}${r}'
 def hc(col,r): return f'Healthcare!${col}${r}'
 def rt(col,r): return f'Roth_Access!${col}${r}'
-def fd(col,r): return f'Funding_Calc!${col}${r}'
+def fd(col,r): return f'Funding_Calc!${funding_search.detail_column(col)}${r}'
 def group(r): return 2+(r-6)*STEPS
 def primary_share(r): return f'IF({pj("F",r)}="Single",1,Inputs!$B$91)'
 

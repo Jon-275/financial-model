@@ -5,6 +5,7 @@ import re
 from openpyxl.formula.tokenizer import Tokenizer
 
 import risk_presentation as risk
+from targeting import DETAIL as CONVERSION_DETAIL
 
 SUMMARY = 'Summary'
 APPENDIX = 'Annual Detail'
@@ -13,7 +14,7 @@ DOLLAR_VIEW_CELL = 'K18'
 TODAY_DOLLARS = 'Today’s dollars'
 FUTURE_DOLLARS = 'Future dollars'
 FUTURE_VIEW = f'{SUMMARY}!$K$18="{FUTURE_DOLLARS}"'
-DECISION_TABS = ('Asset_Allocation', 'Income_Targeting', 'Risk_Settings', risk.SHEET)
+DECISION_TABS = ('Asset_Allocation', 'Income_Targeting', 'Risk_Settings', risk.SHEET, 'Tax_Tables')
 DETAIL_GROUPS = (
     ('Annual schedules', (
         ('Cash_Flow', 'Annual cash flow', 'Income, tax, spending, withdrawals and unpaid costs.'),
@@ -21,11 +22,11 @@ DETAIL_GROUPS = (
         ('Roth_Access', 'Roth account access', 'Balances and available withdrawals by owner.'),
         ('Healthcare', 'Healthcare', 'Coverage, premiums and credits by person.'),
     )),
-    ('Rates and calculation checks', (
-        ('Tax_Tables', 'Tax tables', 'Published amounts and the years they apply to.'),
+    ('Calculation checks', (
         ('Checks', 'Model checks', 'Reconcile cash, taxes, accounts and healthcare.'),
     )),
     ('Supporting data and calculations', (
+        (CONVERSION_DETAIL, 'Conversion detail', 'Tax, healthcare costs and withdrawals for each tested conversion.'),
         ('Report_Data', 'Report data', 'Source values for the plan and its chart.'),
         ('Funding_Calc', 'Withdrawal calculation', 'The funding trials for each projected year.'),
         ('Targeting_Calc', 'Conversion calculation', 'The funding trials for the conversion comparison.'),
@@ -56,11 +57,15 @@ def _detail_address(address):
 
 
 def move_details(template, updates, styles, put):
-    """Retain the detailed results on the visible schedule that feeds the report."""
+    """Move the original metrics beside the printable Summary."""
     for row in template.iter_rows(max_col=3):
         for cell in row:
             updates.setdefault(cell.coordinate, cell.value)
-    for address, value in updates.items():
+    metrics = list(updates.items())
+    prior_styles = dict(styles)
+    updates.clear()
+    styles.clear()
+    for address, value in metrics:
         if value is None:
             continue
         if isinstance(value, str) and value.startswith('='):
@@ -73,16 +78,15 @@ def move_details(template, updates, styles, put):
                         token.value,
                     ) if '!' not in token.value else token.value
             value = tokens.render()
-        style = styles.get(address) or ('label' if address[0] == 'A'
+        style = prior_styles.get(address) or ('label' if address[0] == 'A'
                                          else 'note' if address[0] == 'C' else None)
         if address in ('B8', 'B9', 'B15', 'B16', 'B17', 'B18', 'B19', 'B24', 'B27',
                        'B28', 'B29', 'B30', 'B31', 'B32', 'B38', 'B40', 'B42'):
             style = 'summary_money'
         elif address in ('B12', 'B39', 'B41'):
             style = 'percent_active'
-        put(DETAIL, _detail_address(address), value, style)
-    updates.clear()
-    styles.clear()
+        put(SUMMARY, _detail_address(address), value, style)
+    put(SUMMARY, 'M1', 'Planning metrics', 'detail_title')
 
 
 def _annual_amounts(row):
@@ -109,11 +113,11 @@ def configure(put):
     def appendix(address, value, style='report_body'):
         put(APPENDIX, address, value, style)
 
-    ok = 'Report_Data!$K$2>0'
-    opening_only = 'Report_Data!$K$2=1'
+    ok = 'Report_Data!$Q$2>0'
+    opening_only = 'Report_Data!$Q$2=1'
     end_age = 'Inputs!$B$53'
-    retirement = 'Report_Data!$K$5'
-    gap = 'Report_Data!$K$6'
+    retirement = 'Report_Data!$Q$5'
+    gap = 'Report_Data!$Q$6'
     first_age = f'INDEX(Projection!$C$5:$C$130,{gap})'
     unpaid_tax = f'INDEX(Cash_Flow!$O$5:$O$130,{gap})'
     unpaid_spending = f'INDEX(Cash_Flow!$Q$5:$Q$130,{gap})'
@@ -121,17 +125,17 @@ def configure(put):
     context = '=IFERROR("Scenario: "&Inputs!$B$7&"   •   Opening year: "&TEXT(Inputs!$B$130,"0"),"Choose a scenario on Inputs")'
     dollars = '"$#,##0"'
     first_gap = display_dollars(f'({unpaid_tax}+{unpaid_spending})/{cpi}', cpi)
-    end_cpi = price_index_at('Report_Data!$K$2')
+    end_cpi = price_index_at('Report_Data!$Q$2')
     cents = '"$#,##0.00"'
 
     summary('B2', '1 / Retirement outlook', 'report_kicker')
     summary('B3', 'Your retirement plan', 'report_title')
     summary('B5', context, 'report_caption')
     summary('B6', f'=IF({ok},"Retire at age "&Inputs!$B$10&"   •   Plan through age "&{end_age}&"   •   Prepared "&TEXT(TODAY(),"mmm d, yyyy"),"Review the item below, then return to Inputs.")', 'report_caption')
-    summary('B8', f'=IF({ok},IF({gap}=0,"Projected spending and taxes are covered through age "&{end_age}&".","First shortfall at age "&{first_age}&" ("&Report_Data!$N$26&")."),"Review the plan inputs or calculation")', 'report_result')
-    summary('B9', f'=IF({ok},IF({gap}=0,"Based on the assumptions in this scenario.",IF({first_gap}<0.01,"Less than $0.01",TEXT({first_gap},{cents}))&" in "&IF({unpaid_tax}>0,IF({unpaid_spending}>0,"spending and taxes","taxes"),"spending")&" goes unpaid in that year."),IF(Report_Data!$N$25="Check funding calculation","Review the year flagged on Checks.",Report_Data!$N$25))', 'report_body')
+    summary('B8', f'=IF({ok},IF({gap}=0,"Projected spending and taxes are covered through age "&{end_age}&".","First shortfall at age "&{first_age}&" ("&Summary!$N$26&")."),"Review the plan inputs or calculation")', 'report_result')
+    summary('B9', f'=IF({ok},IF({gap}=0,"Based on the assumptions in this scenario.",IF({first_gap}<0.01,"Less than $0.01",TEXT({first_gap},{cents}))&" in "&IF({unpaid_tax}>0,IF({unpaid_spending}>0,"spending and taxes","taxes"),"spending")&" goes unpaid in that year."),IF(Summary!$N$25="Check funding calculation","Review the year flagged on Checks.",Summary!$N$25))', 'report_body')
     summary('B11', f'=IF({ok},"Estimated portfolio at age "&{end_age},"")', 'report_caption')
-    summary('B12', f'=IF({ok},{display_dollars("Report_Data!$N$29", end_cpi)},"")', 'report_amount')
+    summary('B12', f'=IF({ok},{display_dollars("Summary!$N$29", end_cpi)},"")', 'report_amount')
     summary('F11', f'=IF({ok},IF({risk.CURRENT},"Success rate with fixed spending","Market risk"),"")', 'report_caption')
     summary('F12', risk.display(risk.result('AF8')), 'report_percent_amount')
     summary('F13', risk.display(
@@ -139,8 +143,8 @@ def configure(put):
         f'IF({opening_only},"Extend the plan to run market risk",'
         f'IF({ok},IF({risk.STATUS}="stale","Refresh market risk","Run market risk"),""))',
     ), 'report_caption')
-    restricted = display_dollars('Report_Data!$N$6', end_cpi)
-    summary('B13', f'=IF(N(Report_Data!$N$6)>0,TEXT({restricted},{dollars})&" in unavailable workplace Roth","")', 'report_caption')
+    restricted = display_dollars('Summary!$N$6', end_cpi)
+    summary('B13', f'=IF(N(Summary!$N$6)>0,TEXT({restricted},{dollars})&" in unavailable workplace Roth","")', 'report_caption')
     summary('B29', f'=IF({FUTURE_VIEW},"Future dollars use each year’s prices.","Today’s dollars use opening-year prices.")&" Balances are before estimated tax on traditional savings."', 'report_caption')
     summary('B30', risk.display(
         '"The shaded range shows the middle 80% of simulated balances at each age."'
@@ -152,26 +156,27 @@ def configure(put):
     summary('B33', '="2 / Retirement cash flow   •   "&Inputs!$B$7', 'report_kicker')
     summary('B34', 'How you’ll pay for retirement', 'report_title')
     summary('B36', f'=IF(AND({ok},SUM(Projection!$N$6:$N$130)>0),"Social Security income starts at age "&MAX(Inputs!$B$45,Inputs!$B$8+1)&" in this projection.","")', 'report_caption')
-    summary('B38', f'=IF(Report_Data!$K$4>0,"Income and savings used to pay bills around retirement.",IF({ok},"This projection ends before the first modeled retirement year.","Cash flow is available after you resolve the item on page 1."))')
+    summary('B38', f'=IF(Report_Data!$Q$4>0,"Income and savings used to pay bills around retirement.",IF({ok},"This projection ends before the first modeled retirement year.","Cash flow is available after you resolve the item on page 1."))')
     summary('B39', f'=IF({FUTURE_VIEW},"Future dollars show what you expect to pay or receive in each year.","Today’s dollars show opening-year purchasing power. The forecast includes inflation.")', 'report_caption')
     for column, label in zip('BCDEFGHI', CASH_HEADERS):
         summary(f'{column}40', label, 'report_table_head')
     for row in range(FIRST_TRANSITION_ROW, LAST_TRANSITION_ROW + 1):
-        data_row = row - FIRST_TRANSITION_ROW + 2
-        for index, (column, source) in enumerate(zip('BCDEFGHI', ('U', 'E', 'F', 'V', 'W', 'X', 'Y', 'I'))):
+        offset = row - FIRST_TRANSITION_ROW
+        position = f'(Report_Data!$Q$3+{offset})'
+        for index, (column, source) in enumerate(zip('BCDEFGHI', ('E', 'A', 'F', 'K', 'L', 'M', 'N', 'I'))):
             style = 'report_row_alt' if index < 2 else 'report_money_alt'
             if row % 2 == 0:
                 style = 'report_row' if index < 2 else 'report_money'
-            amount = f'Report_Data!{source}{data_row}'
+            amount = f'INDEX(Report_Data!${source}$2:${source}$127,{position})'
             if index >= 2:
-                amount = display_dollars(amount, price_index_at(f'Report_Data!$J{data_row}'))
-            summary(f'{column}{row}', f'=IF(Report_Data!$J{data_row}="","",{amount})', style)
+                amount = display_dollars(amount, price_index_at(position))
+            summary(f'{column}{row}', f'=IF({offset}<Report_Data!$Q$4,{amount},"")', style)
     summary('B55', 'Income used can include pay after pre-tax savings, Social Security, other cash income and Marketplace credits.', 'report_caption')
     summary('B56', 'Savings used includes withdrawals and HSA payments. Tax due includes any carryover.', 'report_caption')
-    bridge = f'AND({ok},ISNUMBER(Report_Data!$N$19))'
+    bridge = f'AND({ok},ISNUMBER(Summary!$N$19))'
     summary('B57', f'=IF({bridge},"Early retirement access","")', 'report_section')
     bridge_cpi = price_index_at(retirement)
-    bridge_amount = display_dollars(f'Report_Data!$N$19/{bridge_cpi}', bridge_cpi)
+    bridge_amount = display_dollars(f'Summary!$N$19/{bridge_cpi}', bridge_cpi)
     summary('B58', f'=IF({bridge},"Available in the first retirement year: "&TEXT({bridge_amount},{dollars})&" in brokerage and Roth funds this plan can draw on.","")')
     summary('B59', f'=IF({bridge},"Use Roth Access to check when additional funds become available.","")', 'report_caption')
 
@@ -246,10 +251,10 @@ def configure(put):
         '"No early retirement stock losses were tested for this scenario.")',
         f'IF({ok},"Risk Results shows how the plan handles stock losses early in retirement.","")',
     ))
-    target = 'AND(ISNUMBER(Report_Data!$N$16),ISNUMBER(Report_Data!$N$8))'
+    target = 'AND(ISNUMBER(Summary!$N$16),ISNUMBER(Summary!$N$8))'
     benchmark_cpi = price_index_at('MAX(1,Inputs!$B$10-Inputs!$B$8)')
-    projected = display_dollars('Report_Data!$N$16', benchmark_cpi)
-    benchmark = display_dollars('Report_Data!$N$8', benchmark_cpi)
+    projected = display_dollars('Summary!$N$16', benchmark_cpi)
+    benchmark = display_dollars('Summary!$N$8', benchmark_cpi)
     summary('B84', f'=IF(AND({ok},{target}),"Savings at retirement ("&IF({FUTURE_VIEW},"future","today’s")&" dollars): "&TEXT({projected},{dollars})&" projected and "&TEXT({benchmark},{dollars})&" targeted.","")', 'report_caption')
     summary('B86', 'Next decision', 'report_section')
     summary('B87', f'=IF({ok},IF({gap}>0,"Try a later retirement age, lower spending or higher savings. Change one input and compare the first shortfall.",IF({risk.CURRENT},"Choose one change in spending, retirement age or savings. Refresh market risk and compare the funding results.",IF({opening_only},"Extend the plan on Inputs before testing market risk.","Run market risk, then test a change in spending, retirement age or savings."))),"Resolve the item on page 1 before comparing scenarios.")')
@@ -265,6 +270,7 @@ def configure(put):
         'K12': 'Market risk results', 'K13': 'Annual cash flow', 'K14': 'Account access',
         'K15': 'Market risk settings', 'K30': 'Input decisions', 'K31': 'Spending decisions',
         'K32': 'Investment mix', 'K33': 'Roth conversion comparison',
+        'K34': 'Planning metrics', 'K35': 'Tax rates and limits',
     }.items():
         summary(address, label, 'report_link')
     summary('K17', 'Dollar view', 'report_section')
@@ -288,10 +294,8 @@ def configure(put):
     for row in range(FIRST_APPENDIX_ROW, LAST_APPENDIX_ROW + 1):
         source = row - FIRST_APPENDIX_ROW + 5
         for index, (column, amount) in enumerate(zip('BCDEFGHIJ', _annual_amounts(source))):
-            style = 'report_row_alt' if index < 2 else 'report_money_alt'
-            if row % 2 == 0:
-                style = 'report_row' if index < 2 else 'report_money'
-            appendix(f'{column}{row}', f'=IF({ok},IF(Report_Data!$K$2>={source - 4},{amount},""),"")', style)
+            style = 'report_row' if index < 2 else 'report_money'
+            appendix(f'{column}{row}', f'=IF({ok},IF(Report_Data!$Q$2>={source - 4},{amount},""),"")', style)
 
 
 def index_rows():
@@ -312,18 +316,3 @@ def configure_index(put):
             put(INDEX, f'E{row + offset}', description, 'report_caption')
     put(INDEX, f'B{INDEX_LINK_ROW}', 'Back to Summary', 'report_link')
     put(INDEX, f'E{INDEX_LINK_ROW}', 'Open Annual Detail', 'report_link')
-
-
-def add_transition_values(put, report_row, cash, cpi):
-    """Attach the uses of cash to the existing retirement funding schedule."""
-    position = f'$J{report_row}'
-    healthcare = f'INDEX(Projection!$BA$5:$BA$130,{position})'
-    for column, expression in {
-        'U': cash('A'),
-        'V': f'G{report_row}+H{report_row}',
-        'W': f'({cash("D")}-{healthcare})/{cpi}',
-        'X': f'{healthcare}/{cpi}',
-        'Y': f'({cash("F")}+{cash("M")})/{cpi}',
-    }.items():
-        put(DETAIL, f'{column}{report_row}', f'=IF({position}="","",{expression})',
-            'whole' if column == 'U' else 'money')
