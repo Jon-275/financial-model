@@ -35,9 +35,10 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 ## Read the results
 
 - **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The five-page report includes the outlook, retirement cash flow, risk and decisions, and two pages that record your inputs.
-- **Annual Detail** shows the same cash measures and portfolio balance over the full plan. It uses the dollar view on Summary. The opening row gives the starting balance.
+- **Planning Metrics** groups the figures behind the report, including the savings target, accessible balances, funding, taxes and healthcare. Open the tab next to **Summary** or use its **Planning metrics** link. Dollar figures are labeled with their units.
+- **Annual Detail** shows the same cash measures and portfolio balance over the full plan. It uses the dollar view on **Summary**. The opening row gives the starting balance. The values and row shading stop at the end age on **Inputs**.
 - **Asset_Allocation**, **Income_Targeting**, **Risk_Settings**, **Risk Results** and **Tax_Tables** come before Appendix. Use them to review decisions and the tax rates the model uses.
-- **Appendix** links to the schedules, reference tables and calculation details that support the report.
+- **Appendix** links to the detailed schedules that support the report.
 - **Cash_Flow** shows tax, spending and withdrawals by year. Use the first shortfall year on Summary to find the unpaid amounts.
 - **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
 - **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Conversion Detail** shows the results for each conversion amount. **Targeting_Calc** and **Funding_Calc** show the steps behind the results. **Report_Data** holds the annual values used in Summary.
@@ -80,7 +81,7 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 
 ## Compare Roth conversions and market risk
 
-- **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Start with a zero conversion, then test a larger amount in that year’s dollars. Compare how much can convert, the withdrawals needed for bills, and the change in tax and healthcare costs. Apply a conversion on Inputs to see its effect over the full plan. [Conversion comparison](workbook-schedules.md#income_targeting)
+- **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Start with a zero conversion, then test a larger amount in that year’s dollars. Compare how much can convert, the withdrawals needed for bills, and the change in tax and healthcare costs. Select **Open conversion detail** for the full table. Apply a conversion on **Inputs** to see its effect over the full plan. [Conversion comparison](workbook-schedules.md#income_targeting)
 - **Risk_Settings.** Estimate the share of retirement living costs you could reduce and how much you would cut from that share. The next row shows what that means for the full living budget. Refresh market risk after changes. Read the success rate and funding examples on Summary, then open **Risk Results** to see the details. [Portfolio risk analysis](risk-analysis.md)
 - **Portfolio management.** Use the portfolio guide to record tax loss and gain harvesting decisions. [Portfolio management](portfolio-management.md)
 

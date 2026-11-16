@@ -1,6 +1,6 @@
 """Build the detailed measures and the data that feed the retirement plan."""
 
-from plan_report import display_dollars
+from plan_report import METRICS_REF, display_dollars
 from risk_presentation import CURRENT, result
 
 SHEET = 'Report_Data'
@@ -67,11 +67,11 @@ def configure(put):
                                  'Retirement position', 'First shortfall position'), 2):
         put(SHEET, f'P{row}', label, 'report_caption')
     for cell, formula in {
-        'Q2': '=IF(OR(Summary!N25="YES",Summary!N25="NO - cash shortfall"),Inputs!$B$70,0)',
+        'Q2': f'=IF(OR({METRICS_REF}B25="YES",{METRICS_REF}B25="NO - cash shortfall"),Inputs!$B$70,0)',
         'Q3': '=MAX(2,Q5-2)',
         'Q4': '=IF(OR(Q2<2,Q5>Q2),0,MIN(Q2,Q5+10)-Q3+1)',
         'Q5': '=IF(Q2=0,2,MAX(2,Inputs!$B$10-Inputs!$B$8+1))',
-        'Q6': '=IF(ISNUMBER(Summary!N26),MATCH(Summary!N26,Projection!$B$5:$B$130,0),0)',
+        'Q6': f'=IF(ISNUMBER({METRICS_REF}B26),MATCH({METRICS_REF}B26,Projection!$B$5:$B$130,0),0)',
     }.items():
         put(SHEET, cell, formula, 'whole')
 

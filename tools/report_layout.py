@@ -7,7 +7,7 @@ from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
 import input_record
 from workbook_guide import TABLE_GUIDES, TAX_LINKS
-from plan_report import APPENDIX, CONVERSION_DETAIL, DECISION_TABS, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, TODAY_DOLLARS, index_rows
+from plan_report import APPENDIX, CONVERSION_DETAIL, DECISION_TABS, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, METRICS, METRICS_REF, METRIC_SECTIONS, TODAY_DOLLARS, index_rows
 import risk_presentation as risk
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -404,7 +404,7 @@ def apply(name, root, style_ids, numbers, active_fill):
     elif name == 'Inputs':
         _style_inputs(root, style_ids, numbers, active_fill)
     elif name == 'Summary':
-        _columns(root, (3, 8, 7, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 3, 28, 3, 47, 22, 75))
+        _columns(root, (3, 8, 7, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 3, 28))
         _rows(root, input_record.LAST_ROW, 18, {3: 37, 8: 30, 9: 28, 12: 32, 34: 37, 40: 31, 55: 27,
                             58: 28, 66: 37, 70: 36, **dict.fromkeys(range(71, 74), 22),
                             74: 25, 79: 24, 82: 31, 84: 22, 87: 31,
@@ -432,7 +432,7 @@ def apply(name, root, style_ids, numbers, active_fill):
             'K15': 'Risk_Settings!A1', 'K30': f'Summary!B{input_record.FIRST_ROW+1}',
             'K31': f'Summary!B{input_record.SECOND_ROW+1}',
             'K32': 'Asset_Allocation!A1', 'K33': 'Income_Targeting!A1',
-            'K34': 'Summary!M1', 'K35': 'Tax_Tables!A1',
+            'K34': f'{METRICS_REF}A1', 'K35': 'Tax_Tables!A1',
         })
         alert = E.Element(X + 'conditionalFormatting', sqref='B8:I8')
         rule = E.SubElement(alert, X + 'cfRule', type='expression', priority='1',
@@ -450,6 +450,15 @@ def apply(name, root, style_ids, numbers, active_fill):
         validations.set('count', str(len(validations)))
         _select_top(root, 'B3')
         _print(root, (32, 64, *input_record.PAGE_BREAKS))
+    elif name == METRICS:
+        _columns(root, (49, 23, 75, 4, 24))
+        _rows(root, 50, 25, {1: 36, 2: 23, 3: 34, 6: 32, 20: 32, 25: 34, 34: 30,
+                             **dict.fromkeys((13, 21, 36, 43, 48), 8)})
+        _merges(root, [f'A{row}:C{row}' for row in (1, 2, *METRIC_SECTIONS)])
+        for first, last in ((4, 6), (8, 12), (15, 20), (23, 35), (38, 42), (45, 47), (50, 50)):
+            _stripe(root, f'A{first}:C{last}', f'$A{first}', active_fill + 2)
+        _link(root, {'E2': 'Summary!B3', 'E3': "'Annual Detail'!B2", 'E4': 'Cash_Flow!A1'})
+        _select_top(root, 'A1')
     elif name == APPENDIX:
         _columns(root, (3, 8, 7, 12, 12, 12, 12, 12, 12, 15, 3, 25))
         _rows(root, 5, 18, {2: 37, 4: 26, 5: 30})

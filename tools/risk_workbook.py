@@ -340,7 +340,7 @@ def write_snapshot(source, destination, calculated_source, scenario, report, *, 
                         chart = _parse(payload)
                         if rebind_dashboard_workbook(chart, workbook_name):
                             payload = E.tostring(chart, encoding='UTF-8', xml_declaration=True, standalone=True)
-                    output.writestr(entry, payload)
+                    output.writestr(entry, payload, compresslevel=6)
     except (BadZipFile, KeyError, StopIteration, E.XMLSyntaxError) as exc:
         raise ValueError('Could not write the risk snapshot into the workbook package.') from exc
 

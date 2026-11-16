@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsx'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = '8c07a8d5d6d58feb90b6dc4feceef95129acb89eb2393337fcb5b80900b53af1'
-EXAMPLE_RISK_SHA256 = '009c64e6fec232274abfe687ca64dba4f6a7849dad94520b5a503a3e859cc72e'
+EXAMPLE_RISK_SHA256 = '5948f6508ff89680cc8b006566b82a0363193d2a321ca93e9e35a88959379359'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 

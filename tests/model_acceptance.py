@@ -8,6 +8,7 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
+from dashboard_acceptance import planning_metrics
 from xlsx_read import Workbook, col_letter, q, sheet_parts
 
 
@@ -117,8 +118,11 @@ def check_plan_print_layout(workbook: Path) -> None:
                  for name in book.find(q('definedNames')) if name.get('localSheetId') is not None}
         consolidated = 'Risk_Data' in parts
         if 'Conversion Detail' in parts:
-            assert tabs[:10] == ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
-                                 'Risk_Settings', 'Risk Results', 'Tax_Tables', 'Annual Detail', 'Appendix']
+            expected_tabs = ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
+                             'Risk_Settings', 'Risk Results', 'Tax_Tables', 'Annual Detail', 'Appendix']
+            if 'Planning Metrics' in parts:
+                expected_tabs.insert(3, 'Planning Metrics')
+            assert tabs[:len(expected_tabs)] == expected_tabs
             assert all(tabs.index(name) > tabs.index('Appendix') for name in ('Conversion Detail', 'Risk_Data'))
         elif consolidated:
             assert tabs[:9] == ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
@@ -138,6 +142,12 @@ def check_plan_print_layout(workbook: Path) -> None:
         assert names.get(('Summary', '_xlnm.Print_Area')) == f'Summary!$B$2:$I${157 if consolidated else 92}'
         assert names.get(('Annual Detail', '_xlnm.Print_Titles')) == "'Annual Detail'!$5:$5"
         root = ET.fromstring(archive.read(parts['Summary']))
+        if 'Planning Metrics' in parts:
+            link = root.find(f"{q('hyperlinks')}/{q('hyperlink')}[@ref='K34']")
+            assert link is not None and link.get('location') == "'Planning Metrics'!A1"
+            addresses = {cell.get('r') for cell in root.iter(q('c'))}
+            for address in (f'{column}{row}' for column in 'MNO' for row in range(1, 51)):
+                assert address not in addresses, address
         breaks = root.find(q('rowBreaks'))
         expected_breaks = ('32', '64', '96', '128') if consolidated else ('32', '64')
         assert [(point.get('id'), point.get('man')) for point in breaks] == [(row, '1') for row in expected_breaks]
@@ -216,10 +226,9 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
     inputs, projection, cash, roth, checks = (
         wb[name] for name in ("Inputs", "Projection", "Cash_Flow", "Roth_Access", "Checks")
     )
-    report = "Annual Detail" in wb.parts
-    summary = wb["Report_Data" if report and "Conversion Detail" not in wb.parts else "Summary"]
+    summary, metric_col = planning_metrics(wb)
     status_address, first_gap, max_gap, bridge_value = (
-        f'{"N" if report else "B"}{row}' for row in (25, 26, 27, 19)
+        f'{metric_col}{row}' for row in (25, 26, 27, 19)
     )
     cols = sheet_columns(cash, 4, REQUIRED_CASH_HEADERS)
     has_health = "Healthcare" in wb.parts

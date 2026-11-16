@@ -6,7 +6,7 @@ Build a retirement plan in Excel and see whether your household can pay its bill
 2. Open the copy in desktop Excel. Follow **Start Here** and choose a scenario on **Inputs**.
 3. Open **Summary** to see whether the plan covers its costs and how it fares in different markets. The workbook opens with market risk results for the fictional example. [Print your plan with the input decisions](docs/model-guide.md#print-your-plan)
 
-**Appendix** links to the supporting schedules and calculations. The decision tools sit before it. All workbook sheets are visible.
+Open **Planning Metrics** for the figures behind the report. Use **Income_Targeting** to compare Roth conversions and **Tax_Tables** to look up rates. **Appendix** links to the annual schedules, conversion detail, withdrawal trials, and saved market risk data. All workbook sheets are visible.
 
 - Enter your assumptions and print the five-page plan from Summary. [Model guide](docs/model-guide.md)
 - Follow the income, account and tax calculations. [Workbook schedules](docs/workbook-schedules.md)
@@ -41,10 +41,11 @@ build_dir=$(mktemp -d scratch/build.XXXXXXXX)
 bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsx"
 ```
 
-The script runs 1,000 market paths for the example, saves the results on the workbook, and runs the release check. Keep the file name `retirement-model.xlsx` so the Excel charts resolve their references. The [test and release guide](tests/README.md) shows how to verify a candidate before publication.
+The script runs 1,000 market paths for the example, saves the results in the workbook, and runs the release check. Keep the file name `retirement-model.xlsx` when building so the Excel charts resolve their references. The [test and release guide](tests/README.md) shows where the schedules are generated and how to verify a candidate before publication.
 
 ## Maintenance and history
 
 - [Annual tax data review](docs/annual-tax-review.md)
 - [Implementation plan and remaining work](PLAN.md)
-- [Release records for Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md)
+- [Current workbook release](docs/release-notes/workbook-layout.md)
+- [Earlier release records for Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md)

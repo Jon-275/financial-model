@@ -1,20 +1,26 @@
 """Build the reader-facing plan from the existing annual schedules."""
 
-import re
-
-from openpyxl.formula.tokenizer import Tokenizer
-
 import risk_presentation as risk
 from targeting import DETAIL as CONVERSION_DETAIL
 
 SUMMARY = 'Summary'
+METRICS = 'Planning Metrics'
+METRICS_REF = f"'{METRICS}'!"
+METRIC_SECTIONS = {
+    7: 'Savings target',
+    14: 'At retirement',
+    22: 'Funding and balances',
+    37: 'Taxes and conversions',
+    44: 'Healthcare at retirement (future dollars)',
+    49: 'Scenario comparison',
+}
 APPENDIX = 'Annual Detail'
 INDEX = 'Appendix'
 DOLLAR_VIEW_CELL = 'K18'
 TODAY_DOLLARS = 'Today’s dollars'
 FUTURE_DOLLARS = 'Future dollars'
 FUTURE_VIEW = f'{SUMMARY}!$K$18="{FUTURE_DOLLARS}"'
-DECISION_TABS = ('Asset_Allocation', 'Income_Targeting', 'Risk_Settings', risk.SHEET, 'Tax_Tables')
+DECISION_TABS = (METRICS, 'Asset_Allocation', 'Income_Targeting', 'Risk_Settings', risk.SHEET, 'Tax_Tables')
 DETAIL_GROUPS = (
     ('Annual schedules', (
         ('Cash_Flow', 'Annual cash flow', 'Income, tax, spending, withdrawals and unpaid costs.'),
@@ -33,8 +39,6 @@ DETAIL_GROUPS = (
         (risk.DATA_SHEET, 'Market risk data', 'Saved simulation results and their input comparison.'),
     )),
 )
-DETAIL = 'Report_Data'
-DETAIL_COLUMNS = dict(zip('ABC', 'MNO'))
 FIRST_TRANSITION_ROW = 41
 LAST_TRANSITION_ROW = 53
 FIRST_APPENDIX_ROW = 6
@@ -52,41 +56,58 @@ def price_index_at(position):
     return f'INDEX(Projection!$G$5:$G$130,{position})'
 
 
-def _detail_address(address):
-    return DETAIL_COLUMNS[address[0]] + address[1:]
-
-
-def move_details(template, updates, styles, put):
-    """Move the original metrics beside the printable Summary."""
+def move_metrics(template, updates, styles, put):
+    """Keep the supporting calculations on their own worksheet."""
     for row in template.iter_rows(max_col=3):
         for cell in row:
             updates.setdefault(cell.coordinate, cell.value)
     metrics = list(updates.items())
-    prior_styles = dict(styles)
     updates.clear()
     styles.clear()
+    currency = {5, 6, 8, 9, 15, 16, 17, 18, 19, 24, 27, 28, 29, 30, 31,
+                32, 34, 38, 40, 42, 45, 46, 47}
+    percent = {12, 39, 41}
     for address, value in metrics:
         if value is None:
             continue
-        if isinstance(value, str) and value.startswith('='):
-            tokens = Tokenizer(value)
-            for token in tokens.items:
-                if token.type == 'OPERAND' and token.subtype == 'RANGE':
-                    token.value = re.sub(
-                        r'(?<![!\w])(\$?)([ABC])(\$?\d+)',
-                        lambda match: match[1] + DETAIL_COLUMNS[match[2]] + match[3],
-                        token.value,
-                    ) if '!' not in token.value else token.value
-            value = tokens.render()
-        style = prior_styles.get(address) or ('label' if address[0] == 'A'
-                                         else 'note' if address[0] == 'C' else None)
-        if address in ('B8', 'B9', 'B15', 'B16', 'B17', 'B18', 'B19', 'B24', 'B27',
-                       'B28', 'B29', 'B30', 'B31', 'B32', 'B38', 'B40', 'B42'):
-            style = 'summary_money'
-        elif address in ('B12', 'B39', 'B41'):
-            style = 'percent_active'
-        put(SUMMARY, _detail_address(address), value, style)
-    put(SUMMARY, 'M1', 'Planning metrics', 'detail_title')
+        column, row = address[0], int(address[1:])
+        style = {'A': 'report_body', 'B': 'report_row', 'C': 'report_caption_gutter'}[column]
+        if column == 'B':
+            if row == 3:
+                style = 'report_active'
+            elif row == 25:
+                style = 'report_body'
+            elif row in currency:
+                style = 'report_money'
+            elif row in percent:
+                style = 'report_percent'
+        put(METRICS, address, value, style)
+    put(METRICS, 'A1', 'Planning metrics', 'report_title')
+    put(METRICS, 'A2', '=IF(Inputs!$B$70=0,"Check Inputs","Scenario "&Inputs!$B$7&"   •   Retire at age "&Inputs!$B$10&"   •   Plan through age "&Inputs!$B$53)', 'report_caption')
+    put(METRICS, 'A3', 'Does the plan cover its costs?', 'report_section')
+    for row, label in {
+        6: 'Workplace Roth unavailable at end (today’s dollars)',
+        9: 'Spending after the mortgage ends (today’s dollars)',
+        16: 'Portfolio at retirement (today’s dollars)',
+        19: 'Savings available at retirement (future dollars)',
+        25: 'Funding calculation status',
+        27: 'Largest annual shortfall (future dollars)',
+        28: 'Portfolio at age 65 (today’s dollars)',
+        34: 'First-year Roth savings below target (future dollars)',
+        38: 'Total tax, final working year (future dollars)',
+        40: 'Total tax, first retirement year (future dollars)',
+        42: 'Total Roth converted (future dollars)',
+    }.items():
+        put(METRICS, f'A{row}', label, 'report_body')
+    for row, label in METRIC_SECTIONS.items():
+        put(METRICS, f'A{row}', label, 'detail_band')
+    for address, label, style in (
+        ('E1', 'Related views', 'report_section'),
+        ('E2', 'Back to Summary', 'report_link'),
+        ('E3', 'Open Annual Detail', 'report_link'),
+        ('E4', 'Open Cash_Flow', 'report_link'),
+    ):
+        put(METRICS, address, label, style)
 
 
 def _annual_amounts(row):
@@ -132,10 +153,10 @@ def configure(put):
     summary('B3', 'Your retirement plan', 'report_title')
     summary('B5', context, 'report_caption')
     summary('B6', f'=IF({ok},"Retire at age "&Inputs!$B$10&"   •   Plan through age "&{end_age}&"   •   Prepared "&TEXT(TODAY(),"mmm d, yyyy"),"Review the item below, then return to Inputs.")', 'report_caption')
-    summary('B8', f'=IF({ok},IF({gap}=0,"Projected spending and taxes are covered through age "&{end_age}&".","First shortfall at age "&{first_age}&" ("&Summary!$N$26&")."),"Review the plan inputs or calculation")', 'report_result')
-    summary('B9', f'=IF({ok},IF({gap}=0,"Based on the assumptions in this scenario.",IF({first_gap}<0.01,"Less than $0.01",TEXT({first_gap},{cents}))&" in "&IF({unpaid_tax}>0,IF({unpaid_spending}>0,"spending and taxes","taxes"),"spending")&" goes unpaid in that year."),IF(Summary!$N$25="Check funding calculation","Review the year flagged on Checks.",Summary!$N$25))', 'report_body')
+    summary('B8', f'=IF({ok},IF({gap}=0,"Projected spending and taxes are covered through age "&{end_age}&".","First shortfall at age "&{first_age}&" ("&{METRICS_REF}$B$26&")."),"Review the plan inputs or calculation")', 'report_result')
+    summary('B9', f'=IF({ok},IF({gap}=0,"Based on the assumptions in this scenario.",IF({first_gap}<0.01,"Less than $0.01",TEXT({first_gap},{cents}))&" in "&IF({unpaid_tax}>0,IF({unpaid_spending}>0,"spending and taxes","taxes"),"spending")&" goes unpaid in that year."),IF({METRICS_REF}$B$25="Check funding calculation","Review the year flagged on Checks.",{METRICS_REF}$B$25))', 'report_body')
     summary('B11', f'=IF({ok},"Estimated portfolio at age "&{end_age},"")', 'report_caption')
-    summary('B12', f'=IF({ok},{display_dollars("Summary!$N$29", end_cpi)},"")', 'report_amount')
+    summary('B12', f'=IF({ok},{display_dollars(f"{METRICS_REF}$B$29", end_cpi)},"")', 'report_amount')
     summary('F11', f'=IF({ok},IF({risk.CURRENT},"Success rate with fixed spending","Market risk"),"")', 'report_caption')
     summary('F12', risk.display(risk.result('AF8')), 'report_percent_amount')
     summary('F13', risk.display(
@@ -143,8 +164,8 @@ def configure(put):
         f'IF({opening_only},"Extend the plan to run market risk",'
         f'IF({ok},IF({risk.STATUS}="stale","Refresh market risk","Run market risk"),""))',
     ), 'report_caption')
-    restricted = display_dollars('Summary!$N$6', end_cpi)
-    summary('B13', f'=IF(N(Summary!$N$6)>0,TEXT({restricted},{dollars})&" in unavailable workplace Roth","")', 'report_caption')
+    restricted = display_dollars(f'{METRICS_REF}$B$6', end_cpi)
+    summary('B13', f'=IF(N({METRICS_REF}$B$6)>0,TEXT({restricted},{dollars})&" in unavailable workplace Roth","")', 'report_caption')
     summary('B29', f'=IF({FUTURE_VIEW},"Future dollars use each year’s prices.","Today’s dollars use opening-year prices.")&" Balances are before estimated tax on traditional savings."', 'report_caption')
     summary('B30', risk.display(
         '"The shaded range shows the middle 80% of simulated balances at each age."'
@@ -173,10 +194,10 @@ def configure(put):
             summary(f'{column}{row}', f'=IF({offset}<Report_Data!$Q$4,{amount},"")', style)
     summary('B55', 'Income used can include pay after pre-tax savings, Social Security, other cash income and Marketplace credits.', 'report_caption')
     summary('B56', 'Savings used includes withdrawals and HSA payments. Tax due includes any carryover.', 'report_caption')
-    bridge = f'AND({ok},ISNUMBER(Summary!$N$19))'
+    bridge = f'AND({ok},ISNUMBER({METRICS_REF}$B$19))'
     summary('B57', f'=IF({bridge},"Early retirement access","")', 'report_section')
     bridge_cpi = price_index_at(retirement)
-    bridge_amount = display_dollars(f'Summary!$N$19/{bridge_cpi}', bridge_cpi)
+    bridge_amount = display_dollars(f'{METRICS_REF}$B$19/{bridge_cpi}', bridge_cpi)
     summary('B58', f'=IF({bridge},"Available in the first retirement year: "&TEXT({bridge_amount},{dollars})&" in brokerage and Roth funds this plan can draw on.","")')
     summary('B59', f'=IF({bridge},"Use Roth Access to check when additional funds become available.","")', 'report_caption')
 
@@ -251,10 +272,10 @@ def configure(put):
         '"No early retirement stock losses were tested for this scenario.")',
         f'IF({ok},"Risk Results shows how the plan handles stock losses early in retirement.","")',
     ))
-    target = 'AND(ISNUMBER(Summary!$N$16),ISNUMBER(Summary!$N$8))'
+    target = f'AND(ISNUMBER({METRICS_REF}$B$16),ISNUMBER({METRICS_REF}$B$8))'
     benchmark_cpi = price_index_at('MAX(1,Inputs!$B$10-Inputs!$B$8)')
-    projected = display_dollars('Summary!$N$16', benchmark_cpi)
-    benchmark = display_dollars('Summary!$N$8', benchmark_cpi)
+    projected = display_dollars(f'{METRICS_REF}$B$16', benchmark_cpi)
+    benchmark = display_dollars(f'{METRICS_REF}$B$8', benchmark_cpi)
     summary('B84', f'=IF(AND({ok},{target}),"Savings at retirement ("&IF({FUTURE_VIEW},"future","today’s")&" dollars): "&TEXT({projected},{dollars})&" projected and "&TEXT({benchmark},{dollars})&" targeted.","")', 'report_caption')
     summary('B86', 'Next decision', 'report_section')
     summary('B87', f'=IF({ok},IF({gap}>0,"Try a later retirement age, lower spending or higher savings. Change one input and compare the first shortfall.",IF({risk.CURRENT},"Choose one change in spending, retirement age or savings. Refresh market risk and compare the funding results.",IF({opening_only},"Extend the plan on Inputs before testing market risk.","Run market risk, then test a change in spending, retirement age or savings."))),"Resolve the item on page 1 before comparing scenarios.")')

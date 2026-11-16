@@ -153,7 +153,7 @@
           "equals": 10000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -202,7 +202,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -244,7 +244,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -298,7 +298,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -346,7 +346,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -429,7 +429,7 @@
           "equals": 48000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -488,7 +488,7 @@
           "equals": 5000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -527,7 +527,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -571,7 +571,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -612,7 +612,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -648,7 +648,7 @@
           "equals": 2000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -705,7 +705,7 @@
           "equals": -4000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -768,7 +768,7 @@
           "equals": 6000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -804,7 +804,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -840,7 +840,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -877,11 +877,11 @@
           "equals": 40000
         },
         {
-          "cell": "Summary!N19",
+          "cell": "Planning Metrics!B19",
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -919,11 +919,11 @@
           "equals": 40000
         },
         {
-          "cell": "Summary!N19",
+          "cell": "Planning Metrics!B19",
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -974,7 +974,7 @@
           "equals": 10000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1011,11 +1011,11 @@
           "equals": 30000
         },
         {
-          "cell": "Summary!N19",
+          "cell": "Planning Metrics!B19",
           "equals": 10000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -1057,11 +1057,11 @@
           "equals": 20000
         },
         {
-          "cell": "Summary!N19",
+          "cell": "Planning Metrics!B19",
           "blank": true
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -1107,7 +1107,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1153,7 +1153,7 @@
           "equals": 7500
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1256,7 +1256,7 @@
           "equals": 4000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -1306,7 +1306,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1349,7 +1349,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1423,7 +1423,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1456,7 +1456,7 @@
           "equals": null
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         },
         {
@@ -1510,7 +1510,7 @@
           "equals": null
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         },
         {
@@ -1574,23 +1574,23 @@
           "equals": 1000
         },
         {
-          "cell": "Summary!N26",
+          "cell": "Planning Metrics!B26",
           "equals": 2094
         },
         {
-          "cell": "Summary!N27",
+          "cell": "Planning Metrics!B27",
           "equals": 1000
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         },
         {
-          "cell": "Summary!N3",
+          "cell": "Planning Metrics!B3",
           "prefix": "NO"
         },
         {
-          "cell": "Summary!N4",
+          "cell": "Planning Metrics!B4",
           "equals": 2094
         }
       ]
@@ -1695,7 +1695,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -1795,7 +1795,7 @@
           "equals": 10900
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "equals": "YES"
         }
       ]
@@ -1992,7 +1992,7 @@
           "equals": "Missing IRMAA MAGI"
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "Check healthcare"
         }
       ]
@@ -2040,7 +2040,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "Check healthcare"
         }
       ]
@@ -2294,7 +2294,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "equals": "YES"
         }
       ]
@@ -2384,7 +2384,7 @@
           "equals": 1717.4246295350024
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "equals": "YES"
         }
       ]
@@ -2860,7 +2860,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -2911,7 +2911,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3041,7 +3041,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3106,7 +3106,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3159,7 +3159,7 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3260,7 +3260,7 @@
           "equals": 537059
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -3336,7 +3336,7 @@
           "equals": 11564
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "NO"
         }
       ]
@@ -3369,7 +3369,7 @@
           "equals": 441
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3427,7 +3427,7 @@
           "equals": 3986.24
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3470,7 +3470,7 @@
           "equals": 4200
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3520,7 +3520,7 @@
           "equals": 136530
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3697,7 +3697,7 @@
           "equals": 4250
         },
         {
-          "cell": "Summary!N25",
+          "cell": "Planning Metrics!B25",
           "prefix": "YES"
         }
       ]
@@ -3738,15 +3738,15 @@
           "equals": 0
         },
         {
-          "cell": "Summary!N3",
+          "cell": "Planning Metrics!B3",
           "equals": "CHECK PLAN"
         },
         {
-          "cell": "Summary!O3",
+          "cell": "Planning Metrics!C3",
           "equals": "Move one-time expenses to Inputs rows 75\u201382"
         },
         {
-          "cell": "Summary!O6",
+          "cell": "Planning Metrics!C6",
           "blank": true
         }
       ]
@@ -3762,15 +3762,15 @@
       },
       "expects": [
         {
-          "cell": "Summary!N3",
+          "cell": "Planning Metrics!B3",
           "equals": "NO"
         },
         {
-          "cell": "Summary!N5",
+          "cell": "Planning Metrics!B5",
           "equals": 2000
         },
         {
-          "cell": "Summary!N6",
+          "cell": "Planning Metrics!B6",
           "equals": 2000
         }
       ]
@@ -3791,15 +3791,15 @@
       },
       "expects": [
         {
-          "cell": "Summary!N3",
+          "cell": "Planning Metrics!B3",
           "equals": "YES"
         },
         {
-          "cell": "Summary!N5",
+          "cell": "Planning Metrics!B5",
           "equals": 2000
         },
         {
-          "cell": "Summary!N6",
+          "cell": "Planning Metrics!B6",
           "equals": 0
         }
       ]
@@ -3818,11 +3818,11 @@
           "tolerance": 0
         },
         {
-          "cell": "Summary!N3",
+          "cell": "Planning Metrics!B3",
           "equals": "YES"
         },
         {
-          "cell": "Summary!N4",
+          "cell": "Planning Metrics!B4",
           "equals": "None"
         }
       ]
@@ -3841,11 +3841,11 @@
           "tolerance": 0
         },
         {
-          "cell": "Summary!N3",
+          "cell": "Planning Metrics!B3",
           "equals": "NO"
         },
         {
-          "cell": "Summary!N4",
+          "cell": "Planning Metrics!B4",
           "equals": 2027
         }
       ]

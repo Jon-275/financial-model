@@ -3,6 +3,14 @@
 from math import isclose
 
 
+def planning_metrics(wb):
+    if 'Planning Metrics' in wb.parts:
+        return wb['Planning Metrics'], 'B'
+    if 'Annual Detail' in wb.parts:
+        return wb['Summary' if 'Conversion Detail' in wb.parts else 'Report_Data'], 'N'
+    return wb['Summary'], 'B'
+
+
 def validate_dashboard(wb, tolerance):
     """Check the plotted time spans, retirement marker and sources of payments."""
     inputs, summary, projection, cash, data = (
@@ -10,8 +18,8 @@ def validate_dashboard(wb, tolerance):
     )
     report = 'Annual Detail' in wb.parts
     arranged = 'Conversion Detail' in wb.parts
-    metrics = summary if arranged else data
-    status = (metrics['N25'] if report else summary['B25']).value
+    metrics, metric_col = planning_metrics(wb)
+    status = metrics[f'{metric_col}25'].value
     has_result = status in ('YES', 'NO - cash shortfall')
     horizon = inputs['B70'].value if has_result else 0
     checks = wb['Checks']
@@ -53,7 +61,7 @@ def validate_dashboard(wb, tolerance):
     equal(f'{controls}4', cash_count)
     if report:
         gap = data[f'{controls}6'].value
-        expected_gap = metrics['N26'].value - projection['B5'].value + 1 if status == 'NO - cash shortfall' else 0
+        expected_gap = metrics[f'{metric_col}26'].value - projection['B5'].value + 1 if status == 'NO - cash shortfall' else 0
         equal(f'{controls}6', expected_gap)
         upper = max([1, *(projection[f'BN{5 + row}'].value for row in range(horizon))])
         for age_col, balance_col, position in (('AA', 'AB', retirement), ('AC', 'AD', gap)):
@@ -200,8 +208,8 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
     if status == 'YES':
         assert headline == f"Projected spending and taxes are covered through age {wb['Inputs']['B53'].value}."
     elif status == 'NO - cash shortfall':
-        metrics = summary if 'Conversion Detail' in wb.parts else data
-        row = metrics['N26'].value - projection['B5'].value + 5
+        metrics, metric_col = planning_metrics(wb)
+        row = metrics[f'{metric_col}26'].value - projection['B5'].value + 5
         assert headline == f"First shortfall at age {cash[f'B{row}'].value} ({cash[f'A{row}'].value})."
         tax, spending = (cash[f'{col}{row}'].value for col in ('O', 'Q'))
         kind = 'spending and taxes' if tax > 0 and spending > 0 else 'taxes' if tax > 0 else 'spending'

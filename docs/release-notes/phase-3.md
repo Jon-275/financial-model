@@ -1,5 +1,7 @@
 # Phase 3 release record
 
+This record describes the Phase 3 workbooks. See the current release record for the latest print layout, tab order, and risk refresh checks. [Current release record](workbook-layout.md)
+
 ## Published workbook
 
 **Start Here** links to setup and results. **Inputs** highlights the selected scenario and links to groups of assumptions. **Summary** reports whether the plan pays its bills, identifies the first shortfall when one occurs, and explains what to do if an input is missing.

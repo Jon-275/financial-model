@@ -5,6 +5,7 @@ from lxml import etree as E
 from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries
 from dashboard_package import dashboard_chart_data
+from plan_report import METRICS
 
 X='http://schemas.openxmlformats.org/spreadsheetml/2006/main'
 C='http://schemas.openxmlformats.org/drawingml/2006/chart'
@@ -18,7 +19,8 @@ final.parent.mkdir(parents=True,exist_ok=True)
 calc=load_workbook(checked,data_only=True)
 count=calc['Inputs']['B70'].value
 assert isinstance(count,int) and count>0
-risk_count=count if calc['Summary']['N25'].value=='YES' else 1
+funding_status = calc[METRICS]['B25'] if METRICS in calc.sheetnames else calc['Summary']['N25']
+risk_count=count if funding_status.value=='YES' else 1
 updates={}
 with zipfile.ZipFile(template) as src:
     wb=E.fromstring(src.read('xl/workbook.xml')); rr=E.fromstring(src.read('xl/_rels/workbook.xml.rels'))
@@ -35,7 +37,9 @@ with zipfile.ZipFile(template) as src:
             el.attrib.pop('t',None)
             if isinstance(v,bool): el.set('t','b'); E.SubElement(el,x('v')).text='1' if v else '0'
             elif isinstance(v,(int,float)): assert math.isfinite(v); E.SubElement(el,x('v')).text=str(v)
-            elif isinstance(v,str) or v is None: el.set('t','str'); E.SubElement(el,x('v')).text=v or ''
+            elif isinstance(v,str) or v is None:
+                el.set('t','str')
+                E.SubElement(el,x('v')).text=v or None
             else: raise ValueError((name,el.get('r'),v))
         updates[path]=pack(root)
     for path in [p for p in src.namelist() if re.fullmatch(r'xl/charts/chart\d+\.xml',p)]:

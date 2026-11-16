@@ -1,10 +1,12 @@
 # Portfolio risk analysis
 
-Market risk shows how often your plan pays its bills and taxes when returns vary from year to year. The downloaded workbook opens with results for the fictional example on **Summary**. Excel checks whether the assumptions still match and clears the risk figures when they change. The local Python runner performs new simulations and saves them in a refreshed copy of your Excel plan.
+Market risk shows how often your plan pays its bills and taxes when returns vary from year to year. **Summary** opens with results for the fictional example. When you change the active plan or risk settings, Excel hides the old figures from **Summary** and **Risk Results**. The local Python runner performs new simulations and saves them in a refreshed copy of your Excel plan.
 
 ## Refresh the workbook
 
-Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path, or set `SOFFICE_BIN` to the executable. Use the runner from the same release as your workbook. From the repository root, install the requirements once and run the following command with paths to your private workbook and a new output file.
+Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path, or set `SOFFICE_BIN` to the executable. Use the runner from the same release as your workbook. If you move to a new release, enter your assumptions in a private copy of its workbook.
+
+Save and close your private workbook before running the command. From the repository root, install the requirements once and use paths to your saved plan and a new output file.
 
 ```sh
 python3 -m pip install -r tools/requirements.txt
@@ -13,9 +15,11 @@ python3 tools/run_risk.py private/my-plan.xlsx \
   --output private/my-plan-with-risk.xlsx
 ```
 
-Open the refreshed plan in Excel and review **Summary**. Print the plan from that same tab. **Risk Results** shows the outcomes and settings before **Appendix**. **Risk_Data** holds the saved balances by year, early-loss tests, funding examples and comparisons with the current assumptions. Before simulating returns, the runner checks that its baseline matches the workbook. By default it uses 1,000 market paths and seed `2026`. The files and calculations stay on your computer.
+Open the refreshed plan in Excel and review **Summary**. Print the plan from that same tab. Open **Risk Results**, before **Appendix**, for the full results and the **Simulation settings** used in the run. Select **Open saved risk data** to see the saved balances, early-loss tests, funding examples, and the comparison of current and saved inputs on **Risk_Data**.
 
-Keep Excel’s calculation setting on **Automatic** so changes update the base plan and risk status before you print. When **Summary** says **Refresh market risk**, save and close your plan, then run the command again with a new output name. The risk figures return when you refresh or restore the assumptions used in the saved run.
+Before simulating returns, the runner recalculates the workbook and checks that the base projection matches the simulator. By default it uses 1,000 market paths and seed `2026`. The files and calculations stay on your computer.
+
+Keep Excel’s calculation setting on **Automatic** so changes update the base plan and risk status before you print. When **Summary** says **Refresh market risk**, save and close your plan, then run the command again with a new output name. The risk figures also return if you restore the assumptions used in the saved run. You can switch **Dollar view** at any time using those same results.
 
 ## Read the Summary
 

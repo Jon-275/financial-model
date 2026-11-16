@@ -22,7 +22,7 @@ import targeting
 
 END = 130
 FUNDING_ROWS = STEPS = funding_search.ROWS
-MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',risk_presentation.SHEET,risk_workbook.SHEET,dashboard.SHEET,plan_report.APPENDIX,plan_report.INDEX]
+MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',risk_presentation.SHEET,risk_workbook.SHEET,dashboard.SHEET,plan_report.METRICS,plan_report.APPENDIX,plan_report.INDEX]
 cells = defaultdict(dict)
 styles = defaultdict(dict)
 shared = defaultdict(dict)
@@ -540,7 +540,7 @@ def main():
     put('Income_Targeting','C39','Counts requests limited by cash, balances or the withdrawal policy.','note')
     guidance(wb['README'])
     dashboard.configure(put)
-    plan_report.move_details(wb['Summary'], cells['Summary'], styles['Summary'], put)
+    plan_report.move_metrics(wb['Summary'], cells['Summary'], styles['Summary'], put)
     plan_report.configure(put)
     risk_presentation.configure(put, plan_report.display_dollars, plan_report.price_index_at,
                                 plan_report.FUTURE_VIEW)

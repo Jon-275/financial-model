@@ -14,9 +14,9 @@ PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
 node --test tests/gemini_review.test.mjs
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the Summary, annual appendix, chart, worksheet visibility and workbook metadata. The risk tests check the simulator against the workbook. The Node tests cover when Gemini should pass or fail a pull request.
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. The Node tests cover when Gemini should pass or fail a pull request.
 
-For a newly built workbook, use its path in the release and scenario commands. Set the same path for the risk tests.
+For a newly built workbook, use its path in the release, scenario, and risk refresh commands. Set `RISK_TEST_WORKBOOK` to run the risk engine’s scenario and annual calculation tests against the candidate.
 
 ```sh
 candidate=/absolute/path/to/retirement-model.xlsx
@@ -60,6 +60,12 @@ Gemini posts each finding on the relevant line of a ready PR. Fix the issue or e
 
 A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
 
+## Where to update the workbook
+
+- **Report layout and navigation.** The report generator defines the decision tabs and appendix index. The layout code sets the print areas, links, row shading and solver filters. [Report generation](../tools/plan_report.py) · [Report layout](../tools/report_layout.py) · [Workbook tab order](../tools/workbook_layout.py)
+- **Annual figures and conversion calculations.** Report data supplies the chart and annual cash figures. The same withdrawal solver serves the base projection and conversion comparison. The comparison writes the detailed results to **Conversion Detail**, and workbook packaging points its charts to that table. [Report data](../tools/dashboard.py) · [Withdrawal solver](../tools/funding_search.py) · [Conversion comparison](../tools/targeting.py) · [Workbook packaging](../tools/package_model.py)
+- **Saved risk results.** The risk runner writes the results to **Risk_Data**. The workbook layout for this release uses `retirement-risk-workbook-v3`. Keep the snapshot writer, the display references and the privacy check in sync when moving saved fields. [Snapshot writer](../tools/risk_workbook.py) · [Display references](../tools/risk_presentation.py) · [Privacy check](../tools/check_workbook_commit.py)
+
 ## Microsoft Excel release check
 
 Use the candidate workbook from the [build instructions](../README.md#rebuild-the-workbook). Set its path below. The commands create a copy with cleared formula results, using the filename the charts expect.
@@ -72,10 +78,11 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 ```
 
 1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
-2. Verify the saved copy with the command below. On a second copy, change the active scenario’s end age and check that the projection and balance chart reach the new final year.
+2. Verify the saved copy with the command below. On a second copy, change the end age. Check that the projection, balance chart, and shaded rows stop at that age. Refresh market risk for the new end age and check the last row on **Risk Results**.
 3. Verify that the fictional example opens with the success rate, shaded range, and funding examples already visible on **Summary**. On a test copy, change an active assumption and check that the figures and chart range clear. Restore the assumption and check that they return. Refresh the test copy and confirm the results stay in its **Summary**. [Risk refresh instructions](../docs/risk-analysis.md#refresh-the-workbook)
-4. Preview **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show three results pages followed by two decision pages. Preview **Annual Detail** separately. Check the selected dollar view, repeating headers and the last age. Save a PDF and inspect the figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
-5. Record the Excel versions, checks run, results and any pending platform checks in the release record.
+4. Open **Income_Targeting** and change the comparison age or conversion amount. Verify the selected-year results and the link to **Conversion Detail**. Check that the charts and detail table update with the selected year. On **Funding_Calc** and **Targeting_Calc**, filter **Calculation step** to **Selected draw**. Compare the annual withdrawal by account with **Cash_Flow** and a tested conversion with its row on **Conversion Detail**. Clear the filters before using the copy for other checks.
+5. Open **Planning Metrics** from **Summary**. Check the section headings, dollar units and links back to the report and annual detail. Preview **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show three results pages followed by two decision pages. Preview **Annual Detail** separately. Check the selected dollar view, repeating headers and the last age. Save a PDF and inspect the figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
+6. Record the Excel versions, checks run, results and any pending platform checks. [Current release record](../docs/release-notes/workbook-layout.md)
 
 ```sh
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"

@@ -1,6 +1,10 @@
 # Workbook calculations and decision tools
 
-Use **Summary** to read and print the plan. Use **Annual Detail** for the full timeline in the same dollar view. The tabs before **Appendix** help you review decisions. The appendix links to the annual schedules, reference amounts and calculation tables.
+Use **Summary** to read and print the plan. Use **Annual Detail** for the full timeline in the same dollar view. The decision tools and **Tax_Tables** are before **Appendix**. Use the appendix links to open the annual schedules, conversion detail, withdrawal trials, and saved risk data.
+
+## Planning Metrics
+
+Open **Planning Metrics** next to **Summary** for the savings target, balances, shortfall, taxes and healthcare figures behind the report. Read the dollar units beside each figure. Use **Annual Detail** or **Cash_Flow** to trace a figure to a specific year.
 
 ## Cash_Flow and Projection
 
@@ -29,7 +33,9 @@ Expected returns are annual rates before adjusting for inflation. The workbook w
 
 ## Income_Targeting
 
-Choose a retirement year. Enter zero for a no-conversion comparison or enter an amount in that year’s dollars. Use **Funding result** to check whether both cases can pay their required costs. When both are funded, compare total withdrawals and the change in tax and net healthcare. A conversion can increase income and reduce the Marketplace credit for that year. Open **Conversion Detail** to see the results for each tested amount, including where costs rise or bills go unpaid.
+Set **Retirement age to compare** to 0 for the first retirement year or choose a later age. In **Conversion to test**, enter 0 to compare no conversion or enter an amount in that year’s dollars. Use **Funding result** to see if both cases pay their required costs. When both are funded, compare total withdrawals and the change in tax and net healthcare. A conversion can increase income and reduce the Marketplace credit for that year.
+
+Select **Open conversion detail** to see one row per tested amount, including where costs rise or bills go unpaid. The charts on **Income_Targeting** use that table. The display limit controls the range shown in the detail table. The comparison at the top uses the amount entered in **Conversion to test**.
 
 The comparison starts from the active scenario’s balances and rules for one year. Enter the planned conversion on **Inputs** to see how it affects later balances, taxes and Medicare surcharges over the full timeline.
 
@@ -49,10 +55,12 @@ The federal estimate uses the additional standard deduction at age 65. The separ
 
 **Checks** compares income and withdrawals with cash payments and deposits, tax due with paid and unpaid tax, and account balances with transfers and withdrawals. It also checks Roth access, negative balances, the Marketplace credit, eligible HSA costs and taxable cost basis. **Review** means a difference exceeds one cent or the funding calculation flagged the year. The checks can balance in a year with unpaid bills because the model records the unpaid amounts.
 
-**Report_Data** has one row per modeled year. The cash-flow and portfolio source amounts use opening-year dollars. The chart values follow the dollar view on Summary. Use **Planning metrics** on Summary to see the figures that support the report.
+**Report_Data** has one row per modeled year, including the opening row. The cash-flow and portfolio source amounts use opening-year dollars. The chart values follow the dollar view on **Summary**. The annual schedules and report tables shade only rows with data. Change the end age on **Inputs** to extend or shorten the projection.
 
 ## Funding_Calc and Targeting_Calc
 
-**Funding_Calc** tries different withdrawals to find where cash can cover spending and taxes. Each trial recalculates the taxes and any Marketplace credit. The solver checks credit thresholds when eligible coverage applies and narrows the withdrawal amount when it finds a range to search. If the annual plan cannot fund a conversion, it also tests withdrawals without one. **Skipped** identifies an unused trial slot. Use the **Calculation step** filter to show only evaluated trials. **Selected draw** identifies the result carried to **Cash_Flow**.
+**Funding_Calc** tries different withdrawals to find where cash can cover spending and taxes. Each evaluated trial recalculates the taxes and any Marketplace credit. The solver tests credit thresholds when eligible coverage applies. It also tests withdrawals without a planned conversion if the original plan cannot fund it. When the solver finds a range to search, it narrows the draw amount within that range.
 
-**Targeting_Calc** runs the same funding calculation for the selected year and each requested conversion. The comparison holds the starting balances and required bills fixed. The calculation tables display dollars and cents while retaining full precision. Read **Income_Targeting** for the selected-year result and **Conversion Detail** for the full range.
+**Targeting_Calc** uses the same funding calculation for each conversion request in the selected year. The comparison holds the starting balances and required bills fixed. The **Conversion request** column identifies the amount being tested. Read **Income_Targeting** for the selected-year comparison and **Conversion Detail** for the full range.
+
+Both tabs show the year, age, and calculation step. **Skipped** identifies a trial slot the solver did not need. Use the **Calculation step** filter to clear **Skipped**, or select **Selected draw** to see just the final draws. Use the filter to change which rows are visible and keep the rows in calculation order. The final funding status shows whether the draw covers the year’s costs. **Cash_Flow** uses the selected draw from **Funding_Calc**.

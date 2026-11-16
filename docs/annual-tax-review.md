@@ -4,7 +4,7 @@ Review the tax data each year before publishing the workbook for the new tax yea
 
 ## Check the published figures
 
-Start on **Tax_Tables**. The notes name the sources, the years the figures apply to, and how the model estimates later years. Confirm each figure against the agency release for the correct tax, payroll or coverage year.
+Start on **Tax_Tables**, before **Appendix**. Use the links under **Find a rate or limit** to reach the federal, California, payroll, Medicare and Marketplace tables. The notes name the sources, the years the figures apply to, and how the model estimates later years. Confirm each figure against the agency release for the correct tax, payroll or coverage year.
 
 | Check | Where to verify |
 | --- | --- |
@@ -29,6 +29,6 @@ If an agency has yet to publish a value, record the estimate and how the model c
 1. [Build a candidate workbook](../README.md#rebuild-the-workbook) with the fictional scenario.
 2. Run the [workbook and risk tests](../tests/README.md) against the candidate. Exercise the years before and after each changed figure takes effect. Check the workbook against the risk report with returns set to the plan assumptions.
 3. Complete the [desktop Excel release check](../tests/README.md#microsoft-excel-release-check) and open a PR with the source changes, fixtures and rebuilt workbook.
-4. Record the review date, the years checked, the agency links, any values or estimates that changed, and the checks that passed. Link the merged PR from the [release records](release-notes/phase-3.md).
+4. Record the review date, the years checked, the agency links, any values or estimates that changed, and the checks that passed. Link the merged PR from the release record. [Current release record](release-notes/workbook-layout.md)
 
 If a release needs to be restored, use a PR to restore the matching source, test data and workbook from the last verified release.
