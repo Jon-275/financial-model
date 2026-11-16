@@ -14,7 +14,7 @@ Build a retirement plan in Excel and see whether your household can pay its bill
 
 ## Contribute
 
-Open a pull request into `main`. GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** to pass. Run the local checks before submitting a change and use desktop Excel to verify a workbook release. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+Open a pull request into `main`. GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** to pass. Resolve every review thread before merging. Run the local checks before submitting a change and use desktop Excel to verify a workbook release. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
 ### Keep private workbook copies out of Git
 

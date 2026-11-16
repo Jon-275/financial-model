@@ -46,9 +46,11 @@ diff -u tests/phase2-fixtures.json scratch/phase2-fixtures.json
 
 ## Pull request checks
 
-GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. Workbook checks run on PRs and after changes merge. They include the release and privacy checks, the risk and review tests, and seven representative recalculation cases. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. It also requires all review threads to be resolved. Workbook checks run on PRs and after changes merge. They include the release and privacy checks, the risk and review tests, and seven representative recalculation cases. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
-Gemini posts its findings on ready PRs. Critical or high-severity findings and incomplete reviews block merging. Gemini checks source code and workflows. It records a pass when neither changed. A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
+Gemini posts each finding on the relevant line of a ready PR. Fix the issue or explain why the finding does not apply, then resolve the thread. Critical or high-severity findings and incomplete reviews fail the required check. Address every open thread before merging, including findings from a review that passed. Gemini reviews source and workflow changes and records a pass when the PR contains neither.
+
+A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. Changing the PR base to `main` starts a review. Title and description edits can show a skipped job because they do not change the code under review. [Gemini workflow](../.github/workflows/gemini-review.yml)
 
 ## Microsoft Excel release check
 
