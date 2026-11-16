@@ -3594,6 +3594,83 @@
       ]
     },
     {
+      "name": "hsa_uses_its_own_mix_in_both_stages",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D15": 1,
+          "D16": 2,
+          "D27": 1000,
+          "D31": 1000,
+          "D53": 56,
+          "B131": 0.01
+        },
+        "Asset_Allocation": {
+          "B6": 0.1,
+          "B7": 0.05,
+          "B8": 0.02,
+          "D26": 1,
+          "D27": 0,
+          "D28": 0,
+          "D29": 0,
+          "D30": 0,
+          "E26": 0,
+          "E27": 1,
+          "E28": 0,
+          "E29": 0,
+          "E30": 0,
+          "D35": 1,
+          "D36": 0,
+          "D37": 0,
+          "D38": 0,
+          "D39": 0,
+          "E35": 0,
+          "E36": 0,
+          "E37": 1,
+          "E38": 0,
+          "E39": 0
+        }
+      },
+      "expects": [
+        {
+          "cell": "Inputs!B23",
+          "equals": 0.06425
+        },
+        {
+          "cell": "Inputs!B24",
+          "equals": 0.0494
+        },
+        {
+          "cell": "Inputs!B134",
+          "equals": 0.0395
+        },
+        {
+          "cell": "Inputs!B135",
+          "equals": 0.0098
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 1089
+        },
+        {
+          "age": 55,
+          "column": "BG",
+          "equals": 1039.5
+        },
+        {
+          "age": 56,
+          "column": "BF",
+          "equals": 1185.921
+        },
+        {
+          "age": 56,
+          "column": "BG",
+          "equals": 1049.6871
+        }
+      ]
+    },
+    {
       "name": "healthcare_budget_switches_each_spouse_at_65",
       "overrides": {
         "Inputs": {

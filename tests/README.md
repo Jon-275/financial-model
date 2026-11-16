@@ -73,10 +73,23 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 
 1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
 2. Verify the saved copy with the command below. On a second copy, change the active scenario’s end age and check that the projection and balance chart reach the new final year.
-3. Refresh market risk on a copy with fictional inputs. Verify the success rate, shaded range, and funding examples in Excel. Change an active assumption and check that the figures and chart range clear. Restore the assumption and check that they return. [Risk refresh instructions](../docs/risk-analysis.md#refresh-the-workbook)
-4. Preview **Inputs** and **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show two pages of input decisions and three pages of results. Check **Annual Detail** for repeating headers and the correct last age. Save a PDF and inspect the chart, table, figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
+3. Verify that the fictional example opens with the success rate, shaded range, and funding examples already visible on **Summary**. On a test copy, change an active assumption and check that the figures and chart range clear. Restore the assumption and check that they return. Refresh the test copy and confirm the results stay in its **Summary**. [Risk refresh instructions](../docs/risk-analysis.md#refresh-the-workbook)
+4. Preview **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show three results pages followed by two decision pages. Preview **Annual Detail** separately. Check the selected dollar view, repeating headers and the last age. Save a PDF and inspect the figures and page breaks. [Print setup](../docs/model-guide.md#print-your-plan)
 5. Record the Excel versions, checks run, results and any pending platform checks in the release record.
 
 ```sh
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"
+```
+
+Before publishing, confirm that the candidate came from the build template and that **Risk_Data** contains only the seeded fictional run. After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` in `tools/check_workbook_commit.py`. The commit hook compares the staged results with that checksum. The build template has its own checksum, `TEMPLATE_SHA256`. Audit its inputs, saved results and document properties before changing that checksum.
+
+```sh
+PYTHONPATH=tools python3 - "$candidate" <<'PY'
+import sys
+from check_workbook_commit import risk_snapshot_digest
+from xlsx_read import Workbook
+
+with Workbook(sys.argv[1]) as workbook:
+    print(risk_snapshot_digest(workbook))
+PY
 ```

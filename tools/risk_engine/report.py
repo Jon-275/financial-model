@@ -91,11 +91,9 @@ def _summarize(trials):
 def _allocations(scenario, returns, multiplier):
     a, i = scenario.allocation, scenario.inputs
     rows = []
-    for retired, weights, selected, offset in ((False, a.working, i[15], 0), (True, a.retirement, i[16], 1)):
+    for retired, weights, selected in ((False, a.working, i[15]), (True, a.retirement, i[16])):
         covariance = returns.account_covariance(retired, multiplier, scenario.return_basis)
-        for index, (account, mix, anchor) in enumerate(zip(
-            ACCOUNT_NAMES, weights, (i[17 + offset], i[19 + offset], i[21 + offset], i[21 + offset]),
-        )):
+        for index, (account, mix, anchor) in enumerate(zip(ACCOUNT_NAMES, weights, scenario.account_returns(retired))):
             own_anchor = sum(w * r for w, r in zip(mix, a.means)) / sum(mix)
             rows.append({'stage': 'Retirement' if retired else 'Working', 'profile': int(selected),
                          'account': account, 'base_return': anchor, 'weights': list(mix),

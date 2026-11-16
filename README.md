@@ -4,12 +4,13 @@ Build a retirement plan in Excel and see whether your household can pay its bill
 
 1. Save a private copy before entering personal figures. The workbook contains a fictional example.
 2. Open the copy in desktop Excel. Follow **Start Here** and choose a scenario on **Inputs**.
-3. Open **Summary** to see whether you can cover your costs and how you’ll pay for retirement. [Print your plan with the input decisions](docs/model-guide.md#print-your-plan)
+3. Open **Summary** to see whether the plan covers its costs and how it fares in different markets. The workbook opens with market risk results for the fictional example. [Print your plan with the input decisions](docs/model-guide.md#print-your-plan)
 
-**Appendix** marks the start of the supporting sheets and links to the calculations and advanced tools. All workbook sheets are visible.
+**Appendix** links to the supporting schedules and calculations. The decision tools sit before it. All workbook sheets are visible.
 
-- Enter your assumptions and read the results. [Model guide](docs/model-guide.md)
-- Refresh the market risk results in your private workbook, then review the success rate and funding examples on **Summary**. [Market risk guide](docs/risk-analysis.md)
+- Enter your assumptions and print the five-page plan from Summary. [Model guide](docs/model-guide.md)
+- Follow the income, account and tax calculations. [Workbook schedules](docs/workbook-schedules.md)
+- Refresh the market risk results after changing your assumptions. Open the refreshed Excel plan to see the success rate and funding examples on **Summary**. [Market risk guide](docs/risk-analysis.md)
 - Review tax loss and gain harvesting. [Portfolio guide](docs/portfolio-management.md)
 
 ## Contribute
@@ -24,7 +25,7 @@ Run this command from the repository root once per clone to enable the workbook 
 git config --local core.hooksPath .githooks
 ```
 
-Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The published workbook uses the fictional scenario. Audit any change to the build template for private inputs, saved results and document properties before updating its checksum in `tools/check_workbook_commit.py`.
+Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The published workbook uses the fictional scenario and its saved market risk results. The commit check accepts the reviewed example snapshot by checksum. [Review a rebuilt workbook before publishing](tests/README.md#microsoft-excel-release-check)
 
 ## Rebuild the workbook
 
@@ -40,7 +41,7 @@ build_dir=$(mktemp -d scratch/build.XXXXXXXX)
 bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsx"
 ```
 
-The script runs the release check and prints the result. Keep the file name `retirement-model.xlsx` so the Excel charts resolve their references. The [test and release guide](tests/README.md) shows how to verify a candidate before publication.
+The script runs 1,000 market paths for the example, saves the results on the workbook, and runs the release check. Keep the file name `retirement-model.xlsx` so the Excel charts resolve their references. The [test and release guide](tests/README.md) shows how to verify a candidate before publication.
 
 ## Maintenance and history
 

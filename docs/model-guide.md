@@ -26,7 +26,7 @@ Set the year your starting ages and balances apply to in **Inputs B130**. The fi
 | Rows 27–30, 90 and 92 | Choose Roth IRA or workplace Roth for the opening balance. Enter your share in row 90. For a Roth IRA, enter the contributions and conversions already available to withdraw and each owner’s first Roth IRA tax year. |
 | Rows 35, 91 and 98 | Enter the combined annual Roth IRA savings goal and your share. The rest goes to your spouse. Choose 1 to include eligible savings or 0 to leave them out. |
 | Rows 93–96 | Enter each owner’s first workplace Roth tax year and the age their plan allows withdrawals. Use 0 for an unknown tax year or 126 as the withdrawal age to exclude that balance from withdrawals. |
-| Row 97 | Choose the owner of the traditional retirement account. The model uses that person’s age for withdrawals, required distributions and the last year of Roth conversions. Conversions go into that owner’s Roth IRA. |
+| Rows 26 and 97 | Enter one owner’s pre-tax traditional IRA and 401(k) balance. Select that owner for withdrawal rules, required distributions and the last conversion age. Conversions go into the owner’s Roth IRA. |
 
 The opening Roth fields support one account type and apply the same owner split to the balance and the amount available today. Use a separate estimate for opening savings that mix Roth IRA and workplace Roth balances. The workbook uses one traditional balance. Separately inherited accounts need their own estimate.
 
@@ -34,14 +34,17 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 
 ## Read the results
 
-- **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The chart marks retirement and the first shortfall if one occurs. The retirement cash-flow table shows income, savings used and annual costs in today’s dollars.
-- **Annual Detail** shows the same cash measures and portfolio balance over the full plan. The opening row gives the starting balance.
-- **Appendix** links to the supporting sheets and tools. The tabs to its right are for inspecting the model and running advanced analysis.
+- **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The five-page report includes the outlook, retirement cash flow, risk and decisions, and two pages that record your inputs.
+- **Annual Detail** shows the same cash measures and portfolio balance over the full plan. It uses the dollar view on Summary. The opening row gives the starting balance.
+- **Asset_Allocation**, **Income_Targeting**, **Risk_Settings** and **Risk Results** are next to the plan. Use them to review investment, conversion and spending decisions.
+- **Appendix** links to the schedules, reference tables and calculation details that support the report.
 - **Cash_Flow** shows tax, spending and withdrawals by year. Use the first shortfall year on Summary to find the unpaid amounts.
 - **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
 - **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Funding_Calc** shows the withdrawal trials, **Targeting_Calc** shows the conversion trials, and **Report_Data** holds the detailed results used in Summary.
 
 The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. The savings target uses annual spending after the mortgage ends, healthcare, and the withdrawal rate in row 41. Use the funding result to answer whether the scenario pays its modeled bills.
+
+The example starts Social Security at age 67. Its annual benefit is $40,000 at opening-year prices. **Cash_Flow** shows the sources separately. [How cash pays the bills](workbook-schedules.md#cash_flow-and-projection)
 
 ### Print your plan
 
@@ -50,7 +53,7 @@ Choose a **Dollar view** on the right side of **Summary** before you print.
 - **Today’s dollars** show what the amounts can buy at the prices in your opening year. Use this view to compare future costs with your current budget.
 - **Future dollars** show the amounts you expect to pay or receive in each projected year. A $42,000 living budget becomes $43,050 after one year at 2.5% inflation. The two views show the same budget at different price levels.
 
-In desktop Excel, select **Inputs**, then hold **Shift** and select **Summary**. Choose **File → Print → Active Sheets**. The package includes two pages of input decisions and three pages of results. **Print input decisions** on Inputs opens the record on screen. Add **Annual Detail** for the full timeline in today’s dollars. Check the scenario, opening year, and dollar view before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
+Select **Summary** in desktop Excel, then choose **File → Print → Active Sheets**. The five pages include the results and both decision records. **View input decisions** on Inputs jumps to those records on Summary. Print **Annual Detail** separately for the full timeline in the same dollar view. Check the scenario, opening year, and dollar view before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
 
 
 ## Enter healthcare costs
@@ -77,8 +80,8 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 
 ## Compare Roth conversions and market risk
 
-- **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Enter the conversion amount in that year’s dollars. Compare the amount the plan can convert, the withdrawals needed to cover costs, and the change in tax and healthcare costs. Account balances, required distributions and available cash can limit the conversion. Change the main scenario to see effects on later years.
-- **Risk_Settings.** Review the assumptions for early losses and flexible spending. Refresh market risk after saving changes. **Summary** then shows how often the plan pays all costs, three funding examples, and the effect of flexible spending. Open **Risk Results** from **Appendix** for the details. [Portfolio risk analysis](risk-analysis.md)
+- **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Start with a zero conversion, then test a larger amount in that year’s dollars. Compare how much can convert, the withdrawals needed for bills, and the change in tax and healthcare costs. Apply a conversion on Inputs to see its effect over the full plan. [Conversion comparison](workbook-schedules.md#income_targeting)
+- **Risk_Settings.** Estimate the share of retirement living costs you could reduce and how much you would cut from that share. The next row shows what that means for the full living budget. Refresh market risk after changes. Read the success rate and funding examples on Summary, then open **Risk Results** to see the details. [Portfolio risk analysis](risk-analysis.md)
 - **Portfolio management.** Use the portfolio guide to record tax loss and gain harvesting decisions. [Portfolio management](portfolio-management.md)
 
 ## How the model works
@@ -117,7 +120,7 @@ Payroll taxes use wages by earner. Confirm the wage split in row 126. The model 
 
 ### Investment mix and account values
 
-Use rows 15–16 to choose the investment mix for working years and retirement. Check the stock share on **Asset_Allocation** when comparing profiles. The mix sets the return for each account and stays fixed within each period. The market simulations use the volatility and correlations on that sheet.
+Use rows 15–16 to choose investment profiles for working years and retirement. Review stocks, bonds, cash and real assets in each account on **Asset_Allocation**. Each account’s weights must total 100%. The model uses the mix to calculate account returns and income. The market simulations use the volatility and correlations on the same sheet. [Investment assumptions](workbook-schedules.md#asset_allocation)
 
 For taxable investments, enter the cost basis from your brokerage records. Reinvested income and savings increase it. The model reduces it in proportion to what you sell and taxes price gains when realized. The model uses annual investment income and the applicable tax treatment for interest, real estate investment trust distributions and qualified dividends.
 

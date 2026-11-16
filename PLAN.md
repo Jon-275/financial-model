@@ -10,6 +10,7 @@ The model tests whether household income and available savings can pay spending 
 | [2. Taxes, healthcare and conversions](docs/release-notes/phase-2.md) | The model adds healthcare by person, tests tax and Marketplace credit changes as withdrawals rise, and compares Roth conversion amounts for one year. |
 | [3. Risk analysis and workbook usability](docs/release-notes/phase-3.md) | The risk report recalculates cash, taxes and account access for each set of market returns. **Start Here**, **Inputs** and **Summary** guide readers from setup to a five-page printable plan. |
 | [4. Market risk and funding decisions](docs/market-risk-plan.md) | **Summary** includes market risk, funding examples, and a choice of today’s or future dollars. The five-page plan prints with the selected view. |
+| [5. Workbook layout and calculation review](docs/workbook-schedules.md) | All five pages print from **Summary**, including the saved market risk results. **Annual Detail** follows the dollar view. The decision tools come before **Appendix**, and the HSA projection uses its own investment mix. |
 
 Keep tax loss and gain harvesting in the [portfolio guide](docs/portfolio-management.md). The model includes the tax effect of investment sales needed to pay bills.
 
@@ -21,7 +22,7 @@ Use the [test and release guide](tests/README.md) for commands and Excel steps. 
 - Check each scenario and confirm the projection stops at the selected age. Include age 125, an invalid age and a shortfall late in the plan.
 - Exercise account access before and after eligibility dates, changes in tax when money is withdrawn, and a year when available savings run out.
 - Reconcile cash and account balances for all active years. Run the risk report against the candidate and verify it matches the workbook when market returns follow the plan.
-- In desktop Excel, check for repair prompts, recalculate from cleared formula results, and change the end age on a test copy. Verify the charts update and all sheets remain visible. Check the five-page print package and the optional annual detail on Letter and A4.
+- In desktop Excel, check for repair prompts, recalculate from cleared formula results, and change the end age on a test copy. Verify the charts update and all sheets remain visible. Preview all five pages from Summary on Letter and A4. Check Annual Detail in both dollar views.
 - Record the changes, sources, checks and remaining limits in the release record. Git keeps the prior version of the workbook.
 
 ## Remaining maintenance work

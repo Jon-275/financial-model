@@ -3,14 +3,14 @@
 from lxml import etree
 
 from example_inputs import example_cells
-from plan_report import APPENDIX, DETAIL_GROUPS, INDEX
+from plan_report import APPENDIX, DECISION_TABS, DETAIL_GROUPS, INDEX
 from workbook_metadata import make_sheets_visible
 
 _MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 _PROPS = '{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}'
 _VT = '{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}'
 _TAB_ORDER = (
-    'Start Here', 'Inputs', 'Summary', APPENDIX, INDEX,
+    'Start Here', 'Inputs', 'Summary', *DECISION_TABS, APPENDIX, INDEX,
     *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules),
 )
 _INPUT_GROUPS = ((17, 24), (55, 57), (59, 60), (102, 124))

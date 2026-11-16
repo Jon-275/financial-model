@@ -216,11 +216,10 @@ paragraph(assumptions, "A23:J23", `Workbook SHA-256  ${run.workbook_sha256}`);
 paragraph(assumptions, "A24:J24", `Active assumptions SHA-256  ${run.inputs_sha256}`);
 paragraph(assumptions, "A25:J25", `Risk engine ${run.engine_version}  •  Python ${run.python}  •  ${run.workbook_calculation}`);
 paragraph(assumptions, "A26:J26", "Returns vary by asset and year. The model uses the workbook’s tax and healthcare estimates. Other inputs, including wages, inflation and longevity, follow the selected scenario.");
-paragraph(assumptions, "A27:J27", "The workbook uses its Roth return for deterministic HSA growth. The HSA allocation determines its exposure to market shocks.");
 
 wb.recalculate();
 if (previewDir) {
-  for (const [name, range] of [["Overview", "A1:E23"], ["Market Paths", "A1:Q25"], ["Early Losses", "A1:G19"], ["Assumptions", "A1:J27"]]) {
+  for (const [name, range] of [["Overview", "A1:E23"], ["Market Paths", "A1:Q25"], ["Early Losses", "A1:G19"], ["Assumptions", "A1:J26"]]) {
     const preview = await wb.render({ sheetName: name, range, scale: 1.15, format: "png" });
     await fs.writeFile(`${previewDir}/${name.toLowerCase().replaceAll(" ", "-")}.png`,
       new Uint8Array(await preview.arrayBuffer()));

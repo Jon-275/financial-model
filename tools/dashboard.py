@@ -1,6 +1,7 @@
 """Build the detailed measures and the data that feed the retirement plan."""
 
 from plan_report import add_transition_values, display_dollars
+from risk_presentation import CURRENT, DATA_SHEET
 
 SHEET = 'Report_Data'
 LAST_PORTFOLIO_ROW = 127
@@ -82,12 +83,12 @@ def configure(put):
 
         put(SHEET, f'D{row}', f'=IF(AND({pos}<=$K$2,{pos}=$K$6),B{row},"")', 'money')
 
-    risk_current = "'Risk Results'!$Z$1=\"current\""
+    risk_current = CURRENT
     for column, heading in zip(('AE', 'AF', 'AG', 'AH'),
                                ('Base projection', '10th percentile', 'Width of middle 80%', 'Simulated median')):
         put(SHEET, f'{column}1', heading, 'header')
     for row in range(2, LAST_PORTFOLIO_ROW + 1):
-        result = "'Risk Results'!"
+        result = f'{DATA_SHEET}!'
         source = row + 44
         current_year = f'AND({risk_current},{row - 1}<=$K$2)'
         cpi = f'Projection!G{row + 3}'

@@ -13,6 +13,7 @@ DOLLAR_VIEW_CELL = 'K18'
 TODAY_DOLLARS = 'Today’s dollars'
 FUTURE_DOLLARS = 'Future dollars'
 FUTURE_VIEW = f'{SUMMARY}!$K$18="{FUTURE_DOLLARS}"'
+DECISION_TABS = ('Asset_Allocation', 'Income_Targeting', 'Risk_Settings', risk.SHEET)
 DETAIL_GROUPS = (
     ('Annual schedules', (
         ('Cash_Flow', 'Annual cash flow', 'Income, tax, spending, withdrawals and unpaid costs.'),
@@ -20,18 +21,15 @@ DETAIL_GROUPS = (
         ('Roth_Access', 'Roth account access', 'Balances and available withdrawals by owner.'),
         ('Healthcare', 'Healthcare', 'Coverage, premiums and credits by person.'),
     )),
-    ('Planning tools', (
-        (risk.SHEET, 'Market risk results', 'See the simulations and the funding details behind Summary.'),
-        ('Asset_Allocation', 'Investment mix', 'Working and retirement investment assumptions.'),
-        ('Income_Targeting', 'Roth conversion comparison', 'Compare conversion amounts for a selected year.'),
-        ('Risk_Settings', 'Market risk settings', 'Set the spending cuts and early stock losses to test.'),
-    )),
     ('Rates and calculation checks', (
         ('Tax_Tables', 'Tax tables', 'Published amounts and the years they apply to.'),
         ('Checks', 'Model checks', 'Reconcile cash, taxes, accounts and healthcare.'),
+    )),
+    ('Supporting data and calculations', (
         ('Report_Data', 'Report data', 'Source values for the plan and its chart.'),
         ('Funding_Calc', 'Withdrawal calculation', 'The funding trials for each projected year.'),
         ('Targeting_Calc', 'Conversion calculation', 'The funding trials for the conversion comparison.'),
+        (risk.DATA_SHEET, 'Market risk data', 'Saved simulation results and their input comparison.'),
     )),
 )
 DETAIL = 'Report_Data'
@@ -91,7 +89,7 @@ def _annual_amounts(row):
     cash = lambda col: f'Cash_Flow!{col}{row}'
     proj = lambda col: f'Projection!{col}{row}'
     paid = f'({cash("N")}+{cash("P")})'
-    return (
+    real_amounts = (
         cash('A'), cash('B'),
         f'MIN({cash("C")},{paid})/{proj("G")}',
         f'(MAX(0,{paid}-{cash("C")})+{cash("E")})/{proj("G")}',
@@ -101,6 +99,7 @@ def _annual_amounts(row):
         f'{cash("V")}/{proj("G")}',
         proj('BN'),
     )
+    return (*real_amounts[:2], *(display_dollars(amount, proj('G')) for amount in real_amounts[2:]))
 
 
 def configure(put):
@@ -152,6 +151,7 @@ def configure(put):
 
     summary('B33', '="2 / Retirement cash flow   •   "&Inputs!$B$7', 'report_kicker')
     summary('B34', 'How you’ll pay for retirement', 'report_title')
+    summary('B36', f'=IF(AND({ok},SUM(Projection!$N$6:$N$130)>0),"Social Security income starts at age "&MAX(Inputs!$B$45,Inputs!$B$8+1)&" in this projection.","")', 'report_caption')
     summary('B38', f'=IF(Report_Data!$K$4>0,"Income and savings used to pay bills around retirement.",IF({ok},"This projection ends before the first modeled retirement year.","Cash flow is available after you resolve the item on page 1."))')
     summary('B39', f'=IF({FUTURE_VIEW},"Future dollars show what you expect to pay or receive in each year.","Today’s dollars show opening-year purchasing power. The forecast includes inflation.")', 'report_caption')
     for column, label in zip('BCDEFGHI', CASH_HEADERS):
@@ -166,8 +166,8 @@ def configure(put):
             if index >= 2:
                 amount = display_dollars(amount, price_index_at(f'Report_Data!$J{data_row}'))
             summary(f'{column}{row}', f'=IF(Report_Data!$J{data_row}="","",{amount})', style)
-    summary('B55', 'Income includes any Marketplace credit. Savings includes withdrawals and health savings. Tax due includes any carryover.', 'report_caption')
-    summary('B56', 'Working-year healthcare is part of other spending.', 'report_caption')
+    summary('B55', 'Income used can include pay after pre-tax savings, Social Security, other cash income and Marketplace credits.', 'report_caption')
+    summary('B56', 'Savings used includes withdrawals and HSA payments. Tax due includes any carryover.', 'report_caption')
     bridge = f'AND({ok},ISNUMBER(Report_Data!$N$19))'
     summary('B57', f'=IF({bridge},"Early retirement access","")', 'report_section')
     bridge_cpi = price_index_at(retirement)
@@ -257,14 +257,14 @@ def configure(put):
     for column in 'DEFGHI':
         summary(f'{column}90', '', 'report_write_in')
 
-    summary('B94', 'Select Inputs, hold Shift and select Summary. Choose File → Print → Active Sheets to print the full plan.', 'report_caption')
     summary('K3', 'Plan navigation', 'report_section')
     for address, label in {
         'K5': 'Edit assumptions', 'K6': 'Retirement cash flow',
         'K7': 'Risk and decisions', 'K8': 'How to print',
         'K10': 'Annual detail', 'K11': 'Appendix and model details',
         'K12': 'Market risk results', 'K13': 'Annual cash flow', 'K14': 'Account access',
-        'K15': 'Market risk settings',
+        'K15': 'Market risk settings', 'K30': 'Input decisions', 'K31': 'Spending decisions',
+        'K32': 'Investment mix', 'K33': 'Roth conversion comparison',
     }.items():
         summary(address, label, 'report_link')
     summary('K17', 'Dollar view', 'report_section')
@@ -274,11 +274,15 @@ def configure(put):
     summary('K21', 'money can buy today.', 'report_caption')
     summary('K22', 'Future dollars use prices', 'report_caption')
     summary('K23', 'in each projected year.', 'report_caption')
+    summary('K25', 'Print the plan', 'report_section')
+    summary('K26', 'Choose File → Print.', 'report_caption')
+    summary('K27', 'Use Active Sheets with only', 'report_caption')
+    summary('K28', 'Summary selected.', 'report_caption')
 
     appendix('B2', 'Annual projection', 'report_title')
     appendix('L2', 'Back to Summary', 'report_link')
     appendix('B3', context, 'report_caption')
-    appendix('B4', 'Opening-year dollars. The first row gives opening balances. Tax due includes any carryover.', 'report_caption')
+    appendix('B4', f'=IF({FUTURE_VIEW},"Future dollars","Today’s dollars")&" from the view on Summary. The first row gives opening balances. Tax due includes carryover."', 'report_caption')
     for column, label in zip('BCDEFGHIJ', (*CASH_HEADERS, 'Portfolio')):
         appendix(f'{column}5', label, 'report_table_head')
     for row in range(FIRST_APPENDIX_ROW, LAST_APPENDIX_ROW + 1):
@@ -299,8 +303,8 @@ def index_rows():
 
 def configure_index(put):
     put(INDEX, 'B3', 'Appendix', 'report_title')
-    put(INDEX, 'B5', 'Inspect the schedules behind your plan or open an advanced planning tool.', 'report_body')
-    put(INDEX, 'B6', 'Print Inputs and Summary for the plan. Add Annual Detail for the full timeline.', 'report_caption')
+    put(INDEX, 'B5', 'Inspect the schedules, source data and calculations behind your plan.', 'report_body')
+    put(INDEX, 'B6', 'Print Summary for the five-page report. Print Annual Detail separately for the full timeline.', 'report_caption')
     for row, title, schedules in index_rows():
         put(INDEX, f'B{row}', title, 'report_section')
         for offset, (_, label, description) in enumerate(schedules, 1):

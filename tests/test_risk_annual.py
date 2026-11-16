@@ -1,5 +1,7 @@
 """Verify the annual risk runner against the packaged release workbook."""
 
+from dataclasses import replace
+from math import sqrt
 from pathlib import Path
 import os
 from types import SimpleNamespace
@@ -7,8 +9,8 @@ import unittest
 
 from risk_engine.annual import AnnualModel, PathResult, YearResult, reconcile
 from risk_engine.paths import Guardrail, ReturnModel, RiskInputs, TrialOutcome
-from risk_engine.report import _representative_trials, _result, run_analysis
-from risk_engine.scenario import load_scenario
+from risk_engine.report import _allocations, _representative_trials, _result, run_analysis
+from risk_engine.scenario import HSA_RETURN_ROWS, load_scenario
 
 
 class AnnualRiskTests(unittest.TestCase):
@@ -80,6 +82,24 @@ class AnnualRiskTests(unittest.TestCase):
         for row in result['representative_paths']:
             self.assertEqual(row['fixed'], result['baseline'])
             self.assertEqual(row['flexible'], result['baseline'])
+
+    def test_hsa_export_uses_the_simulated_rate_in_both_stages(self):
+        working_rate, retirement_rate = HSA_RETURN_ROWS
+        scenario = replace(self.scenario, inputs={**self.scenario.inputs, working_rate: .03, retirement_rate: .02})
+        allocation = scenario.allocation
+        returns = ReturnModel(RiskInputs(allocation.means, allocation.volatilities, allocation.correlation,
+                                        allocation.working, allocation.retirement))
+        hsa = [row for row in _allocations(scenario, returns, 1) if row['account'] == 'HSA']
+        self.assertEqual([row['base_return'] for row in hsa], [.03, .02])
+        for retired, row in enumerate(hsa):
+            variance = returns.account_covariance(bool(retired), 1, scenario.return_basis)[3][3]
+            gross_return = 1 + sum(w * r for w, r in zip(row['weights'], allocation.means)) / sum(row['weights'])
+            self.assertAlmostEqual(row['return_volatility'], sqrt(variance) * (1 + row['base_return']) / gross_return)
+
+        old_inputs = {row: value for row, value in scenario.inputs.items() if row not in HSA_RETURN_ROWS}
+        old_report = _allocations(replace(scenario, inputs=old_inputs), returns, 1)
+        self.assertEqual([row['base_return'] for row in old_report if row['account'] == 'HSA'],
+                         [old_inputs[21], old_inputs[22]])
 
 
 class FundingDetailTests(unittest.TestCase):

@@ -1,13 +1,13 @@
 """Lay out the printable record of the assumptions used by the active scenario."""
 
-# The report lives below the entry grid so expanding or collapsing input groups
-# cannot change what prints.
-FIRST_ROW = 136
-PAGE_BREAK = 162
-LAST_ROW = 194
-PRINT_AREA = f'Inputs!$L${FIRST_ROW}:$S${LAST_ROW}'
-FIRST_HEADERS = 143
-SECOND_HEADERS = 170
+from openpyxl.formula.tokenizer import Tokenizer
+
+FIRST_ROW = 97
+SECOND_ROW = 129
+LAST_ROW = 157
+PAGE_BREAKS = (FIRST_ROW - 1, SECOND_ROW - 1)
+FIRST_HEADERS = FIRST_ROW + 7
+SECOND_HEADERS = SECOND_ROW + 7
 EACH_PAGE = (
     (FIRST_HEADERS, 'Timeline and income', 'Savings and investments', (
         ('Current age', 8, 'row', 'Taxable account balance', 25, 'money'),
@@ -24,7 +24,7 @@ EACH_PAGE = (
         ('Tax-exempt interest', 46, 'money', 'Savings benchmark withdrawal rate', 41, 'percent'),
     )),
     (SECOND_HEADERS, 'Spending and healthcare', 'Account and tax choices', (
-        ('Annual spending now', 36, 'money', 'Opening Roth type', 'IF(B28=1,"IRA","Workplace")', 'body'),
+        ('Annual spending now', 36, 'money', 'Opening Roth type', 'IF(B28=1,"Roth IRA","Workplace Roth")', 'body'),
         ('Annual retirement spending', 37, 'money', 'Roth IRA funds available today', 'IF(B28=1,B30,"")', 'money'),
         ('Annual fixed mortgage payment', 38, 'money', 'Withdrawal order', 'IF(B48=1,"Taxable first","Tax target")', 'body'),
         ('Final mortgage payment year', 'IF(B39>0,B39,"")', 'row', 'Annual Roth conversion', 47, 'money'),
@@ -40,51 +40,59 @@ EACH_PAGE = (
 )
 
 
+def _on_inputs(expression):
+    formula = Tokenizer('=' + expression)
+    for token in formula.items:
+        if token.type == 'OPERAND' and token.subtype == 'RANGE':
+            token.value = 'Inputs!' + token.value
+    return formula.render()
+
+
 def configure(put):
     def display(address, value, style='report_body'):
-        put('Inputs', address, value, style)
+        put('Summary', address, value, style)
 
     valid = 'IF(ISNUMBER(B4),AND(B4>=1,B4<=3,B4=INT(B4)),FALSE())'
-    context = f'=IF({valid},"Scenario: "&B7&"   •   Opening year: "&B130&"   •   Prepared "&TEXT(TODAY(),"mmm d, yyyy"),"Choose a scenario before printing.")'
     for start, kicker, title in (
-        (136, 'Input record / 1', 'Input decisions'),
-        (163, 'Input record / 2', 'Spending and other decisions'),
+        (FIRST_ROW, '4 / Input decisions', 'Input decisions'),
+        (SECOND_ROW, '5 / Spending decisions', 'Spending and account decisions'),
     ):
-        caption = kicker if start == FIRST_ROW else f'=IF({valid},"{kicker}   •   "&B7,"{kicker}")'
-        display(f'L{start}', caption, 'report_kicker')
-        display(f'L{start + 1}', title, 'report_title')
-        if start == FIRST_ROW:
-            display(f'L{start + 3}', context, 'report_caption')
-    display('L141', 'Figures reflect the selected scenario. Dollar amounts use opening-year prices.', 'report_caption')
-    display('L168', 'Review the full coverage and account settings on Inputs when you use those options.', 'report_caption')
+        display(f'B{start}', _on_inputs(f'IF({valid},"{kicker}   •   "&B7,"{kicker}")'), 'report_kicker')
+        display(f'B{start + 1}', title, 'report_title')
+        display(f'B{start + 3}', _on_inputs(
+            f'IF({valid},"Opening year "&B130&"   •   "&B7,"Choose a scenario on Inputs.")'
+        ), 'report_caption')
+    display(f'B{FIRST_ROW + 5}', 'These are your input amounts. Dollars use the opening year’s prices.', 'report_caption')
+    display(f'B{SECOND_ROW + 5}', 'Input amounts use opening-year prices. See Inputs for detailed healthcare settings.', 'report_caption')
     for row, left, right, entries in EACH_PAGE:
-        display(f'L{row}', left, 'report_section')
-        display(f'P{row}', right, 'report_section_gutter')
+        display(f'B{row}', left, 'report_section')
+        display(f'F{row}', right, 'report_section_gutter')
         for index, pair in enumerate(entries, row + 1):
             for label_col, value_col, (label, source, style) in (
-                ('L', 'O', pair[:3]), ('P', 'S', pair[3:]),
+                ('B', 'E', pair[:3]), ('F', 'I', pair[3:]),
             ):
                 if isinstance(source, int):
                     source = (f'B{source}' if source >= 130 else
                               f'IF(ISBLANK(INDEX(D{source}:F{source},1,B4)),"",B{source})')
-                display(f'{label_col}{index}', label, 'report_caption_gutter' if label_col == 'P' else 'report_caption')
-                display(f'{value_col}{index}', f'=IF({valid},{source},"")', 'report_' + style)
-    display('L158', '¹ Includes inflation.  ² The fee applies to all scenarios.', 'report_caption')
-    display('L184', 'One-time expenses for all scenarios', 'report_section')
+                display(f'{label_col}{index}', label, 'report_caption_gutter' if label_col == 'F' else 'report_caption')
+                display(f'{value_col}{index}', _on_inputs(f'IF({valid},{source},"")'), 'report_' + style)
+    display('B119', '¹ Includes inflation.  ² The fee applies to all scenarios.', 'report_caption')
+    display('B150', 'One-time expenses for all scenarios', 'report_section')
     for index, source in enumerate(range(75, 83)):
-        row = 186 + index % 4
-        col = 'L' if index < 4 else 'P'
+        row = 152 + index % 4
+        col = 'B' if index < 4 else 'F'
         no_costs = 'IF(COUNT(B75:B82)=0,"None entered","")' if index == 0 else '""'
-        display(f'{col}{row}', f'=IF(N(B{source})>0,"Year "&TEXT(B{source},"0")&"    "&TEXT(C{source},"$#,##0"),{no_costs})')
-    display('L196', 'Return to input fields', 'report_link')
+        display(f'{col}{row}', _on_inputs(
+            f'IF(N(B{source})>0,"Year "&TEXT(B{source},"0")&"    "&TEXT(C{source},"$#,##0"),{no_costs})'
+        ))
 
 
 def merges():
-    ranges = [f'L{row}:S{row}' for row in (136, 137, 139, 141, 158, 163, 164, 166, 168, 184, 196)]
+    ranges = [f'B{row}:I{row}' for row in (97, 98, 100, 102, 119, 129, 130, 132, 134, 150)]
     for row, _, _, entries in EACH_PAGE:
-        ranges += [f'L{row}:O{row}', f'P{row}:S{row}']
+        ranges += [f'B{row}:E{row}', f'F{row}:I{row}']
         for i in range(row + 1, row + len(entries) + 1):
-            ranges += [f'L{i}:N{i}', f'P{i}:R{i}']
-    for row in range(186, 190):
-        ranges += [f'L{row}:O{row}', f'P{row}:S{row}']
+            ranges += [f'B{i}:D{i}', f'F{i}:H{i}']
+    for row in range(152, 156):
+        ranges += [f'B{row}:E{row}', f'F{row}:I{row}']
     return ranges

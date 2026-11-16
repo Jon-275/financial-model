@@ -1,6 +1,7 @@
 """Check staged Excel workbooks before a repository commit."""
 
 from hashlib import sha256
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -15,6 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsx'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = '8c07a8d5d6d58feb90b6dc4feceef95129acb89eb2393337fcb5b80900b53af1'
+EXAMPLE_RISK_SHA256 = 'ca0f21b06be77a78912be69fb1aeb123eda41db95e080f5072c795ddbd675050'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
@@ -24,6 +26,18 @@ from xlsx_read import Workbook, address_parts
 
 def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT)
+
+
+def risk_snapshot_digest(workbook):
+    """Fingerprint every populated snapshot cell, including saved input values."""
+    entries = []
+    for cells in workbook['Risk_Data'].iter_rows():
+        for cell in cells:
+            row, column = address_parts(cell.coordinate)
+            if cell.coordinate == 'Z3' or (row > 1 and (column == 29 or 32 <= column <= 50)):
+                if cell.formula is not None or cell.value not in (None, ''):
+                    entries.append((cell.coordinate, cell.formula, cell.value))
+    return sha256(json.dumps(sorted(entries), separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
 def check_sample_workbook(path):
@@ -39,16 +53,8 @@ def check_sample_workbook(path):
             cell = workbook['Income_Targeting'][address]
             if cell.formula is not None or type(cell.value) is bool or cell.value != expected:
                 raise ValueError(f'Income_Targeting!{address} differs from the example settings.')
-        if 'Risk Results' in workbook.parts:
-            risk = workbook['Risk Results']
-            if risk['Z1'].value != 'missing':
-                raise ValueError('Publish the workbook with market risk results empty.')
-            for cells in risk.iter_rows():
-                for cell in cells:
-                    row, column = address_parts(cell.coordinate)
-                    is_snapshot = cell.coordinate == 'Z3' or (row > 1 and (column == 29 or 32 <= column <= 50))
-                    if is_snapshot and (cell.value not in (None, '') or cell.formula is not None):
-                        raise ValueError(f'Risk Results!{cell.coordinate} contains private run data.')
+        if workbook['Risk_Data']['Z1'].value != 'current' or risk_snapshot_digest(workbook) != EXAMPLE_RISK_SHA256:
+            raise ValueError('Risk_Data differs from the verified fictional example.')
 
 
 def main():

@@ -115,19 +115,28 @@ def check_plan_print_layout(workbook: Path) -> None:
         tabs = [sheet.get('name') for sheet in book.find(q('sheets'))]
         names = {(tabs[int(name.get('localSheetId'))], name.get('name')): name.text
                  for name in book.find(q('definedNames')) if name.get('localSheetId') is not None}
-        assert tabs[:5] == ['Start Here', 'Inputs', 'Summary', 'Annual Detail', 'Appendix']
+        consolidated = 'Risk_Data' in parts
+        if consolidated:
+            assert tabs[:9] == ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
+                                 'Risk_Settings', 'Risk Results', 'Annual Detail', 'Appendix']
+            assert tabs.index('Risk_Data') > tabs.index('Appendix')
+        else:
+            assert tabs[:5] == ['Start Here', 'Inputs', 'Summary', 'Annual Detail', 'Appendix']
         for sheet, part in parts.items():
             view = ET.fromstring(archive.read(part)).find(f'{q("sheetViews")}/{q("sheetView")}')
             assert view.get('zoomScale') == '100' and view.get('showGridLines') == '0', sheet
-        assert {sheet for sheet, name in names if name == '_xlnm.Print_Area'} == {'Inputs', 'Summary', 'Annual Detail'}
-        assert names.get(('Inputs', '_xlnm.Print_Area')) == 'Inputs!$L$136:$S$194'
-        input_breaks = ET.fromstring(archive.read(parts['Inputs'])).find(q('rowBreaks'))
-        assert [(point.get('id'), point.get('man')) for point in input_breaks] == [('162', '1')]
-        assert names.get(('Summary', '_xlnm.Print_Area')) == 'Summary!$B$2:$I$92'
+        printed = {'Summary', 'Annual Detail'} if consolidated else {'Inputs', 'Summary', 'Annual Detail'}
+        assert {sheet for sheet, name in names if name == '_xlnm.Print_Area'} == printed
+        if not consolidated:
+            assert names.get(('Inputs', '_xlnm.Print_Area')) == 'Inputs!$L$136:$S$194'
+            input_breaks = ET.fromstring(archive.read(parts['Inputs'])).find(q('rowBreaks'))
+            assert [(point.get('id'), point.get('man')) for point in input_breaks] == [('162', '1')]
+        assert names.get(('Summary', '_xlnm.Print_Area')) == f'Summary!$B$2:$I${157 if consolidated else 92}'
         assert names.get(('Annual Detail', '_xlnm.Print_Titles')) == "'Annual Detail'!$5:$5"
         root = ET.fromstring(archive.read(parts['Summary']))
         breaks = root.find(q('rowBreaks'))
-        assert [(point.get('id'), point.get('man')) for point in breaks] == [('32', '1'), ('64', '1')]
+        expected_breaks = ('32', '64', '96', '128') if consolidated else ('32', '64')
+        assert [(point.get('id'), point.get('man')) for point in breaks] == [(row, '1') for row in expected_breaks]
         assert root.find(q('pageSetup')).get('orientation') == 'portrait'
         if 'Risk Results' in parts:
             views = root.find(f"{q('dataValidations')}/{q('dataValidation')}[@sqref='K18']")
@@ -186,7 +195,12 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
     cols = sheet_columns(cash, 4, REQUIRED_CASH_HEADERS)
     has_health = "Healthcare" in wb.parts
     health = wb['Healthcare'] if has_health else None
-    roth_headers = {"roth accessible", "roth closing", "primary ira opening", "spouse ira opening", "primary workplace opening", "spouse workplace opening", "primary ira draw", "spouse ira draw", "primary workplace draw", "spouse workplace draw", "primary savings", "spouse savings", "primary conversion", "spouse conversion"}
+    account_types = ('roth ira', 'workplace roth') if 'Risk_Data' in wb.parts else ('ira', 'workplace')
+    owners = tuple(f'{owner} {kind}' for kind in account_types for owner in ('primary', 'spouse'))
+    roth_openings = tuple(f'{owner} opening' for owner in owners)
+    roth_draws = tuple(f'{owner} draw' for owner in owners)
+    roth_headers = {"roth accessible", "roth closing", "primary savings", "spouse savings",
+                    "primary conversion", "spouse conversion", *roth_openings, *roth_draws}
     roth_cols = sheet_columns(roth, 4, roth_headers)
     check_col = sheet_columns(checks, 4, {"reconciliation"})["reconciliation"]
     years = expect_number(inputs, "B70")
@@ -285,8 +299,8 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
             raise AssertionError(f"{label} Roth withdrawal exceeds available Roth assets")
         equal(f"{label} Roth accessible", p("X"), ra("roth accessible"), tolerance)
         equal(f"{label} Roth closing", p("BF"), ra("roth closing"), tolerance)
-        equal(f"{label} Roth opening balances", expect_number(projection, f"BF{row-1}"), sum(ra(h) for h in ("primary ira opening", "spouse ira opening", "primary workplace opening", "spouse workplace opening")), tolerance)
-        equal(f"{label} Roth draws by account", p("Y"), sum(ra(h) for h in ("primary ira draw", "spouse ira draw", "primary workplace draw", "spouse workplace draw")), tolerance)
+        equal(f"{label} Roth opening balances", expect_number(projection, f"BF{row-1}"), sum(ra(h) for h in roth_openings), tolerance)
+        equal(f"{label} Roth draws by account", p("Y"), sum(ra(h) for h in roth_draws), tolerance)
         equal(f"{label} Roth savings by owner", p("M"), ra("primary savings") + ra("spouse savings"), tolerance)
         equal(f"{label} Roth conversions by owner", p("AA"), ra("primary conversion") + ra("spouse conversion"), tolerance)
         if p("Y") > expect_number(projection, f"BF{row-1}") + tolerance:

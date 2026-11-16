@@ -17,7 +17,7 @@ from xlsx_read import Workbook, sheet_parts
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RISK = 'Risk Results'
+RISK = 'Risk_Data'
 CHART = '{http://schemas.openxmlformats.org/drawingml/2006/chart}'
 
 
@@ -28,7 +28,7 @@ def check_state(workbook, expected):
 
 
 def check_refresh(workbook, office, timeout):
-    check_state(workbook, 'missing')
+    check_state(workbook, 'current')
     with Workbook(workbook) as book:
         inputs = book['Inputs']
         case = inputs['B4'].value
@@ -37,11 +37,18 @@ def check_refresh(workbook, office, timeout):
         inactive_age = inputs[f'{inactive}8'].value
         basis = book['Risk_Settings']['B9'].value
         disability_rate = book['Tax_Tables']['B251'].value
+        profile_start = 26 + 9 * (inputs['B15'].value - 1)
+        profile_weight = book['Asset_Allocation'][f'B{profile_start}'].value
+        assert book[RISK]['AF3'].value == inputs['B7'].value
+        assert book[RISK]['AF5'].value == 1000
+        assert book['Summary']['F12'].value == book[RISK]['AF8'].value
 
     with TemporaryDirectory(prefix='retirement-risk-acceptance-') as temp:
         work = Path(temp)
         source = work / 'source.xlsx'
-        prepare_xlsx(workbook, source, {'Inputs': {f'{active}53': 125}})
+        different_hsa_mix = {f'E{profile_start + offset}': int(offset == 2) for offset in range(5)}
+        prepare_xlsx(workbook, source, {'Inputs': {f'{active}31': 10000, f'{active}53': 125},
+                                       'Asset_Allocation': different_hsa_mix})
         original = source.read_bytes()
 
         refreshed = work / "Family's plan.xlsx"
@@ -85,6 +92,7 @@ def check_refresh(workbook, office, timeout):
             ('active', {'Inputs': {f'{active}53': 124}}, 'stale'),
             ('inactive', {'Inputs': {f'{inactive}8': inactive_age + 1}}, 'current'),
             ('future-dollars', {'Summary': {'K18': 'Future dollars'}}, 'current'),
+            ('asset-mix', {'Asset_Allocation': {f'B{profile_start}': profile_weight + 0.01}}, 'stale'),
             ('returns', {'Risk_Settings': {'B9': 3 - basis}}, 'stale'),
             ('tax', {'Tax_Tables': {'B251': disability_rate + 0.00000006}}, 'stale'),
             ('scenario', {'Inputs': {'B4': case % 3 + 1}}, 'stale'),
@@ -94,6 +102,9 @@ def check_refresh(workbook, office, timeout):
             prepare_xlsx(refreshed, changed, changes)
             candidate = recalculate(changed, output, work / 'profile', office, timeout)
             check_state(candidate, state)
+            if name == 'asset-mix':
+                with Workbook(candidate) as book:
+                    assert book['Inputs']['B71'].value == 'Check the selected mixes on Asset_Allocation'
     print('PASS workbook risk refresh, stale results, scenario switches, and source preservation')
 
 

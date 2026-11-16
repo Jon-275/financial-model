@@ -146,9 +146,7 @@ class AnnualModel:
         owner_age = (age, spouse_age)[self.owner]
         working, single = p['E'] == 'Working', p['F'] == 'Single'
         year_tax = self.tables.for_year(row.year, i[14], p['H'], single, age, spouse_age)
-        rate_col = 0 if working else 1
-        roth_return = i[21 + rate_col]
-        baseline = (i[17 + rate_col], i[19 + rate_col], roth_return, roth_return)
+        baseline = self.scenario.account_returns(retired=not working)
         fixed = i[38] * (1 if row.year < i[39] else i[40] / 12 if row.year == i[39] else 0)
         fixed *= i[56] if single else 1
         wages, deferral, hsa_contribution, match = (p[c] for c in ('I', 'J', 'K', 'L'))

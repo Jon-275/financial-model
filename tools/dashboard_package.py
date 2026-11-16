@@ -5,6 +5,8 @@ from posixpath import basename, dirname, join, normpath
 
 from lxml import etree as E
 
+from risk_presentation import CURRENT, DATA_SHEET, SHEET
+
 X = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 C = "{http://schemas.openxmlformats.org/drawingml/2006/chart}"
@@ -75,7 +77,7 @@ def _add_names(workbook):
             f"{first}:INDEX({source},MAX(1,{c}))"
         )
     for name, column in _RISK_SERIES.items():
-        start = f'IF(\'Risk Results\'!$Z$1="current",1,127)'
+        start = f'IF({CURRENT},1,127)'
         length = f'MAX(1,{sheet}$K$2)'
         # The second half is physically empty. It keeps risks off the chart
         # while preserving the length of the common category axis.
@@ -193,7 +195,8 @@ def dashboard_chart_data(formula, workbook):
         column = _RISK_SERIES[name]
         sheet = workbook["Report_Data"]
         count = max(1, int(sheet["K2"].value or 0))
-        if workbook["Risk Results"]["Z1"].value != "current":
+        risk_sheet = DATA_SHEET if DATA_SHEET in workbook.sheetnames else SHEET
+        if workbook[risk_sheet]["Z1"].value != "current":
             return [None] * count
         return [sheet[f"{column}{row}"].value for row in range(2, 2 + count)]
     return None

@@ -12,15 +12,16 @@ from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.utils.exceptions import InvalidFileException
 
 from dashboard_package import rebind_dashboard_workbook
+from risk_presentation import DATA_SHEET
 from risk_engine import __version__
 from risk_engine.scenario import (
-    ASSET_ROWS, CACHED_INPUT_ROWS, CORRELATION_HEADER_ROW, CORRELATION_ROWS,
+    ASSET_ROWS, CACHED_INPUT_ROWS, CORRELATION_HEADER_ROW, CORRELATION_ROWS, HSA_RETURN_ROWS,
     ONE_TIME_EXPENSE_ROWS, RISK_CONTROL_ROWS, RISK_RETURN_BASIS_ROW, RISK_STRESS_ROWS,
     SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW, asset_profile_start,
 )
 
-SHEET = 'Risk Results'
-SCHEMA = 'retirement-risk-workbook-v1'
+SHEET = DATA_SHEET
+SCHEMA = 'retirement-risk-workbook-v2'
 STATUS = 'Z1'
 SCHEMA_CELL = 'Z2'
 SNAPSHOT_CELL = 'Z3'
@@ -48,7 +49,7 @@ def _manifest():
     for row in SCENARIO_INPUT_ROWS:
         yield (f'Selected scenario, row {row}',
                f'INDEX(Inputs!$D{row}:$F{row},1,Inputs!$B$4)', False)
-    for row in (*SCENARIO_INPUT_ROWS, *CACHED_INPUT_ROWS, 84, *range(130, 134)):
+    for row in (*SCENARIO_INPUT_ROWS, *CACHED_INPUT_ROWS, 84, *range(130, 134), *HSA_RETURN_ROWS):
         yield f'Effective input B{row}', f'Inputs!$B${row}', row <= 129 and row != 84
     for row in (*ONE_TIME_EXPENSE_ROWS, ONE_TIME_EXPENSE_ROWS.stop):
         for col in 'BC':
@@ -84,6 +85,25 @@ _LAST_CHECK_ROW = _FIRST_CHECK_ROW + len(_MANIFEST) - 1
 
 def configure_freshness(put, *, is_tax_formula=None):
     """Author the visible snapshot audit and the status used by Summary formulas."""
+    for address, text, style in (
+        ('A1', 'Market risk data', 'detail_title'),
+        ('A2', 'The local risk runner saves results here. Review the results on Risk Results.', 'report_caption'),
+        ('A3', 'Compare the saved assumptions with the current plan. A match is shown as 1.', 'report_caption'),
+        ('A5', 'Back to risk results', 'report_link'),
+        ('A6', 'Open saved data', 'report_link'),
+        ('A7', 'Open assumption comparison', 'report_link'),
+    ):
+        put(SHEET, address, text, style)
+    for row, label in enumerate((
+        'Run date', 'Scenario', 'End age', 'Trials', 'Seed', 'Engine version',
+        'Fixed success rate', 'Flexible success rate', 'Runs with cuts', 'Median years with cuts',
+        'Spending cut trigger', 'Cut of flexible budget', 'Flexible share', 'Opening year',
+        'Market variation multiplier', 'Early-loss years', 'Median first shortfall age',
+        'Source checksum', 'Input checksum', 'Representative runs',
+    ), 2):
+        put(SHEET, f'AE{row}', label, 'report_caption')
+    put(SHEET, 'AE28', 'Early-loss test cases', 'report_section')
+    put(SHEET, 'AE46', 'Balances by age', 'report_section')
     put(SHEET, SCHEMA_CELL, SCHEMA)
     put(SHEET, ENGINE_CELL, __version__)
     for column, title in zip(('AA', 'AB', 'AC', 'AD'),
@@ -116,7 +136,7 @@ def _worksheet(source, *, calculated=False):
         raise ValueError('The risk workbook could not be read.') from None
     try:
         if SHEET not in book.sheetnames:
-            raise ValueError('Use a workbook release with a Risk Results sheet.')
+            raise ValueError('Use a workbook release with a Risk_Data sheet.')
         sheet = book[SHEET]
         version = sheet[SCHEMA_CELL].value
         if version != SCHEMA or sheet[ENGINE_CELL].value != __version__:

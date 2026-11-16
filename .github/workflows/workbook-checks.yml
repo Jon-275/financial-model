@@ -63,7 +63,8 @@ jobs:
             --case report_explains_missing_retirement_age \
             --case invalid_age126 \
             --case targeting_aca_cliff_preserves_earliest_fundable_branch \
-            --case wage_growth_includes_inflation_and_stops_at_retirement
+            --case wage_growth_includes_inflation_and_stops_at_retirement \
+            --case hsa_uses_its_own_mix_in_both_stages
           python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase3-fixtures.json --compact --ledger
       - name: Refresh and verify the embedded market risk results
         run: python tests/risk_workbook_acceptance.py workbook/retirement-model.xlsx

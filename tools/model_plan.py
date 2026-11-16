@@ -13,6 +13,8 @@ import risk_presentation
 import risk_workbook
 import roth_contributions
 import workbook_layout
+import workbook_guide
+from risk_engine.scenario import HSA_RETURN_ROWS
 import healthcare
 import published_tax
 import tax_policy
@@ -20,7 +22,7 @@ import targeting
 
 END = 130
 FUNDING_ROWS = STEPS = funding_search.ROWS
-MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',risk_workbook.SHEET,dashboard.SHEET,plan_report.APPENDIX,plan_report.INDEX]
+MODULES = ['Cash_Flow', 'Roth_Access', 'Funding_Calc', 'Checks','Healthcare','Targeting_Calc','Risk_Settings',risk_presentation.SHEET,risk_workbook.SHEET,dashboard.SHEET,plan_report.APPENDIX,plan_report.INDEX]
 cells = defaultdict(dict)
 styles = defaultdict(dict)
 shared = defaultdict(dict)
@@ -78,7 +80,7 @@ def inputs(wb):
                      'OR(B97=1,B97=2)','OR(B98=0,B98=1)','OR(B28=1,B28=2)',
                      'MIN(B25:B27,B30:B38,B42:B44,B46:B47,B52,B59)>=0',
                      'ISNUMBER(CHOOSE(B4,D55,E55,F55))','CHOOSE(B4,D55,E55,F55)>=0','CHOOSE(B4,D55,E55,F55)<=1',
-                     'OR(B28=2,B30<=B27)','B13>=-1','B14>-1','MIN(B17:B22)>-1'))
+                     'OR(B28=2,B30<=B27)','B13>=-1','B14>-1','MIN(B17:B22,B134:B135)>-1'))
     put('Inputs','B99',f'=IFERROR(IF(AND({checks}),"OK","Check cash and Roth inputs"),"Check cash and Roth inputs")','note')
     put('Inputs','A83',"Use today's dollars. Shared by all scenarios.", 'note')
     put('Inputs','A84','One-time expense check','label')
@@ -105,6 +107,7 @@ def inputs(wb):
         (f'AND({working},COUNT(INDEX(D12:F12,1,B4))<>1)', 'Enter annual pay on Inputs'),
         (f'AND({working},COUNT(INDEX(D36:F36,1,B4))<>1)', 'Enter annual spending now on Inputs'),
         (f'AND({retired},COUNT(INDEX(D37:F37,1,B4))<>1)', 'Enter retirement spending on Inputs'),
+        ('OR(Asset_Allocation!B94<>"OK",Asset_Allocation!B95<>"OK")', 'Check the selected mixes on Asset_Allocation'),
     ]
     readiness = '"OK"'
     for condition, message in reversed(age_checks + required):
@@ -114,13 +117,24 @@ def inputs(wb):
     for r in range(17,23):
         rate = original(wb['Inputs'], f'B{r}')
         put('Inputs',f'B{r}',f'=(1+({rate}))*(1-$B$131)-1')
+    for hsa_row, profile_row, taxable_row, pretax_row, roth_row, blended_row, stage in zip(
+        HSA_RETURN_ROWS, (15, 16), (17, 18), (19, 20), (21, 22), (23, 24), ('working years', 'retirement')
+    ):
+        put('Inputs', f'A{roth_row}', f'Roth return in {stage}', 'label')
+        put('Inputs', f'A{hsa_row}', f'HSA return in {stage}', 'label')
+        gross = f'INDEX(Asset_Allocation!$B$54:$B$65,($B${profile_row}-1)*4+4)'
+        put('Inputs', f'B{hsa_row}', f'=(1+{gross})*(1-$B$131)-1', 'percent_active')
+        put('Inputs', f'G{hsa_row}', 'Uses the HSA investment mix and annual investment fee.', 'note')
+        weighted = (f'B25*B{taxable_row}+B26*B{pretax_row}+B27*B{roth_row}+B31*B{hsa_row}')
+        put('Inputs', f'B{blended_row}', f'=IFERROR(({weighted})/SUM(B25:B27,B31),B{taxable_row})')
     for col in 'DEF':
         styles['Inputs'][f'{col}55'] = 'percent_input'
     put('Inputs','A55','Survivor’s share of combined Social Security','label')
     put('Inputs','B55','=B44*CHOOSE(B4,D55,E55,F55)')
     put('Inputs','C55','today’s $','label')
     for addr, val in {'A13':'Annual wage growth',
-                      'A27':'Opening Roth balance','A28':'Opening Roth type: 1 = IRA, 2 = workplace',
+                      'A26':'Opening pre-tax IRA or 401(k) balance','A27':'Opening Roth balance',
+                      'A28':'Opening Roth type: 1 = Roth IRA, 2 = workplace Roth',
                       'A29':'Primary first Roth IRA tax year','A30':'Opening Roth IRA basis accessible today',
                       'A35':'Annual Roth IRA savings target (combined)','A50':'Last conversion age (traditional owner)',
                      }.items():
@@ -149,10 +163,22 @@ FUND_HEADERS = ['Requested draw','Lower draw','Upper draw','Allow conversion','T
 
 def cash_ledger():
     s='Cash_Flow'
-    put(s,'A1','Annual cash flow','title'); put(s,'A2','Tax is funded in the year it is calculated. Unpaid tax and unmet spending are shown separately.','note')
+    put(s,'A1','Annual cash flow','title')
+    put(s,'A2','Future dollars. Spendable income and withdrawals pay taxes first, then bills. See columns AN–AQ for income sources.','report_caption')
+    put(s,'A3','Open income sources','report_link')
+    put(s,'AN1','Cash income sources','detail_title')
+    put(s,'AN2','These amounts total cash income before any Marketplace credit.','report_caption')
+    put(s,'AN3','Back to cash flow','report_link')
     row(s,4,CASH_HEADERS,'header')
+    for col, label in zip(('AN','AO','AP','AQ'), ('Pay after pre-tax savings','Social Security',
+                                                'Other spendable income','Outside cash interest')):
+        put(s,f'{col}4',label,'report_table_head')
     for r in range(5,END+1):
         prev=r-1; f=group(r)+STEPS-1; p=lambda c:pj(c,r); b=lambda c:pj(c,prev)
+        income_sources = (f'{p("I")}-{p("J")}-{p("K")}', p('N'),
+                          f'{p("O")}*Inputs!$B$86', f'{p("AG")}*Inputs!$B$89')
+        for col, amount in zip(('AN','AO','AP','AQ'), income_sources if r != 5 else ('0',) * 4):
+            put(s,f'{col}{r}',active(r,amount),'money')
         if r==5:
             values=[p('B'),p('C'),*['0']*9,'"Opening balances"',*['0']*17]
         else:
@@ -161,7 +187,7 @@ def cash_ledger():
             capacity=f'IF(OR({p("E")}="Working",{age}<60,{p("R")}>0),{p("T")},{cap})'
             share=primary_share(r)
             savings_cap=f'MIN(MAX(0,{p("I")}-{p("J")}-{p("K")}),IF({share}=0,G{r},{rt("AN",r)}/{share}),IF({share}=1,G{r},{rt("AO",r)}/(1-{share})))'
-            base_cash=f'{p("I")}-{p("J")}-{p("K")}+{p("N")}+{p("O")}*Inputs!$B$86+{p("AG")}*Inputs!$B$89'
+            base_cash=f'AN{r}+AO{r}+AP{r}+AQ{r}'
             values=[p('B'),p('C'),f'AB{r}+AC{r}',
                     f'SUM({p("AW")},{p("AX")},{p("BA")})',p('P'),f'O{prev}',
                     f'IF({p("E")}="Working",Inputs!$B$35*{p("G")},0)',b('BC'),capacity,
@@ -180,8 +206,10 @@ def cash_ledger():
 
 def roth():
     s='Roth_Access'; put(s,'A1','Roth balances and access','title')
-    put(s,'A2','IRA basis remains separate from market value. Workplace Roth withdrawals require verified plan access and full qualification.','note')
-    row(s,4,ROTH_HEADERS,'header')
+    put(s,'A2','Future dollars. Roth IRA and workplace Roth (such as a Roth 401(k)) each have their own access limits.','report_caption')
+    put(s,'A3','See Projection for pre-tax IRA and 401(k) balances.','report_caption')
+    row(s,4,[label.replace(' IRA', ' Roth IRA').replace(' workplace', ' workplace Roth')
+             for label in ROTH_HEADERS],'header')
     for r in range(5,END+1):
         prev=r-1; p=lambda c:pj(c,r)
         rv='Inputs!$B$27'; split='Inputs!$B$90'; typ='Inputs!$B$28'; pri='Inputs!$B$29'; spouse='Inputs!$B$92'
@@ -248,6 +276,7 @@ def funding(wb):
 
 def projection(wb):
     s='Projection'
+    work_hsa, retired_hsa = (f'Inputs!$B${row}' for row in HSA_RETURN_ROWS)
     for a,label in {'M4':'Roth IRA savings funded','Q4':'Cash need before current tax','X4':'Accessible Roth at year start',
                     'Z4':'Essential funding shortfall','AV4':'Current-year tax','BB4':'Taxable savings deposited'}.items(): put(s,a,label)
     for r in range(5,END+1):
@@ -263,6 +292,7 @@ def projection(wb):
             'K':f'IF(E{r}="Working",MIN(MAX(0,I{r}-J{r}),Inputs!$B$34*G{r}),0)',
             'M':cf('R',r),'O':f'IF(AND(C{r}>=Inputs!$B$87,C{r}<=Inputs!$B$88),Inputs!$B$52*G{r},0)',
             'Q':f'MAX(0,{cf("W",r)})','X':rt('T',r),'Z':cf('V',r),'BB':cf('T',r),'BF':rt('AM',r),
+            'BG':f'MAX(0,BG{p}+K{r}-P{r})*(1+IF(E{r}="Working",{work_hsa},{retired_hsa}))',
             'U':f'MAX(0,Inputs!$B$49*G{r}+AL{r}-(T{r}+O{r}+AC{r}+0.85*N{r}))',
             'BJ':f'BH{r}-BI{r}-{cf("O",r)}',
             'BO':f'SUM(J{r}:M{r})+BB{r}-SUM(V{r}:W{r})-Y{r}-P{r}',
@@ -297,7 +327,8 @@ def reconciliation():
     """Calculate annual reconciliation in the ledger and show its details on Checks."""
     sheet = 'Checks'
     put(sheet, 'A1', 'Model checks', 'title')
-    put(sheet, 'A2', 'Cash and account balances reconcile to one cent. An unfunded year is a planning result.', 'note')
+    put(sheet, 'A2', 'Review flags a difference above one cent or a funding calculation that needs checking.', 'report_caption')
+    put(sheet, 'A3', 'A year can pass these checks and still have unpaid spending or taxes.', 'report_caption')
     diagnostics = {
         'C': 'Cash balance error', 'D': 'Tax balance error', 'E': 'Roth balance error',
         'F': 'Portfolio flow error', 'G': 'Roth draw over access', 'H': 'Negative account balance',
@@ -347,7 +378,7 @@ def guidance(start_sheet):
         'B11': ('Choose the scenario to edit, then enter ages, income, savings and spending.', 'report_body'),
         'B12': ('Open Inputs', 'report_link'),
         'B14': ('3. Review your plan', 'report_section'),
-        'B15': ('Read the funding result, see how retirement is paid for, and print the plan from Excel.', 'report_body'),
+        'B15': ('Read the funding result and print the five-page plan directly from Summary.', 'report_body'),
         'B16': ('Open Summary', 'report_link'),
         'B19': ('=HYPERLINK("https://github.com/Jon-275/financial-model/blob/main/docs/model-guide.md","Read the model guide")', 'report_link'),
     }
@@ -379,9 +410,9 @@ def guidance(start_sheet):
             'G17': 'This return comes from Asset_Allocation.',
             'G23': 'This average uses today’s balances across all accounts.',
             'G25': 'Enter the current value of investments in taxable accounts.',
-            'G26': 'Enter the current value of traditional retirement accounts.',
+            'G26': 'Enter the pre-tax IRA and 401(k) balance for the owner in row 97.',
             'G27': 'Enter the combined Roth balance today.',
-            'G28': 'Use 1 for Roth IRA or 2 for workplace Roth.',
+            'G28': 'Use 1 for Roth IRA or 2 for a Roth 401(k) or other workplace Roth.',
             'G29': 'Enter your first Roth IRA tax year. Use 0 if unknown.',
             'G30': 'Enter Roth IRA contributions and conversions available today.',
             'G31': 'Enter your current health savings account (HSA) balance.',
@@ -469,7 +500,7 @@ def guidance(start_sheet):
         'J12': 'Healthcare details',
         'J13': 'Settings for all scenarios',
         'J15': 'Review your result',
-        'J16': 'Print input decisions',
+        'J16': 'View input decisions',
     }.items():
         put('Inputs', address, value, 'report_section' if address == 'J4' else 'report_link')
     for sheet, cells_by_address in notes.items():
@@ -511,13 +542,15 @@ def main():
     dashboard.configure(put)
     plan_report.move_details(wb['Summary'], cells['Summary'], styles['Summary'], put)
     plan_report.configure(put)
-    risk_presentation.configure(put)
+    risk_presentation.configure(put, plan_report.display_dollars, plan_report.price_index_at,
+                                plan_report.FUTURE_VIEW)
     def is_tax_formula(address):
         value = cells['Tax_Tables'].get(address, wb['Tax_Tables'][address].value)
         return isinstance(value, str) and value.startswith('=')
     risk_workbook.configure_freshness(put, is_tax_formula=is_tax_formula)
     plan_report.configure_index(put)
     input_record.configure(put)
+    workbook_guide.configure(put)
     workbook_layout.write_scenarios(put)
     order = workbook_layout.sheet_order([s for s in wb.sheetnames if s not in risk_cleanup.LEGACY_SHEETS] + MODULES)
     out.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared},separators=(',',':')))

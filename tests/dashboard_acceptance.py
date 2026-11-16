@@ -35,7 +35,9 @@ def validate_dashboard(wb, tolerance):
     if report:
         _validate_report(wb, data, summary, status, horizon, retirement, cash_count, tolerance)
         if 'Risk Results' in wb.parts:
-            _validate_risk_report(wb['Risk Results'], inputs, projection, data, summary, horizon, tolerance)
+            risk = wb['Risk Results']
+            snapshot = wb['Risk_Data'] if 'Risk_Data' in wb.parts else risk
+            _validate_risk_report(risk, snapshot, inputs, projection, data, summary, horizon, tolerance)
     else:
         expected_headline = 'YES' if status == 'YES' else 'NO' if has_result else 'CHECK PLAN'
         assert summary['B3'].value == expected_headline, 'Summary headline differs from the funding result.'
@@ -93,7 +95,7 @@ def validate_dashboard(wb, tolerance):
 
 
 
-def _validate_risk_report(risk, inputs, projection, data, summary, horizon, tolerance):
+def _validate_risk_report(results, risk, inputs, projection, data, summary, horizon, tolerance):
     status = risk['Z1'].value
     assert status in ('current', 'stale', 'missing'), 'Unknown market risk result status.'
     future_view = summary['K18'].value == 'Future dollars'
@@ -113,7 +115,7 @@ def _validate_risk_report(risk, inputs, projection, data, summary, horizon, tole
             'Retirement timing', 'Retirement spending', 'Roth IRA savings goal'
         ]
         result_cells = ('B7', 'F7', 'B58', *(f'{col}{row}' for row in (13, 14, 15) for col in 'FHJ'))
-        assert all(risk[address].value in (None, '') for address in result_cells)
+        assert all(results[address].value in (None, '') for address in result_cells)
         assert all(data[f'{col}{row}'].value in (None, '')
                    for row in range(2, 128) for col in ('AF', 'AG', 'AH'))
         if horizon:
@@ -132,8 +134,8 @@ def _validate_risk_report(risk, inputs, projection, data, summary, horizon, tole
     trials = risk['AF5'].value
     assert horizon >= 2 and 0 <= fixed <= 1 and 0 <= flexible <= 1 and trials >= 1
     assert isclose(summary['F12'].value, fixed, abs_tol=1e-14)
-    assert isclose(risk['B7'].value, fixed, abs_tol=1e-14)
-    assert isclose(risk['F7'].value, flexible, abs_tol=1e-14)
+    assert isclose(results['B7'].value, fixed, abs_tol=1e-14)
+    assert isclose(results['F7'].value, flexible, abs_tol=1e-14)
     assert summary['F13'].value == f'{round(fixed * trials):,} of {trials:,} paths paid all costs'
     for printed, source in zip(range(71, 74), range(21, 24)):
         assert isclose(summary[f'E{printed}'].value, risk[f'AG{source}'].value * factor(horizon - 1),
@@ -151,14 +153,17 @@ def _validate_risk_report(risk, inputs, projection, data, summary, horizon, tole
         chart_row, table_row, source_row = offset + 2, offset + 58, offset + 46
         if offset >= horizon:
             assert all(data[f'{col}{chart_row}'].value in (None, '') for col in ('AF', 'AG', 'AH'))
-            assert risk[f'B{table_row}'].value in (None, '')
+            assert results[f'B{table_row}'].value in (None, '')
             continue
         low, median, high = (risk[f'{col}{source_row}'].value for col in ('AI', 'AJ', 'AK'))
         assert 0 <= low <= median <= high, 'Risk interval points are out of order.'
-        assert risk[f'B{table_row}'].value == risk[f'AG{source_row}'].value == data[f'A{chart_row}'].value
+        assert results[f'B{table_row}'].value == risk[f'AG{source_row}'].value == data[f'A{chart_row}'].value
         assert isclose(data[f'AF{chart_row}'].value, low * factor(offset), abs_tol=tolerance)
         assert isclose(data[f'AG{chart_row}'].value, (high - low) * factor(offset), abs_tol=tolerance)
         assert isclose(data[f'AH{chart_row}'].value, median * factor(offset), abs_tol=tolerance)
+        if results is not risk:
+            for col, amount in zip('FHJ', (low, median, high)):
+                assert isclose(results[f'{col}{table_row}'].value, amount * factor(offset), abs_tol=tolerance)
 
 
 def _validate_report(wb, data, summary, status, horizon, retirement, cash_count, tolerance):
@@ -166,13 +171,19 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
     selected = inputs['B4'].value
     future_view = summary['K18'].value == 'Future dollars'
     if 'Appendix' in wb.parts and selected in (1, 2, 3):
-        label = inputs['L139'].value
-        assert label.startswith(f"Scenario: {inputs['B7'].value}")
-        for source, reported in (('B10', 'O146'), ('B53', 'O147'), ('B13', 'O150'),
-                                 ('B27', 'S146'), ('B36', 'O171')):
+        if 'Risk_Data' in wb.parts:
+            record = summary
+            assert record['B98'].value == 'Input decisions'
+            assert record['B130'].value == 'Spending and account decisions'
+            links = (('B10', 'E107'), ('B53', 'E108'), ('B13', 'E111'), ('B27', 'I107'), ('B36', 'E137'))
+        else:
+            record = inputs
+            assert record['L139'].value.startswith(f"Scenario: {inputs['B7'].value}")
+            links = (('B10', 'O146'), ('B53', 'O147'), ('B13', 'O150'), ('B27', 'S146'), ('B36', 'O171'))
+        for source, reported in links:
             editable = f'{"DEF"[int(selected) - 1]}{source[1:]}'
             expected = inputs[source].value if inputs[editable].value not in (None, '') else None
-            value = inputs[reported].value
+            value = record[reported].value
             assert value == expected or expected is None and value in (None, ''), (source, reported)
     headline = summary['B8'].value
     if status == 'YES':
@@ -195,6 +206,20 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
     else:
         assert summary['B12'].value in (None, '')
 
+    if 'Risk_Data' in wb.parts:
+        assert isclose(wb['Risk_Settings']['B10'].value,
+                       wb['Risk_Settings']['B7'].value * wb['Risk_Settings']['B8'].value,
+                       abs_tol=1e-13)
+        for row in range(6, 5 + horizon):
+            p = lambda col: projection[f'{col}{row}'].value
+            flow = lambda col: cash[f'{col}{row}'].value
+            expected = (p('I') - p('J') - p('K'), p('N'), p('O') * inputs['B86'].value,
+                        p('AG') * inputs['B89'].value)
+            for column, amount in zip(('AN', 'AO', 'AP', 'AQ'), expected):
+                assert isclose(flow(column), amount, rel_tol=1e-13, abs_tol=tolerance)
+            assert isclose(flow('AB'), sum(expected), rel_tol=1e-13, abs_tol=tolerance)
+            assert isclose(flow('C'), flow('AB') + flow('AC'), rel_tol=1e-13, abs_tol=tolerance)
+
     def annual_row(row, nominal):
         def cf(column):
             return cash[f'{column}{row}'].value
@@ -205,7 +230,7 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
                 (max(0, paid - cf('C')) + cf('E')) / cpi,
                 (cf('D') - healthcare) / cpi, healthcare / cpi,
                 (cf('F') + cf('M')) / cpi, cf('V') / cpi,
-                projection[f'BN{row}'].value)
+                projection[f'{"BH" if nominal else "BN"}{row}'].value)
 
     for sheet, first, count, source, columns in (
         (summary, 41, cash_count, max(2, retirement - 2) + 4, 'BCDEFGHI'),
@@ -217,7 +242,8 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
             if offset >= count:
                 assert all(value in (None, '') for value in values), (sheet.title, row)
                 continue
-            for actual, expected in zip(values, annual_row(source + offset, sheet is summary and future_view)):
+            nominal = future_view and (sheet is summary or 'Risk_Data' in wb.parts)
+            for actual, expected in zip(values, annual_row(source + offset, nominal)):
                 assert isinstance(actual, (int, float)) and isclose(actual, expected, rel_tol=1e-13, abs_tol=tolerance), (
                     sheet.title, row, actual, expected
                 )

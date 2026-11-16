@@ -27,6 +27,7 @@ _LAST_ROW = 130
 SCENARIO_INPUT_ROWS = (*range(7, 17), *range(25, 63), 67, 68, 69,
                        *range(86, 99), *range(101, 125), 126, 127, 128)
 CACHED_INPUT_ROWS = (*range(17, 25), *range(63, 67), 70, 71, 99, 125, 129)
+HSA_RETURN_ROWS = (134, 135)
 ONE_TIME_EXPENSE_ROWS = range(75, 83)
 ASSET_ROWS = range(6, 11)
 CORRELATION_HEADER_ROW = 15
@@ -88,6 +89,14 @@ class Scenario:
     @property
     def tax_tables(self) -> Cells:
         return self.tax
+
+    def account_returns(self, retired: bool) -> tuple[float, float, float, float]:
+        """Read the base rates in taxable, pre-tax, Roth and HSA order."""
+        offset = int(retired)
+        roth = self.inputs[21 + offset]
+        # Earlier workbooks applied the Roth rate to the HSA.
+        return (self.inputs[17 + offset], self.inputs[19 + offset], roth,
+                self.inputs.get(HSA_RETURN_ROWS[offset], roth))
 
 
 def _invalid(location: str, reason: str) -> None:
@@ -207,6 +216,10 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             _invalid('Inputs!B131:B132', 'fee or healthcare inflation is outside the supported range')
         if _cell(cached['Inputs']['B133'], 'Inputs!B133') != 'OK':
             _invalid('Inputs!B133', 'planning assumptions have not passed validation')
+    if raw['Inputs']['B134'].data_type == 'f':
+        for row in HSA_RETURN_ROWS:
+            location = f'Inputs!B{row}'
+            inputs[row] = _number(_cell(cached['Inputs'][f'B{row}'], location), location)
     _validate_assumptions(inputs)
     return selected, inputs, _one_offs(raw)
 
@@ -302,9 +315,12 @@ def _allocation(raw, inputs) -> Allocation:
     working = profile(inputs[15])
     retirement = profile(inputs[16])
     for weights, return_rows, qualified_row, ordinary_row in (
-        (working, (17, 19, 21), 63, 65), (retirement, (18, 20, 22), 64, 66)
+        (working, (17, 19, 21, HSA_RETURN_ROWS[0]), 63, 65),
+        (retirement, (18, 20, 22, HSA_RETURN_ROWS[1]), 64, 66),
     ):
         for row, weight in zip(return_rows, weights):
+            if row not in inputs:
+                continue
             gross = math.fsum(x * y for x, y in zip(weight, means))
             net = (1 + gross) * (1 - inputs.get(131, 0)) - 1
             _matches(inputs[row], net, f'Inputs!B{row}')
