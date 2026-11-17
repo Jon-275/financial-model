@@ -10,13 +10,15 @@ from xml.etree import ElementTree
 from zipfile import BadZipFile
 
 from example_inputs import example_cells
+from workbook_privacy import audit_fixture, audit_package
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsx'
+RELEASE_SHA256 = 'c06fd3b55b03ae3d59c9467a91ac62b4c0015d85fd1256d7602674f1ed95fef4'
 TEMPLATE = 'workbook/build-template.xlsx'
-TEMPLATE_SHA256 = '8c07a8d5d6d58feb90b6dc4feceef95129acb89eb2393337fcb5b80900b53af1'
-EXAMPLE_RISK_SHA256 = '5948f6508ff89680cc8b006566b82a0363193d2a321ca93e9e35a88959379359'
+TEMPLATE_SHA256 = 'fdf966bd8556733b946ce6c1ee36b812c8a1b1abe901c17fc94bb76b90e45221'
+EXAMPLE_RISK_SHA256 = 'a88cb59f08344382508b56e9b1011b8ed7fa006d80fbdf51ec3cf78c777e9360'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
@@ -43,7 +45,9 @@ def risk_snapshot_digest(workbook):
 
 def check_sample_workbook(path):
     check_release_package(path)
+    audit_package(path)
     with Workbook(path) as workbook:
+        audit_fixture(workbook)
         inputs = workbook['Inputs']
         for address, expected in example_cells().items():
             cell = inputs[address]
@@ -56,6 +60,8 @@ def check_sample_workbook(path):
                 raise ValueError(f'Income_Targeting!{address} differs from the example settings.')
         if workbook['Risk_Data']['Z1'].value != 'current' or risk_snapshot_digest(workbook) != EXAMPLE_RISK_SHA256:
             raise ValueError('Risk_Data differs from the verified fictional example.')
+    if sha256(path.read_bytes()).hexdigest() != RELEASE_SHA256:
+        raise ValueError('The release workbook differs from the approved synthetic artifact.')
 
 
 def main():
@@ -71,13 +77,17 @@ def main():
             if len(files) != 1 or files[0].split(b' ', 1)[0] != b'100644':
                 raise ValueError('Expected a regular workbook file.')
             content = git('show', f':{name}')
-            if name == TEMPLATE:
-                if sha256(content).hexdigest() != TEMPLATE_SHA256:
-                    raise ValueError('The build template changed. Audit it for private inputs and metadata before updating its checksum.')
-            else:
-                with TemporaryDirectory(prefix='retirement-workbook-check-') as directory:
-                    staged = Path(directory) / Path(name).name
-                    staged.write_bytes(content)
+            with TemporaryDirectory(prefix='retirement-workbook-check-') as directory:
+                staged = Path(directory) / Path(name).name
+                staged.write_bytes(content)
+                if name == TEMPLATE:
+                    check_release_package(staged)
+                    audit_package(staged, template=True)
+                    with Workbook(staged) as workbook:
+                        audit_fixture(workbook)
+                    if sha256(content).hexdigest() != TEMPLATE_SHA256:
+                        raise ValueError('The audited build template differs from its approved checksum.')
+                else:
                     check_sample_workbook(staged)
         except (AssertionError, BadZipFile, ElementTree.ParseError, KeyError, ValueError) as exc:
             print(f'{name}: {exc}', file=sys.stderr)

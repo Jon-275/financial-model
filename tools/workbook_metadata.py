@@ -1,10 +1,10 @@
 """Remove inherited document metadata from the release workbook package."""
 
 from lxml import etree
+from workbook_privacy import DISCARDED_PARTS
 
 
 MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
-DISCARDED_PARTS = frozenset({'docMetadata/LabelInfo.xml', 'docProps/custom.xml', 'xl/calcChain.xml'})
 _WORKBOOK_METADATA = (
     '{http://schemas.microsoft.com/office/spreadsheetml/2014/revision}revisionPtr',
     MAIN + 'fileSharing',

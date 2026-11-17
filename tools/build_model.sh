@@ -12,19 +12,13 @@ input="$input_dir/$(basename -- "$1")"
 output=$2
 [[ -f "$input" && ! -e "$output" ]] || { printf 'Use an existing baseline and a new output path.\n' >&2; exit 2; }
 python_bin=${PYTHON_BIN:-python3}
-node_bin=${NODE_BIN:-node}
 office_bin=${SOFFICE_BIN:-soffice}
-node_path=$(command -v "$node_bin")
-module_dir=${ARTIFACT_NODE_MODULES:-$(cd -- "$(dirname -- "$node_path")/.." && pwd)/node_modules}
-[[ -d "$module_dir/@oai/artifact-tool" ]] || { printf 'Set ARTIFACT_NODE_MODULES to the bundled Artifact Tool node_modules directory.\n' >&2; exit 2; }
 temp_dir=$(mktemp -d "${TMPDIR:-/tmp}/retirement-model.XXXXXXXX")
 trap 'rm -rf -- "$temp_dir"' EXIT
 mkdir -- "$temp_dir/draft" "$temp_dir/clean" "$temp_dir/recalculated"
-ln -s -- "$module_dir" "$temp_dir/node_modules"
-cp -- "$tool_dir/author_model.mjs" "$tool_dir/dashboard_charts.mjs" "$temp_dir/"
 
 "$python_bin" "$tool_dir/model_plan.py" "$input" "$temp_dir/plan.json"
-"$node_bin" "$temp_dir/author_model.mjs" "$temp_dir/plan.json" "$temp_dir/authored.xlsx"
+"$python_bin" "$tool_dir/author_model.py" "$temp_dir/plan.json" "$temp_dir/authored.xlsx"
 "$python_bin" "$tool_dir/package_model.py" "$input" "$temp_dir/plan.json" "$temp_dir/authored.xlsx" "$temp_dir/draft/retirement-model.xlsx"
 "$python_bin" "$tool_dir/workbook_recalc.py" "$temp_dir/draft/retirement-model.xlsx" "$temp_dir/clean/retirement-model.xlsx"
 "$office_bin" "-env:UserInstallation=file://$temp_dir/office-profile" --headless --convert-to xlsx --outdir "$temp_dir/recalculated" "$temp_dir/clean/retirement-model.xlsx"

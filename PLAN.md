@@ -2,6 +2,12 @@
 
 The model tests whether household income and available savings can pay spending and taxes each year. The plan runs through the age selected on **Inputs**, up to 125.
 
+## Next planned release
+
+The [model improvement plan](docs/model-improvement-plan.md) addresses the November 17 review. It starts with the sensitive build template and repository history, then corrects expense funding, simplifies the calculation, brings market risk calculation into Excel and completes the design and publication checks. Implementation is open.
+
+Phase 1 includes deleting the 12 completed topic branches, enabling automatic branch deletion after future merges and verifying the remaining history and local clones.
+
 ## Completed
 
 | Phase | Changes |

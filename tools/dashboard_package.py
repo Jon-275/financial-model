@@ -158,7 +158,7 @@ def _combine_charts(line_chart, area_chart):
 
 
 def install_dashboard(src, authored, workbook, changes, summary_part, authored_summary_part):
-    """Replace the old Summary chart with the editable portfolio chart from Artifact Tool."""
+    """Replace the old Summary chart with the compiled editable portfolio chart."""
     drawing_part, drawing, relationships = _drawing(src, summary_part)
     authored_part, authored_drawing, authored_rels = _drawing(authored, authored_summary_part)
     [(old_anchor, old_chart)] = _chart_anchors(drawing)
@@ -166,10 +166,15 @@ def install_dashboard(src, authored, workbook, changes, summary_part, authored_s
     original_chart_part = _target(drawing_part, old_rel)
     drawing.remove(old_anchor)
     relationships.remove(old_rel)
-    [(anchor, chart), (_, area_chart)] = _chart_anchors(authored_drawing)
+    anchors = _chart_anchors(authored_drawing)
+    anchor, chart = anchors[0]
     root = _read(authored, _target(authored_part, _relationship(authored_rels, chart.get(R + "id"))))
-    area = _read(authored, _target(authored_part, _relationship(authored_rels, area_chart.get(R + "id"))))
-    _combine_charts(root, area)
+    if len(anchors) == 2:
+        area_chart = anchors[1][1]
+        area = _read(authored, _target(authored_part, _relationship(authored_rels, area_chart.get(R + "id"))))
+        _combine_charts(root, area)
+    elif len(anchors) != 1 or root.find(f'.//{C}plotArea/{C}areaChart') is None:
+        raise ValueError('Dashboard source requires the line and percentile-band charts.')
     _bind_chart(root, _SERIES.keys() | _RISK_SERIES.keys())
     changes[original_chart_part] = _pack(root)
     frame = deepcopy(anchor)

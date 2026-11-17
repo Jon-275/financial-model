@@ -25,17 +25,16 @@ Run this command from the repository root once per clone to enable the workbook 
 git config --local core.hooksPath .githooks
 ```
 
-Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The published workbook uses the fictional scenario and its saved market risk results. The commit check accepts the reviewed example snapshot by checksum. [Review a rebuilt workbook before publishing](tests/README.md#microsoft-excel-release-check)
+Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The template and published workbook use synthetic inputs and investment profiles. The commit check inspects their content, unused text and metadata before comparing approved checksums. [Review a rebuilt workbook before publishing](tests/README.md#microsoft-excel-release-check)
 
 ## Rebuild the workbook
 
-The build starts from `workbook/build-template.xlsx` and writes a new workbook. Run the commands from the repository root with Python 3.11 or later, Node.js, LibreOffice Calc, and the Codex spreadsheet runtime containing `@oai/artifact-tool`.
+The build starts from the audited synthetic `workbook/build-template.xlsx` and writes a new workbook. Run the commands from the repository root with Python 3.11 or later and LibreOffice Calc.
 
-Put `soffice` on your path or set `SOFFICE_BIN` to its executable. Set `ARTIFACT_NODE_MODULES` to the runtime’s absolute `node_modules` path. If the runtime has a separate Node executable, set `NODE_BIN` to that executable.
+Put `soffice` on your path or set `SOFFICE_BIN` to its executable. The public Python dependencies write the formulas and preserve the native Excel charts and workbook layout.
 
 ```sh
 python3 -m pip install -r tools/requirements.txt
-export ARTIFACT_NODE_MODULES=/absolute/path/to/runtime/node_modules
 mkdir -p scratch
 build_dir=$(mktemp -d scratch/build.XXXXXXXX)
 bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsx"

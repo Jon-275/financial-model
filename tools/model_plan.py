@@ -19,6 +19,7 @@ import healthcare
 import published_tax
 import tax_policy
 import targeting
+from example_inputs import example_asset_cells
 
 END = 130
 FUNDING_ROWS = STEPS = funding_search.ROWS
@@ -519,8 +520,8 @@ def main():
     tax_policy.bind_projection(m,lambda r,k:fd(funding_search.columns(tax_policy)[k],group(r)+STEPS-1))
     healthcare.configure(m,wb)
     targeting.configure(m,wb)
-    put('Asset_Allocation','A33','PROFILE 2 - Higher cash allocation')
-    put('Asset_Allocation','A42','PROFILE 3 - Highest cash allocation')
+    for address, value in example_asset_cells().items():
+        put('Asset_Allocation', address, value)
     put('Asset_Allocation','A22','Market risk uses these correlations. Keep the diagonal at 1.00 and matching values on either side equal.')
     put('Asset_Allocation','A91','The early-loss tests apply to stocks. Other assets keep their assumed returns.')
     put('Summary','B5','=COUNTIF(Inputs!$H$8:$H$69,"VARIES")+COUNTIF(Inputs!$H$86:$H$98,"VARIES")+COUNTIF(Inputs!$H$101:$H$124,"VARIES")+COUNTIF(Inputs!$H$126:$H$128,"VARIES")')

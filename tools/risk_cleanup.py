@@ -4,19 +4,20 @@ from pathlib import PurePosixPath
 from posixpath import normpath
 
 from lxml import etree as ET
+from example_inputs import example_risk_cells
 
 
 LEGACY_SHEETS = ('Sequence_Risk', 'Monte_Carlo')
 RISK_SHEET = 'Risk_Settings'
-EXAMPLE_FLEXIBLE_SHARE = 0.30
 MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 REL_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
 REL = '{' + REL_NS + '}'
 
 
 def configure(model, baseline):
-    """Carry the old workbook's report inputs into one short worksheet."""
-    sequence, monte_carlo = (baseline[name] for name in LEGACY_SHEETS)
+    """Define the example risk controls from the reviewed source fixture."""
+    del baseline
+    values = example_risk_cells()
     put = lambda address, value, style: model.put(RISK_SHEET, address, value, style)
     put('A1', 'Risk settings', 'title')
     put('A2', 'Use a spending cut you could live with. Save and close before refreshing market risk.', 'report_caption')
@@ -32,9 +33,8 @@ def configure(model, baseline):
         ('Investment return convention', 'Use 1 for compound growth or 2 for a simple annual average.', 'input'),
     )
     for row, (label, description, style) in enumerate(settings, 5):
-        source = monte_carlo['B8'] if row == 9 else sequence[f'B{row}']
         put(f'A{row}', label, 'label')
-        put(f'B{row}', EXAMPLE_FLEXIBLE_SHARE if row == 8 else source.value, style)
+        put(f'B{row}', values[f'B{row}'], style)
         put(f'C{row}', description, 'note')
     put('A10', 'Overall living-cost cut', 'report_section')
     put('B10', '=B7*B8', 'report_percent')
@@ -43,9 +43,9 @@ def configure(model, baseline):
     put('A13', 'Test', 'header')
     put('B13', 'Annual return', 'header')
     put('C13', 'Enter returns in order from lowest to highest.', 'note')
-    for offset, source in enumerate(sequence['G13:S13'][0], 14):
+    for offset in range(14, 27):
         put(f'A{offset}', offset - 13, 'whole')
-        put(f'B{offset}', source.value, 'percent_input')
+        put(f'B{offset}', values[f'B{offset}'], 'percent_input')
 
 
 def _target(source, target):

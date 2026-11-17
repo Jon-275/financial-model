@@ -30,6 +30,10 @@ jobs:
           python-version: '3.12'
       - name: Test Gemini review outcomes
         run: node --test tests/gemini_review.test.mjs
+      - name: Test workbook content privacy
+        env:
+          PYTHONPATH: tools
+        run: python -m unittest discover -s tests -p 'test_workbook_privacy.py'
       - name: Check tracked workbooks for private data
         run: |
           # Use an empty temporary Git repository so the staged-file guard checks every tracked workbook.

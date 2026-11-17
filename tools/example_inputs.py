@@ -35,3 +35,28 @@ def example_cells():
 
 
 EXAMPLE_NOTICE = 'Save a private copy before entering your figures. The example uses fictional data.'
+
+
+def example_asset_cells():
+    """Synthetic investment profiles, shared by the template and release."""
+    cells = {}
+    profiles = (
+        (24, 'PROFILE 1 - Diversified growth example', (0.45, 0.25, 0.25, 0.05, 0)),
+        (33, 'PROFILE 2 - Balanced retirement example', (0.35, 0.20, 0.35, 0.10, 0)),
+        (42, 'PROFILE 3 - Larger reserve example', (0.25, 0.15, 0.35, 0.25, 0)),
+    )
+    for heading, label, weights in profiles:
+        cells[f'A{heading}'] = label
+        for column in 'BCDE':
+            for row, weight in enumerate(weights, heading + 2):
+                cells[f'{column}{row}'] = weight
+    return cells
+
+
+def example_risk_cells():
+    """Illustrative spending policy and early-loss tests."""
+    cells = {'B5': 5, 'B6': 0.8, 'B7': 0.15, 'B8': 0.30, 'B9': 1}
+    stresses = (-0.20, -0.18, -0.16, -0.14, -0.12, -0.10, -0.08,
+                -0.06, -0.04, -0.02, 0, 0.03, 0.06)
+    cells.update({f'B{row}': value for row, value in enumerate(stresses, 14)})
+    return cells

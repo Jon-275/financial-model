@@ -10,6 +10,7 @@ python3 -m pip install -r tools/requirements.txt
 
 ```sh
 python3 tests/model_acceptance.py --release workbook/retirement-model.xlsx
+PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_privacy.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
 node --test tests/gemini_review.test.mjs
 ```
@@ -88,15 +89,29 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsx"
 ```
 
-Before publishing, confirm that the candidate came from the build template and that **Risk_Data** contains only the seeded fictional run. After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` in `tools/check_workbook_commit.py`. The commit hook compares the staged results with that checksum. The build template has its own checksum, `TEMPLATE_SHA256`. Audit its inputs, saved results and document properties before changing that checksum.
+Before publishing, confirm that the candidate came from the synthetic build template and that **Risk_Data** contains only the seeded fictional run. The content audit checks the template and release inputs, investment profiles, stored text and metadata independently of their checksums. The template also requires empty formula and chart caches.
+
+After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` and `RELEASE_SHA256` in `tools/check_workbook_commit.py`. The full-file checksum also catches added sheets, notes and other changes outside the input and risk ranges. The build template has its own checksum, `TEMPLATE_SHA256`. Audit each artifact before updating its checksum.
+
+To refresh the synthetic template, write fixture cells with the public author and preserve the source workbook's native parts. Use new output paths for each step.
+
+```sh
+python3 tools/template_fixture.py workbook/build-template.xlsx scratch/template-plan.json
+python3 tools/author_model.py scratch/template-plan.json scratch/template-cells.xlsx
+python3 tools/template_fixture.py workbook/build-template.xlsx scratch/clean-template.xlsx \
+  --authored scratch/template-cells.xlsx
+```
 
 ```sh
 PYTHONPATH=tools python3 - "$candidate" <<'PY'
 import sys
+from hashlib import sha256
+from pathlib import Path
 from check_workbook_commit import risk_snapshot_digest
 from xlsx_read import Workbook
 
 with Workbook(sys.argv[1]) as workbook:
     print(risk_snapshot_digest(workbook))
+print(sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
 PY
 ```
