@@ -55,7 +55,9 @@ def emit(m,sheet,first,c,request,tax,health):
     enabled=c['active']; cap=cash('K'); mandatory=p('T'); trad_limit=cash('I'); broker_cap=cash('H')
     room=f'MAX(0,{trad_limit}-{mandatory})'
     pref=f'IF(Inputs!$B$48=2,MIN({room},{p("U")}),0)'
-    broker_lo=f'({mandatory}+{pref})'; broker_hi=f'({broker_lo}+{broker_cap})'
+    # Use the exact traditional balance when the preferred draw exhausts it.
+    # Re-adding a mandatory draw to the remaining room can change its last bit.
+    preferred_limit=f'IF({pref}>={room},{trad_limit},{mandatory}+{pref})'
     aca=f'AND({h("M")}>0,{h("N")}>0,{h("O")}>0)'
     exact_conversion=request is not None
     req=request if exact_conversion else f'Inputs!$B$47*{p("G")}'
@@ -66,6 +68,11 @@ def emit(m,sheet,first,c,request,tax,health):
     scratch=L(27+len(tax.EXTRA_HEADERS))
     best=L(28+len(tax.EXTRA_HEADERS))
     scratch_cell=lambda t:f'${scratch}${t}'
+    # The first grid always has these source values, including during a
+    # no-conversion retry. Both policies use the same withdrawal boundaries.
+    broker_lo = scratch_cell(first+1)
+    broker_hi = scratch_cell(first+2)
+    trad_hi = scratch_cell(first+3)
     def put(addr,value):
         m.put(sheet, detail_address(addr), m.source_cache.localize(sheet, _detail_formula(value)))
     def on(guard,formula): return f'IF({guard},{formula},"")'
@@ -107,7 +114,7 @@ def emit(m,sheet,first,c,request,tax,health):
     def draw_for_trad(amount):
         w=f'MAX({mandatory},MIN({trad_limit},{amount}))'
         return f'IF({w}<={broker_lo},{w},{w}+{broker_cap})'
-    base_points=['0',broker_lo,broker_hi,f'{trad_limit}+{broker_cap}',cap,
+    base_points=['0',preferred_limit,f'{broker_lo}+{broker_cap}',f'{trad_limit}+{broker_cap}',cap,
                  draw_for_trad(f'{prev("BE")}-{req}'),draw_for_trad(f'{mandatory}+{p("U")}-{req}'),
                  draw_for_trad(f'{mandatory}+{p("U")}'),
                  f'IF({p("AB")}=1,{broker_lo},{broker_lo}+MAX(0,MIN({broker_cap},({c["fed_loss"]}-Tax_Tables!$B$190)/(1-{p("AB")}))))']
@@ -180,11 +187,12 @@ def emit(m,sheet,first,c,request,tax,health):
 
     # One shared candidate block. The control row has a numeric A, so exclude
     # it explicitly to prevent its result cells from entering either grid.
-    t=first; a=f'A{t}'; rem=f'MAX(0,{a}-{mandatory})'
-    chosen_trad=f'MIN({pref},{rem})'
-    taxable=f'MIN({broker_cap},MAX(0,{rem}-{chosen_trad}))'
-    trad=f'{mandatory}+{chosen_trad}+MIN(MAX(0,{room}-{chosen_trad}),MAX(0,{rem}-{chosen_trad}-E{t}))'
-    roth=f'MIN({cash("J")},MAX(0,{a}-E{t}-F{t}))'
+    t=first; a=f'A{t}'
+    # Each exact breakpoint returns the account's stated capacity. Between
+    # breakpoints, only the current account takes a partial withdrawal.
+    taxable=f'IF({a}>={broker_hi},{broker_cap},MIN({broker_cap},MAX(0,{a}-{broker_lo})))'
+    trad=f'IF({a}>={trad_hi},{trad_limit},IF({a}<={broker_hi},MIN(MAX({a},{mandatory}),{broker_lo}),MIN({trad_limit},MAX({broker_lo},{a}-{broker_cap}))))'
+    roth=f'IF({a}>={cap},{cash("J")},MIN({cash("J")},MAX(0,{a}-{trad_hi})))'
     # The comparison varies the request, using the same capped conversion
     # policy and bracket as the projection.
     conversion=f'IF(AND(D{t}=1,{allow}),MIN(MAX(0,{prev("BE")}-F{t}),{req},IF(Inputs!$B$48=2,MAX(0,{p("U")}-MAX(0,F{t}-{mandatory})),{req})),0)'

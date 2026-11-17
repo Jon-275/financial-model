@@ -12,10 +12,11 @@ python3 -m pip install -r tools/requirements.txt
 python3 tests/model_acceptance.py --release workbook/retirement-model.xlsx
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_privacy.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
+python3 -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
 node --test tests/gemini_review.test.mjs
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. The Node tests cover when Gemini should pass or fail a pull request.
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. The fixture tests preserve Excel namespace bindings and formulas when creating test copies. The Node tests cover when Gemini should pass or fail a pull request.
 
 For a newly built workbook, use its path in the release, scenario, and risk refresh commands. Set `RISK_TEST_WORKBOOK` to run the risk engine’s scenario and annual calculation tests against the candidate.
 
@@ -65,7 +66,7 @@ A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review �
 
 - **Report layout and navigation.** The report generator defines the decision tabs and appendix index. The layout code sets the print areas, links, row shading and solver filters. [Report generation](../tools/plan_report.py) · [Report layout](../tools/report_layout.py) · [Workbook tab order](../tools/workbook_layout.py)
 - **Annual figures and conversion calculations.** Report data supplies the chart and annual cash figures. The same withdrawal solver serves the base projection and conversion comparison. The comparison writes the detailed results to **Conversion Detail**, and workbook packaging points its charts to that table. [Report data](../tools/dashboard.py) · [Withdrawal solver](../tools/funding_search.py) · [Conversion comparison](../tools/targeting.py) · [Workbook packaging](../tools/package_model.py)
-- **Saved risk results.** The risk runner writes the results to **Risk_Data**. The workbook layout for this release uses `retirement-risk-workbook-v4` and engine 1.4.0, including carried spending obligations and working-year Roth access. Keep the snapshot writer, display references and privacy check in sync. Use the runner from the same release as the workbook. [Snapshot writer](../tools/risk_workbook.py) · [Display references](../tools/risk_presentation.py) · [Privacy check](../tools/check_workbook_commit.py)
+- **Saved risk results.** The risk runner writes the results to **Risk_Data**. The workbook layout for this release uses `retirement-risk-workbook-v4` and engine 1.4.1, including carried spending obligations, working-year Roth access and exact account-depletion boundaries. Keep the snapshot writer, display references and privacy check in sync. Use the runner from the same release as the workbook. [Snapshot writer](../tools/risk_workbook.py) · [Display references](../tools/risk_presentation.py) · [Privacy check](../tools/check_workbook_commit.py)
 
 ## Microsoft Excel release check
 

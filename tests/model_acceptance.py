@@ -9,7 +9,7 @@ from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
 from dashboard_acceptance import planning_metrics
-from xlsx_read import Workbook, col_letter, q, sheet_parts
+from xlsx_read import Workbook, col_letter, q, scan_errors, sheet_parts
 
 
 # Match the workbook's funding decision independently of comparison tolerance.
@@ -407,7 +407,6 @@ def main() -> int:
     if args.release:
         check_release_package(args.workbook)
         check_plan_print_layout(args.workbook)
-    from xlsx_acceptance import scan_errors
     with Workbook(args.workbook) as wb:
         scan_errors(wb)
         result = validate_model(wb, args.tolerance)

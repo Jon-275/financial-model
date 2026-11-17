@@ -4141,6 +4141,163 @@
       ]
     },
     {
+      "name": "legacy_medical_surcharge_allows_negative_joint_magi",
+      "overrides": {
+        "Inputs": {
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 67,
+          "D25": 1000,
+          "D51": 2000,
+          "D37": 1000
+        }
+      },
+      "expects": [
+        {
+          "age": 65,
+          "column": "AK",
+          "equals": -1000
+        },
+        {
+          "cell": "Healthcare!L8",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!Q8",
+          "equals": 2000
+        },
+        {
+          "cell": "Planning Metrics!B26",
+          "equals": 2028
+        },
+        {
+          "cell": "Summary!B8",
+          "equals": "First shortfall at age 66 (2028)."
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "equals": "NO - cash shortfall"
+        }
+      ]
+    },
+    {
+      "name": "legacy_medical_surcharge_allows_negative_single_magi",
+      "overrides": {
+        "Inputs": {
+          "D8": 64,
+          "D9": 62,
+          "D10": 65,
+          "D53": 67,
+          "D54": 64,
+          "D25": 1000,
+          "D51": 2000,
+          "D37": 1000,
+          "D56": 1
+        }
+      },
+      "expects": [
+        {
+          "age": 65,
+          "column": "AK",
+          "equals": -1000
+        },
+        {
+          "cell": "Healthcare!L8",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!Q8",
+          "equals": 2000
+        },
+        {
+          "cell": "Planning Metrics!B26",
+          "equals": 2028
+        },
+        {
+          "cell": "Summary!B8",
+          "equals": "First shortfall at age 66 (2028)."
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "equals": "NO - cash shortfall"
+        }
+      ]
+    },
+    {
+      "name": "complete_brokerage_liquidation_removes_its_cost_basis",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 61,
+          "D53": 62,
+          "D25": 4246.77694910289,
+          "D51": 8493.55389820578,
+          "D26": 50000.123,
+          "D37": 100000,
+          "D48": 2,
+          "D49": 1000000
+        },
+        "Asset_Allocation": {
+          "D6": 0.01,
+          "D7": 0.01,
+          "D8": 0.01,
+          "D9": 0.01,
+          "D10": 0.01,
+          "E6": 0.02,
+          "E7": 0.02,
+          "E8": 0.02,
+          "E9": 0.02,
+          "E10": 0.02
+        }
+      },
+      "expects": [
+        {
+          "age": 61,
+          "column": "BC",
+          "equals": 0,
+          "tolerance": 0
+        },
+        {
+          "age": 61,
+          "column": "BD",
+          "equals": 0,
+          "tolerance": 0
+        },
+        {
+          "age": 61,
+          "column": "BE",
+          "equals": 0,
+          "tolerance": 0
+        },
+        {
+          "age": 62,
+          "column": "BC",
+          "equals": 0,
+          "tolerance": 0
+        },
+        {
+          "age": 62,
+          "column": "BD",
+          "equals": 0,
+          "tolerance": 0
+        },
+        {
+          "cell": "Planning Metrics!B26",
+          "equals": 2027
+        },
+        {
+          "cell": "Summary!B8",
+          "equals": "First shortfall at age 61 (2027)."
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "equals": "NO - cash shortfall"
+        }
+      ]
+    },
+    {
       "name": "report_explains_missing_retirement_age",
       "overrides": {
         "Inputs": {

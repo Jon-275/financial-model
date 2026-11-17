@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-import io
 from pathlib import Path, PurePosixPath
 import re
 from typing import Iterator
@@ -13,6 +12,8 @@ import zipfile
 
 MAIN = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+
+ERRS = frozenset({"#REF!", "#DIV/0!", "#VALUE!", "#NAME?", "#N/A", "#NUM!", "#NULL!", "#SPILL!", "#CALC!"})
 
 
 def q(name: str) -> str:
@@ -147,15 +148,15 @@ class Workbook:
         return sheet
 
 
-def parse_preserving_namespaces(payload: bytes) -> ET.Element:
-    # Keep known prefixes referenced in compatibility attributes when writing fixture copies.
-    result = ET.iterparse(io.BytesIO(payload), events=("start-ns", "end"))
-    declared = {}
-    for event, item in result:
-        if event == "start-ns":
-            prefix, namespace = item
-            declared.setdefault(prefix, namespace)
-    for prefix, namespace in declared.items():
-        if not re.fullmatch(r"ns\d+", prefix):
-            ET.register_namespace(prefix, namespace)
-    return result.root
+def scan_errors(wb) -> None:
+    failures = []
+    count = 0
+    for sheet in wb:
+        for row in sheet.iter_rows():
+            for cell in row:
+                if cell.data_type == "e" or (isinstance(cell.value, str) and cell.value in ERRS):
+                    count += 1
+                    if len(failures) < 12:
+                        failures.append(f"{sheet.title}!{cell.coordinate}={cell.value}")
+    if failures:
+        raise AssertionError(f"Found {count} spreadsheet error cells: {', '.join(failures)}")

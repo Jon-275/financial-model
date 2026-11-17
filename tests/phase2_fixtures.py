@@ -7,6 +7,24 @@ from health_fixtures import CASES as HEALTH
 from targeting_fixtures import CASES as TARGETING
 from tax_fixtures import CASES as TAX
 
+BOUNDARIES=[
+    case('legacy_medical_surcharge_allows_negative_joint_magi',
+         {'D8':64,'D9':62,'D10':65,'D53':67,'D25':1000,'D51':2000,'D37':1000},
+         checks=(*by_age(65,AK=-1000),out('Healthcare!L8',0),out('Cash_Flow!Q8',2000),
+                 out('Planning Metrics!B26',2028),out('Summary!B8','First shortfall at age 66 (2028).'),out('Planning Metrics!B25','NO - cash shortfall'))),
+    case('legacy_medical_surcharge_allows_negative_single_magi',
+         {'D8':64,'D9':62,'D10':65,'D53':67,'D54':64,'D25':1000,'D51':2000,'D37':1000,'D56':1},
+         checks=(*by_age(65,AK=-1000),out('Healthcare!L8',0),out('Cash_Flow!Q8',2000),
+                 out('Planning Metrics!B26',2028),out('Summary!B8','First shortfall at age 66 (2028).'),out('Planning Metrics!B25','NO - cash shortfall'))),
+    case('complete_brokerage_liquidation_removes_its_cost_basis',
+         {'D8':60,'D9':58,'D10':61,'D53':62,'D25':4246.77694910289,'D51':8493.55389820578,
+          'D26':50000.123,'D37':100000,'D48':2,'D49':1000000},
+         {'Asset_Allocation':{**{f'D{row}':.01 for row in range(6,11)},
+                              **{f'E{row}':.02 for row in range(6,11)}}},
+         checks=(*by_age(61,tolerance=0,BC=0,BD=0,BE=0),*by_age(62,tolerance=0,BC=0,BD=0),
+                 out('Planning Metrics!B26',2027),out('Summary!B8','First shortfall at age 61 (2027).'),out('Planning Metrics!B25','NO - cash shortfall'))),
+]
+
 PUBLISHED=[
     case('published_2027_federal_and_2026_california_floors',{'D52':133200},
         {'Tax_Tables':{'B219':1,**{f'B{r}':v for r,v in enumerate((.10,.12,.22,.24,.32,.35,.37),6)},
@@ -142,4 +160,4 @@ if __name__=='__main__':
     }
     print(json.dumps({'common_overrides':synthetic,
                       'cases':[report_addresses(existing) for existing in
-                               [dashboard_case(case) for case in LEGACY] + HEALTH + TARGETING + TAX + PUBLISHED] + REPORT},indent=2))
+                               [dashboard_case(case) for case in LEGACY] + HEALTH + TARGETING + TAX + PUBLISHED] + BOUNDARIES + REPORT},indent=2))

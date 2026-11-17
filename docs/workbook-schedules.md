@@ -19,6 +19,10 @@ Open **Planning Metrics** next to **Summary** for the savings target, balances, 
 
 Columns AR–AW on **Cash_Flow** show the spending obligation roll-forward. Required spending includes the opening unpaid bills. The cumulative figure counts current bills left unpaid in their due year. It stays recorded after repayment. For example, $500 unpaid in year one and $1,000 of new bills unpaid in year two produce $1,500 of missed payments, even if the first $500 was repaid. The ending obligation shows what is still owed. The model applies zero financing interest and deducts outstanding spending and tax from after-tax net resources.
 
+The first page of **Summary** shows the earliest year with at least one cent of unpaid spending or tax. Look up that year on **Cash_Flow** to see which bills were unpaid and what money was available.
+
+When a withdrawal reaches an account's available balance, the model withdraws that exact amount. A fully sold brokerage account closes with zero balance and zero cost basis. This avoids retaining cost basis because of a tiny arithmetic remainder.
+
 ## Roth_Access
 
 Choose one account type for the combined opening Roth balance. It can be a **Roth IRA** or a **workplace Roth**, such as a Roth 401(k). Use separate estimates if your household starts with both. The schedule tracks the two types separately as the plan adds Roth IRA contributions or conversions. For Roth IRAs, it tracks contributions, conversion amounts that become available over time, and the value of the account. For workplace Roth it uses each owner’s first contribution year and the age the plan permits withdrawals. The model uses age 60 for age 59½ because it runs in whole years. [IRS Roth account comparison](https://www.irs.gov/retirement-plans/ten-differences-between-a-roth-ira-and-a-designated-roth-account)
@@ -28,6 +32,8 @@ The traditional balance on **Inputs** holds one owner’s pre-tax IRA and 401(k)
 ## Healthcare
 
 The household budget option uses the amounts entered before and after Medicare and allocates them by person. Detailed coverage uses each person’s premiums, out-of-pocket costs, Medicare start age and coverage type. It adds long-term care and estimates the applicable Medicare income surcharge using income from two years earlier. The Marketplace credit uses eligible premiums, the benchmark quote, household size and income after the modeled withdrawals or conversion. The HSA pays eligible expenses up to its available balance. The rest goes into the cash-flow calculation. [Healthcare inputs](model-guide.md#enter-healthcare-costs) · [IRS premium tax credit](https://www.irs.gov/credits-deductions/premium-tax-credit-ptc-overview) · [Social Security’s Medicare income rules](https://secure.ssa.gov/apps10/poms.nsf/lnx/0601101010)
+
+Negative income can result from investment losses. It does not trigger a Medicare income surcharge. The model keeps the actual income for tax calculations and returns zero surcharge below the income brackets. [Social Security surcharge rule](https://www.ssa.gov/OP_Home/cfr20/418/418-1101.htm)
 
 ## Asset_Allocation
 

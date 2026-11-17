@@ -48,5 +48,6 @@ The script runs 1,000 market paths for the example, saves the results in the wor
 
 - [Annual tax data review](docs/annual-tax-review.md)
 - [Implementation plan and remaining work](PLAN.md)
-- [Current workbook release](docs/release-notes/workbook-layout.md)
+- [Latest financial corrections](docs/release-notes/financial-boundaries.md)
+- [Workbook layout and report release](docs/release-notes/workbook-layout.md)
 - [Earlier release records for Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md)
