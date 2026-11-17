@@ -4,15 +4,21 @@ These source checks complement native Excel compilation and run tests. They do
 not establish that Excel executed the macro or that cancellation worked there.
 """
 from collections import defaultdict
+import os
 from pathlib import Path
 import re
 from types import SimpleNamespace
 import unittest
+from xml.etree import ElementTree
+from zipfile import ZipFile
 
 from openpyxl.utils.cell import range_boundaries
+from pyopenvba.cfb import CFB
+from pyopenvba.vba import compress, decompress
 import native_capture
 import native_funding_paths
 import native_results
+from package_macro import audit_project_metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / 'tools/vba/RunMarketRisk.bas').read_text()
@@ -36,6 +42,52 @@ def procedure(name):
 class _TaxSheet:
     def __getitem__(self, _):
         return SimpleNamespace(value=None)
+
+
+class MacroPublicationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        default = ROOT / 'workbook' / 'retirement-model.xlsm'
+        with ZipFile(os.environ.get('RISK_TEST_WORKBOOK', default)) as archive:
+            cls.payload = archive.read('xl/vbaProject.bin')
+            book = ElementTree.fromstring(archive.read('xl/workbook.xml'))
+        sheet_count = len(book.find('{*}sheets'))
+        cls.module_names = {'ThisWorkbook', 'MarketRiskRunner',
+                            *(f'Sheet{i}' for i in range(1, sheet_count + 1))}
+
+    def test_rejects_extra_binary_records_at_each_level(self):
+        for path, is_storage in (((), False), ((), True), (('VBA',), False), (('VBA',), True)):
+            with self.subTest(path=path, is_storage=is_storage):
+                project = CFB.from_bytes(self.payload)
+                if is_storage:
+                    project.add_substorage_at(path, 'Unexpected')
+                else:
+                    project.add_stream_at(path, 'Unexpected', b'')
+                with self.assertRaisesRegex(ValueError, 'unexpected records'):
+                    audit_project_metadata(project.to_bytes(), self.module_names)
+
+    def test_rejects_profile_text_in_a_permitted_binary_record(self):
+        for sample in ('/HOME/Example', r'C:\Users\Example', 'Macintosh HD:Users:Example'):
+            for encoding in ('ascii', 'utf-16le', 'utf-16be'):
+                with self.subTest(sample=sample, encoding=encoding):
+                    project = CFB.from_bytes(self.payload)
+                    original = project.get_stream_at((), 'PROJECTwm')
+                    project.write_stream_at((), 'PROJECTwm', original + sample.encode(encoding))
+                    with self.assertRaisesRegex(ValueError, 'local profile path'):
+                        audit_project_metadata(project.to_bytes(), self.module_names)
+
+    def test_rejects_profile_text_visible_only_after_directory_decompression(self):
+        for encoding in ('ascii', 'utf-16le', 'utf-16be'):
+            with self.subTest(encoding=encoding):
+                project = CFB.from_bytes(self.payload)
+                directory = decompress(project.get_stream_at(('VBA',), 'dir'))
+                # Repeated pieces cause compression to split the complete path marker.
+                sample = 'zzzz/Us**ers/*zz/Users/Example'.encode(encoding)
+                project.write_stream_at(('VBA',), 'dir', compress(directory + sample))
+                payload = project.to_bytes()
+                self.assertNotIn('/users/'.encode(encoding), payload.lower())
+                with self.assertRaisesRegex(ValueError, 'local profile path'):
+                    audit_project_metadata(payload, self.module_names)
 
 
 class MacroRunnerContractTests(unittest.TestCase):
