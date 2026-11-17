@@ -13,6 +13,9 @@ from plan_report import APPENDIX, CONVERSION_DETAIL, INDEX
 from targeting import FIRST_TRIAL, LAST_TRIAL
 import workbook_layout
 import workbook_metadata
+import native_risk
+import native_layout
+import native_package
 from openpyxl.formula.translate import Translator
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
@@ -61,9 +64,13 @@ def main():
         access_fmt = cent_fmt + 1
         E.SubElement(numfmts, x('numFmt'), numFmtId=str(access_fmt),
                      formatCode='[=126]"Access unconfirmed";0')
+        decimal_fmt = access_fmt + 1
+        E.SubElement(numfmts, x('numFmt'), numFmtId=str(decimal_fmt), formatCode='0.0000000000')
         numfmts.set('count',str(len(numfmts)))
         for name,source,fmt in [('input','input',1),('input_active','input_active',1),('whole','whole',1),('cents','money',cent_fmt),('published_percent','percent_active',10),
-                                ('access_input','input',access_fmt),('access_active','input_active',access_fmt)]:
+                                ('access_input','input',access_fmt),('access_active','input_active',access_fmt),
+                                ('decimal','money',decimal_fmt),('decimal_input','input',cent_fmt),
+                                ('report_date','money',14)]:
             xf=deepcopy(xfs[int(style_ids[source] or 0)]); xf.set('numFmtId',str(fmt)); xf.set('applyNumberFormat','1')
             style_ids[name]=str(len(xfs)); xfs.append(xf)
         active_fill, number_formats = report_layout.install_styles(style_root, style_ids)
@@ -170,14 +177,17 @@ def main():
                     E.SubElement(cols,x('col'),min='72',max='84',width='19',customWidth='1')
             max_col=max((coordinate_from_string(a)[0] for a in old),key=column_index_from_string)
             root.find(x('dimension')).set('ref',f'A1:{max_col}{max(rows)}')
-            workbook_layout.apply_sheet_layout(n, root)
-            report_layout.apply(n, root, style_ids, number_formats, active_fill)
+            layout_name = native_risk.BASE_LAYOUT.get(n, n)
+            workbook_layout.apply_sheet_layout(layout_name, root)
+            report_layout.apply(layout_name, root, style_ids, number_formats, active_fill)
+            native_layout.apply(n, root, style_ids, number_formats, active_fill)
             workbook_metadata.clear_revision_ids(root)
             changes[part]=pack(root); print(n,len(edits),flush=True)
         app = read(src, 'docProps/app.xml')
         workbook_layout.apply_tab_order(wb, app)
         report_layout.install_print_names(wb)
         install_dashboard(src, authored, wb, changes, sp['Summary'], ap['Summary'])
+        native_package.install(wb,changes,plan.get('native_names',{}))
         # Use the open space beside the conversion controls, above the full sweep.
         part = 'xl/drawings/drawing2.xml'
         drawing = read(src, part)
@@ -188,6 +198,7 @@ def main():
                     column.text = str(int(column.text) - 16)
         changes[part] = pack(drawing)
         wb.find(x('calcPr')).set('fullCalcOnLoad','1')
+        wb.find(x('calcPr')).set('calcMode','auto')
         skip.update(workbook_metadata.clean_metadata(src, wb, app, ct, rel, changes))
         workbook_metadata.compact_shared_strings(src, (part for part in sp.values() if part not in skip), changes)
         changes['docProps/app.xml'] = pack(app)

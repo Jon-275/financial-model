@@ -85,6 +85,7 @@ class Scenario:
     years: tuple[YearSnapshot, ...]
     digest: str
     workbook_sha256: str
+    retained_investment_basis: bool = False
 
     @property
     def tax_tables(self) -> Cells:
@@ -367,6 +368,13 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
                                        'Bridge' if age < 60 else
                                        'Pre-Medicare' if age < 65 else 'Medicare')
     projection_expected = dict(A=step, B=year, C=age, D=spouse, E=phase, F=filing, G=index, H=(1 + inputs[14]) ** (year - _OPENING_YEAR))
+    benefit_index = index
+    if 'CG' in p:
+        # After claiming, deflation holds the nominal benefit at its prior high.
+        # With constant CPI the peak is either today's index or the claim-year index.
+        first_claim_step = min(step, max(0, int(inputs[45] - inputs[8])))
+        benefit_index = max(index, (1 + inputs[14]) ** first_claim_step)
+        projection_expected['CG'] = benefit_index
     if step == 0:
         projection_expected.update(BC=inputs[25], BD=inputs[51], BE=inputs[26], BF=inputs[27],
                                    BG=inputs[31], BW=inputs[127], BY=inputs[128])
@@ -389,7 +397,7 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
         hsa_eligible = inputs[101] == 0 or ((owner == 1 or not single)
                                             and (medicare_age == 126 or owner_age < medicare_age))
         hsa = min(wages - deferral, inputs[34] * index) if working and hsa_eligible else 0
-        social_security = (inputs[55] if single else inputs[44]) * index if age >= inputs[45] else 0
+        social_security = (inputs[55] if single else inputs[44]) * benefit_index if age >= inputs[45] else 0
         other = inputs[52] * index if inputs[87] <= age <= inputs[88] else 0
         exempt = inputs[46] * index
         fixed = inputs[38] if year < inputs[39] else 0
@@ -417,8 +425,9 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
         _invalid(f'Healthcare!T{row}', 'healthcare assumptions need review')
 
 
-def _model_rows(cached, inputs, one_offs, *, real_wage_growth) -> tuple[YearSnapshot, ...]:
-    ranges = {sheet: _grid(cached[sheet], _FIRST_ROW, _LAST_ROW, columns)
+def _model_rows(cached, inputs, one_offs, *, real_wage_growth, benefit_floor) -> tuple[YearSnapshot, ...]:
+    ranges = {sheet: _grid(cached[sheet], _FIRST_ROW, _LAST_ROW,
+                           columns + int(sheet == 'Projection' and benefit_floor))
               for sheet, columns in _MODEL_RANGES.items()}
     active_last = int(inputs[70]) + _FIRST_ROW - 1
     snapshots = []
@@ -476,7 +485,7 @@ def _risk_inputs(raw) -> tuple[dict[int, float], tuple[float, ...], int]:
     return sequence, stress_returns, _integer(basis, f'{basis_sheet.title}!B{basis_row}', 1, 2)
 
 
-def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_basis, *, real_wage_growth) -> str:
+def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_basis, *, real_wage_growth, benefit_floor, retained_basis) -> str:
     # Numeric cells are canonicalized across engines that distinguish 1 and 1.0.
     payload = {
         'schema': 'risk-scenario-v1',
@@ -493,6 +502,10 @@ def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_
         payload['planning'] = [inputs[row] for row in (130, 131, 132)]
     if not real_wage_growth:
         payload['wage_growth_includes_inflation'] = True
+    if benefit_floor:
+        payload['social_security_deflation_floor'] = True
+    if retained_basis:
+        payload['basis_on_retained_investments'] = True
     canonical = json.dumps(payload, sort_keys=True, separators=(',', ':'), allow_nan=False)
     return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
 
@@ -521,7 +534,7 @@ def load_scenario(path: str | Path) -> Scenario:
 def _read(raw, cached, workbook_sha256: str) -> Scenario:
     # Stable model headers guard fixed-coordinate reads against moved or replaced sheets.
     for sheet, cell, expected in (
-        ('Projection', 'CF4', 'Taxable basis added'), ('Roth_Access', 'AP4', 'Roth net transfer'),
+        ('Roth_Access', 'AP4', 'Roth net transfer'),
         ('Healthcare', 'AF4', 'Healthcare paid from cash'), ('Cash_Flow', 'AC4', 'ACA premium credit'),
         ('Cash_Flow', 'AR4', 'Opening unpaid spending'),
         ('Checks', 'M4', 'Taxable basis reconciliation'), ('Inputs', 'A129', 'Tax inputs'),
@@ -529,6 +542,10 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     ):
         if raw[sheet][cell].value != expected:
             _invalid(f'{sheet}!{cell}', 'workbook layout is incompatible with this risk engine')
+    basis_header = raw['Projection']['CF4'].value
+    if basis_header not in ('Taxable basis added', 'Basis added to retained investments'):
+        _invalid('Projection!CF4', 'unknown taxable basis treatment')
+    retained_basis = basis_header == 'Basis added to retained investments'
     selected, inputs, one_offs = _inputs(raw, cached)
     wage_label = raw['Inputs']['A13'].value
     if wage_label not in ('Real wage growth', 'Annual wage growth'):
@@ -539,10 +556,15 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     tax, tax_source = _tax_tables(raw, cached)
     if not real_wage_growth and not 0 <= _number(tax_source.get('B251'), 'Tax_Tables!B251') <= 1:
         _invalid('Tax_Tables!B251', 'expected a fraction from zero to one')
-    opening, *years = _model_rows(cached, inputs, one_offs, real_wage_growth=real_wage_growth)
+    benefit_header = raw['Projection']['CG4'].value
+    if benefit_header not in (None, 'Social Security price index'):
+        _invalid('Projection!CG4', 'unknown Social Security benefit index')
+    benefit_floor = benefit_header is not None
+    opening, *years = _model_rows(cached, inputs, one_offs, real_wage_growth=real_wage_growth,
+                                  benefit_floor=benefit_floor)
     return Scenario(selected, MappingProxyType(inputs), MappingProxyType(tax), allocation,
                     MappingProxyType(sequence), stress_returns, return_basis,
                     opening.projection, opening.cash, opening.health, opening.roth, tuple(years),
                     _digest(inputs, one_offs, tax_source, allocation, sequence, stress_returns, return_basis,
-                            real_wage_growth=real_wage_growth),
-                    workbook_sha256)
+                            real_wage_growth=real_wage_growth, benefit_floor=benefit_floor, retained_basis=retained_basis),
+                    workbook_sha256, retained_basis)

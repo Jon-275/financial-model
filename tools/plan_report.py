@@ -38,12 +38,29 @@ DETAIL_GROUPS = (
         ('Targeting_Calc', 'Conversion calculation', 'The funding trials for the conversion comparison.'),
         (risk.DATA_SHEET, 'Market risk data', 'Saved simulation results and their input comparison.'),
     )),
+    ('Market trial calculations', (
+        ('Funding_Paths', 'Funding paths', 'Annual income, withdrawals and unpaid costs for the low, median and high paths.'),
+        ('Funding_Path_Data', 'Funding path source data', 'Saved annual values for the three paths. Money is in each year’s dollars.'),
+        ('Risk_Trials','Market trials','Native Excel results for paired market paths and stresses.'),
+        ('Market_Paths','Market path and prices','Returns, inflation and spending cuts for a selected trial.'),
+        ('Random_Numbers','Random number method','Visible trial seeds, state transitions and uniform draws.'),
+        ('Trial_Inputs','Trial assumptions','Linked plan inputs and the selected stress overrides.'),
+        ('Trial_Cash_Flow','Trial cash flow','Income, draws, taxes, spending and unpaid costs.'),
+        ('Trial_Projection','Trial projection','Balances and account activity for the selected path.'),
+        ('Trial_Roth_Access','Trial Roth access','Owner-specific availability and Roth balance changes.'),
+        ('Trial_Healthcare','Trial healthcare','Coverage costs, credits and additional medical reserves.'),
+        ('Trial_Checks','Trial checks','Annual reconciliation for the selected path.'),
+        ('Trial_Funding_Calc','Trial withdrawal calculation','The same annual withdrawal and tax solver used by the main plan.'),
+    )),
 )
 FIRST_TRANSITION_ROW = 41
 LAST_TRANSITION_ROW = 53
 FIRST_APPENDIX_ROW = 6
 LAST_APPENDIX_ROW = 131
-INDEX_LINK_ROW = 30
+STRESS_FIRST_ROW = 97
+REPORT_PAGE_BREAKS = (32,64,96,128,160)
+# Leave two rows below the final group so navigation cannot overlap its items.
+INDEX_LINK_ROW = 8 + sum(len(items)+2 for _,items in DETAIL_GROUPS)
 CASH_HEADERS = ('Year', 'Age', 'Income used', 'Savings used', 'Other spending',
                 'Healthcare', 'Tax due', 'Unpaid')
 
@@ -162,7 +179,7 @@ def configure(put):
     summary('F13', risk.display(
         f'TEXT({risk.success_count("AF8")},"#,##0")&" of "&TEXT({risk.result("AF5")},"#,##0")&" paths paid all costs"',
         f'IF({opening_only},"Extend the plan to run market risk",'
-        f'IF({ok},IF({risk.STATUS}="stale","Refresh market risk","Run market risk"),""))',
+        f'IF({ok},{risk.short_status()},""))',
     ), 'report_caption')
     restricted = display_dollars(f'{METRICS_REF}$B$6', end_cpi)
     summary('B13', f'=IF(N({METRICS_REF}$B$6)>0,TEXT({restricted},{dollars})&" in unavailable workplace Roth","")', 'report_caption')
@@ -171,12 +188,12 @@ def configure(put):
         '"The shaded range shows the middle 80% of simulated balances at each age."'
     ), 'report_caption')
     summary('B31', risk.display(
-        f'"Market risk run "&{risk.result("AF2")}&IF({risk.result("AF16")}=1,""," • "&{risk.volatility_notice()})'
+        f'"Conditional on the assumptions entered. Run "&{risk.result("AF2")}&" • "&TEXT({risk.result("AF5")},"#,##0")&" paths per policy."'
     ), 'report_caption')
 
     summary('B33', '="2 / Retirement cash flow   •   "&Inputs!$B$7', 'report_kicker')
     summary('B34', 'How you’ll pay for retirement', 'report_title')
-    summary('B36', f'=IF(AND({ok},SUM(Projection!$N$6:$N$130)>0),"Social Security income starts at age "&MAX(Inputs!$B$45,Inputs!$B$8+1)&" in this projection.","")', 'report_caption')
+    summary('B36', f'=IF(AND({ok},SUM(Projection!$N$6:$N$130)>0),"Social Security is included from age "&MAX(Inputs!$B$45,Inputs!$B$8+1)&" in this projection.","")', 'report_caption')
     summary('B38', f'=IF(Report_Data!$Q$4>0,"Income and savings used to pay bills around retirement.",IF({ok},"This projection ends before the first modeled retirement year.","Cash flow is available after you resolve the item on page 1."))')
     summary('B39', f'=IF({FUTURE_VIEW},"Future dollars show what you expect to pay or receive in each year.","Today’s dollars show opening-year purchasing power. The forecast includes inflation.")', 'report_caption')
     for column, label in zip('BCDEFGHI', CASH_HEADERS):
@@ -194,20 +211,28 @@ def configure(put):
             summary(f'{column}{row}', f'=IF({offset}<Report_Data!$Q$4,{amount},"")', style)
     summary('B55', 'Income used can include pay after pre-tax savings, Social Security, other cash income and Marketplace credits.', 'report_caption')
     summary('B56', 'Savings used includes HSA payments. Spending and tax due include prior unpaid bills.', 'report_caption')
+    summary('B57', f'=IF({ok},"Income timing","")', 'report_section')
+    summary('B58', f'=IF({ok},IF(Inputs!$B$44=0,"No Social Security benefit is entered for the couple.",'
+            'IF(Inputs!$B$45>Inputs!$B$53,"Social Security starts after the selected end age.",'
+            'IF(Report_Data!$Q$4=0,"The plan ends before a full retirement year.",'
+            'IF(Inputs!$B$45<=MAX(Inputs!$B$10,Inputs!$B$8+1),"Social Security is included from the first projected retirement year.",'
+            '"Cash income and accessible savings must cover retirement costs until Social Security starts at age "&Inputs!$B$45&".")))),"")')
+    first_single = 'MAX(Inputs!$B$8+1,Inputs!$B$54+1)'
+    summary('B59', f'=IF(AND({ok},{first_single}<=Inputs!$B$53),"From age "&{first_single}'
+            '&", the plan uses single-filer tax rules and "&TEXT(Inputs!$B$56,"0%")&" of the couple’s living costs.","")',
+            'report_caption')
     bridge = f'AND({ok},ISNUMBER({METRICS_REF}$B$19))'
-    summary('B57', f'=IF({bridge},"Early retirement access","")', 'report_section')
+    summary('B60', f'=IF({bridge},"Early retirement access","")', 'report_section')
     bridge_cpi = price_index_at(retirement)
     bridge_amount = display_dollars(f'{METRICS_REF}$B$19/{bridge_cpi}', bridge_cpi)
-    summary('B58', f'=IF({bridge},"Available in the first retirement year: "&TEXT({bridge_amount},{dollars})&" in brokerage and Roth funds this plan can draw on.","")')
-    summary('B59', f'=IF({bridge},"Use Roth Access to check when additional funds become available.","")', 'report_caption')
-    summary('B60', f'=IF({ok},"Income timing","")', 'report_section')
-    summary('B61', f'=IF({ok},IF(Inputs!$B$44=0,"Enter your expected Social Security benefit and start age on Inputs, or keep zero to test the plan without it.",IF(Inputs!$B$45<=MAX(Inputs!$B$10,Inputs!$B$8+1),"Social Security is included from the first projected retirement year.",IF(Inputs!$B$45>Inputs!$B$53,"Social Security starts after the selected end age. Review the horizon and benefit start age.","Cash and accessible savings must cover the years before Social Security starts at age "&Inputs!$B$45&". The funding calculation follows that timing."))),"")', 'report_caption')
+    summary('B61', f'=IF({bridge},"Brokerage and accessible Roth funds total "&TEXT({bridge_amount},{dollars})'
+            '&" in the first retirement year. See Roth_Access for withdrawal rules.","")')
 
     summary('B65', '="3 / Risk and decisions   •   "&Inputs!$B$7', 'report_kicker')
     summary('B66', 'What could change the outcome', 'report_title')
     summary('B68', risk.display('"Funding in three market paths"', '"Key plan decisions"'), 'report_section')
     summary('B69', risk.display(
-        '"Actual simulations ranked by ending balance, with fixed spending."',
+        '"Actual fixed-spending paths near the 10th, 50th and 90th ending ranks in today’s dollars."',
         f'IF({opening_only},"Set an end age after the opening age to run market risk.",'
         f'IF({ok},{risk.status_message()},"Resolve the plan item on page 1 to see funding results."))',
     ), 'report_caption')
@@ -225,8 +250,8 @@ def configure(put):
     for row, ((label, case_row), (choice, setting, unit, timing)) in enumerate(zip(risk.CASES, choices), 71):
         amount = risk.result(f'AI{case_row}')
         age = risk.result(f'AH{case_row}')
-        path_balance = display_dollars(risk.result(f'AG{case_row}'), end_cpi)
-        path_amount = display_dollars(amount, price_index_at(f'{age}-Inputs!$B$8+1'))
+        path_balance = risk.case_dollars(risk.result(f'AG{case_row}'),case_row,ending=True)
+        path_amount = risk.case_dollars(amount,case_row)
         style = 'report_row_alt' if row % 2 else 'report_row'
         money = 'report_money_alt' if row % 2 else 'report_money'
         summary(f'B{row}', risk.display(f'"{label}"', f'"{choice}"'), style)
@@ -242,7 +267,7 @@ def configure(put):
         '"All fixed-spending paths paid their required costs.")'
     ), 'report_caption')
     summary('B75', risk.display(
-        f'IF({FUTURE_VIEW},"Future dollars.","Today’s dollars.")&" See Risk Results for the income and accounts behind each shortfall."',
+        f'IF({FUTURE_VIEW},"Future dollars.","Today’s dollars.")&" Each case follows one complete path. Later repayment does not remove an earlier shortfall."',
         '"Spending and savings inputs are in today’s dollars."',
     ), 'report_caption')
     summary('B76', 'Would temporary spending cuts help?', 'report_section')
@@ -255,13 +280,14 @@ def configure(put):
     cuts = risk.result('AF10')
     summary('B78', risk.display(
         f'IF({cuts}>0,TEXT({cuts},"#,##0")&" of "&TEXT({risk.result("AF5")},"#,##0")'
-        f'&" paths used cuts. Median number of years with cuts: "&TEXT({risk.result("AF11")},"0.0")&".",'
+        f'&" paths used cuts. Median across all flexible paths: "&TEXT({risk.result("AF11")},"0.0")&" years with cuts.",'
         '"No paths used a spending cut.")'
     ), 'report_caption')
     summary('B79', risk.display(
-        f'"The rule cuts "&{rate("AF13")}&" of flexible living costs when the opening balance falls below "'
-        f'&{rate("AF12")}&" of plan."'
+        f'"The rule reduces non-mortgage living costs by "&TEXT({risk.result("AF13")}*{risk.result("AF14")},{risk.PERCENT})'
+        f'&" when the opening balance falls below "&{rate("AF12")}&" of plan."'
     ), 'report_caption')
+    summary('B80','Mortgage and healthcare costs are protected. Tax follows the revised withdrawals.','report_caption')
     summary('B81', 'Early stock losses', 'report_section')
     stress_rate, years = risk.result('AF28'), risk.result('AF17')
     fixed_age, flex_age = risk.result('AG28'), risk.result('AI28')
@@ -283,29 +309,37 @@ def configure(put):
     summary('B90', 'Change to test', 'report_caption')
     for column in 'DEFGHI':
         summary(f'{column}90', '', 'report_write_in')
+    summary('B92',risk.display(
+        f'"Seed "&{risk.result("AF6")}&". "&TEXT({risk.result("AF5")},"#,##0")&" paths per policy. "'
+        '&IF(Risk_Settings!$B$9=1,"Compound-growth returns. ","Average annual returns. ")'
+        f'&IF({risk.NATIVE},Risk_Data!$BB$19&".","Expected inflation.")'),'report_caption')
+    summary('B94','Markets and prices can behave differently from these assumptions. Review the plan regularly.','report_caption')
+
+    _stress_page(summary,ok)
 
     summary('K3', 'Plan navigation', 'report_section')
     for address, label in {
         'K5': 'Edit assumptions', 'K6': 'Retirement cash flow',
-        'K7': 'Risk and decisions', 'K8': 'How to print',
+        'K7': 'Market risk and decisions', 'K8': 'How to print',
+        'K9': 'Inflation and longevity',
         'K10': 'Annual detail', 'K11': 'Appendix and model details',
         'K12': 'Market risk results', 'K13': 'Annual cash flow', 'K14': 'Account access',
-        'K15': 'Market risk settings', 'K30': 'Input decisions', 'K31': 'Spending decisions',
-        'K32': 'Investment mix', 'K33': 'Roth conversion comparison',
-        'K34': 'Planning metrics', 'K35': 'Tax rates and limits',
+        'K15': 'Market risk settings', 'K34': 'Input decisions', 'K35': 'Spending decisions',
+        'K36': 'Investment mix', 'K37': 'Roth conversion comparison',
+        'K38': 'Planning metrics', 'K39': 'Tax rates and limits',
     }.items():
         summary(address, label, 'report_link')
     summary('K17', 'Dollar view', 'report_section')
     summary(DOLLAR_VIEW_CELL, TODAY_DOLLARS, 'report_active')
     summary('K19', 'Select a view before printing.', 'report_caption')
-    summary('K20', 'Today’s dollars show what', 'report_caption')
-    summary('K21', 'money can buy today.', 'report_caption')
-    summary('K22', 'Future dollars use prices', 'report_caption')
-    summary('K23', 'in each projected year.', 'report_caption')
-    summary('K25', 'Print the plan', 'report_section')
-    summary('K26', 'Choose File → Print.', 'report_caption')
-    summary('K27', 'Use Active Sheets with only', 'report_caption')
-    summary('K28', 'Summary selected.', 'report_caption')
+    summary('K20', '', 'report_caption')
+    summary('K22',f'=IF({risk.CURRENT},"Risk results are current.",{risk.status_message()})','report_caption')
+    summary('K24',risk.display(f'"Last completed: "&{risk.result("AF2")}'),'report_caption')
+    summary('K25', 'Today’s dollars use opening-year prices.', 'report_caption')
+    summary('K27', 'Future dollars use each year’s projected prices.', 'report_caption')
+    summary('K29', 'Print the plan', 'report_section')
+    summary('K30', 'Choose File → Print.', 'report_caption')
+    summary('K31', 'Use Active Sheets. Select only Summary for all six pages.', 'report_caption')
 
     appendix('B2', 'Annual projection', 'report_title')
     appendix('L2', 'Back to Summary', 'report_link')
@@ -320,6 +354,44 @@ def configure(put):
             appendix(f'{column}{row}', f'=IF({ok},IF(Report_Data!$Q$2>={source - 4},{amount},""),"")', style)
 
 
+def _stress_page(summary,plan_ok):
+    """Keep seven independent stresses together on their own report page."""
+    ready=f'AND({risk.CURRENT},{risk.NATIVE})'
+    summary('B97','="4 / Inflation and longevity   •   "&Inputs!$B$7','report_kicker')
+    summary('B98','Test a more demanding retirement','report_title')
+    summary('B100',f'=IF({ready},"Each test uses fixed spending. Unpaid costs are in "&'
+            f'IF({FUTURE_VIEW},"future dollars.","today’s dollars."),'
+            f'IF({risk.NATIVE},{risk.status_message()},"These tests require the macro-enabled workbook release."))','report_caption')
+    summary('B102','Inflation and a longer retirement','report_section')
+    summary('B110','Higher healthcare costs','report_section')
+    summary('B111','Medical budgets are annual amounts for a couple in opening-year dollars. Survivor costs follow your settings.','report_caption')
+    headers=(('B','Test'),('E','End age'),('F','Paid all costs'),('G','First shortfall age'),('H','Unpaid in that year'))
+    for row in (103,112):
+        for column,label in headers:summary(f'{column}{row}',label,'report_table_head')
+    labels=('Inflation at 4%','Inflation at 5%','Plan through at least age 100','Plan through at least age 105',
+            'Higher inflation and weaker returns','Medical budget of $18,000','Medical budget of $25,000')
+    for report_row,source_row,label in zip((*range(104,109),113,114),range(23,30),labels,strict=True):
+        suffix='_alt' if report_row%2 else ''
+        summary(f'B{report_row}',label,'report_label'+suffix)
+        for column,value,style in (
+            ('E',f'Risk_Data!M{source_row}','report_case_age'),
+            ('F',f'IF(Risk_Data!L{source_row}=1,"Yes","No")','report_case_age'),
+            ('G',risk.age_or_none(f'Risk_Data!N{source_row}'),'report_case_age'),
+            ('H',f'IF(ISNUMBER(Risk_Data!O{source_row}),'
+                   f'{risk.shortfall(display_dollars(f"Risk_Data!O{source_row}",f"Risk_Data!P{source_row}"))},"")','report_cost'),
+        ):
+            summary(f'{column}{report_row}',f'=IF({ready},{value},"")',style+suffix)
+    summary('B115','The medical tests add a cash reserve when the modeled budget is lower. Extra reserves are not assumed eligible for HSA reimbursement.','report_caption')
+    summary('B117','What to review','report_section')
+    failed='COUNTIF(Risk_Data!$L$23:$L$29,0)'
+    insight=(f'IF({failed}>0,TEXT({failed},"0")&" of seven tests had unpaid costs. Compare changes to spending, retirement age or savings.",'
+             '"All seven tests paid the entered costs. Review medical costs, inflation and the end age each year.")')
+    summary('B118',f'=IF({ready},{insight},IF({plan_ok},"Review the base plan, then run market risk to compare these tests.","Resolve the plan inputs before comparing tests."))','report_body')
+    summary('B120','How to read these results','report_section')
+    summary('B121','The combined test uses 5% inflation, asset returns two percentage points lower and a plan through at least age 105. Medical tests keep the base return and inflation assumptions.','report_caption')
+    summary('B124',f'=IF({ready},"Each test starts from the base plan. The results show the effect of those assumptions.","")','report_caption')
+
+
 def index_rows():
     row = 8
     for title, schedules in DETAIL_GROUPS:
@@ -330,7 +402,7 @@ def index_rows():
 def configure_index(put):
     put(INDEX, 'B3', 'Appendix', 'report_title')
     put(INDEX, 'B5', 'Inspect the schedules, source data and calculations behind your plan.', 'report_body')
-    put(INDEX, 'B6', 'Print Summary for the five-page report. Print Annual Detail separately for the full timeline.', 'report_caption')
+    put(INDEX, 'B6', 'Print Summary for the six-page report. Print Annual Detail separately for the full timeline.', 'report_caption')
     for row, title, schedules in index_rows():
         put(INDEX, f'B{row}', title, 'report_section')
         for offset, (_, label, description) in enumerate(schedules, 1):

@@ -1,5 +1,6 @@
 """Preserve Excel namespace bindings while preparing disposable test inputs."""
 from hashlib import sha256
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -37,7 +38,8 @@ class FixturePackageTests(unittest.TestCase):
             patch_xml(SHEET, {'B1': 7})
 
     def test_release_roundtrip_preserves_namespaces_formulas_and_other_parts(self):
-        source = Path(__file__).resolve().parents[1] / 'workbook/retirement-model.xlsx'
+        default = Path(__file__).resolve().parents[1] / 'workbook/retirement-model.xlsm'
+        source = Path(os.environ.get('RISK_TEST_WORKBOOK', default))
         original_hash = sha256(source.read_bytes()).digest()
         with TemporaryDirectory() as directory:
             destination = Path(directory) / 'case.xlsx'

@@ -1,0 +1,90 @@
+' Authoring-only checks. Append to a disposable copy of RunMarketRisk.bas
+' before importing that copy into Excel. Do not include in the release.
+Public Sub VerifyMarketRiskRunner()
+    Dim counts As Variant, item As Variant, count As Long, index As Long
+    Dim seen(1 To 2207) As Boolean, code As Long, errorNumber As Long
+    Dim data As Variant, ids As Variant, order() As Long, expected As Variant
+    Dim row As Long, ignored As Double
+    On Error GoTo Failed
+
+    counts = Array(1, 37, 1000)
+    For Each item In counts
+        count = CLng(item)
+        Erase seen
+        For index = 1 To 2 * count + 33
+            code = TrialCode(index, count)
+            AssertRunner code >= 1 And code <= 2207, "Trial code outside the supported range."
+            AssertRunner Not seen(code), "Duplicate trial code."
+            seen(code) = True
+        Next index
+        For index = 1 To count
+            AssertRunner seen(index), "A fixed path is missing."
+            AssertRunner seen(1000 + index), "A paired flexible path is missing."
+        Next index
+        For code = 2001 To 2013
+            AssertRunner seen(code), "A fixed early-loss test is missing."
+            AssertRunner seen(code + 100), "A flexible early-loss test is missing."
+        Next code
+        For code = 2201 To 2207
+            AssertRunner seen(code), "A required stress test is missing."
+        Next code
+    Next item
+
+    ReDim data(1 To 8, 1 To 6)
+    ReDim ids(1 To 8, 1 To 1)
+    ReDim order(1 To 8)
+    For row = 1 To 8
+        ids(row, 1) = row
+        order(row) = row
+        data(row, ENDING_REAL_FIELD) = 100
+        data(row, MAX_UNPAID_FIELD) = 0
+    Next row
+    data(2, FAILURE_AGE_FIELD) = 60: data(2, MAX_UNPAID_FIELD) = 10
+    data(3, ENDING_REAL_FIELD) = 50: data(3, FAILURE_AGE_FIELD) = 80: data(3, MAX_UNPAID_FIELD) = 100
+    data(4, FAILURE_AGE_FIELD) = 60: data(4, MAX_UNPAID_FIELD) = 20
+    data(5, FAILURE_AGE_FIELD) = 60: data(5, MAX_UNPAID_FIELD) = 20
+    data(6, ENDING_REAL_FIELD) = 200
+    data(7, ENDING_REAL_FIELD) = 50: data(7, FAILURE_AGE_FIELD) = 70: data(7, MAX_UNPAID_FIELD) = 25
+    data(8, FAILURE_AGE_FIELD) = 61: data(8, MAX_UNPAID_FIELD) = 100
+    SortPaths order, data, ids, 1, 8
+    expected = Array(7, 3, 4, 5, 2, 8, 1, 6)
+    For row = 1 To 8
+        AssertRunner order(row) = expected(row - 1), "Representative-path ordering differs from the independently specified order."
+    Next row
+
+    AssertRunner SeedNumber(0) = 0, "Zero seed was not preserved."
+    AssertRunner SeedNumber(4294967295#) = 4294967295#, "The largest seed was not preserved."
+    counts = Array(-1, 4294967296#, 1.5, True, Empty)
+    For Each item In counts
+        On Error Resume Next
+        Err.Clear
+        ignored = SeedNumber(item)
+        errorNumber = Err.Number
+        On Error GoTo Failed
+        AssertRunner errorNumber = RUN_ERROR, "An invalid seed was accepted."
+    Next item
+    On Error Resume Next
+    Err.Clear
+    RequireText "Record", "record", "Expected case-sensitive mismatch."
+    errorNumber = Err.Number
+    On Error GoTo Failed
+    AssertRunner errorNumber = RUN_ERROR, "Assumption comparison was not case-sensitive."
+
+    mCancelRequested = True
+    On Error Resume Next
+    Err.Clear
+    CheckCancelled
+    errorNumber = Err.Number
+    On Error GoTo Failed
+    mCancelRequested = False
+    AssertRunner errorNumber = 18, "Cancellation did not use the normal interruption handler."
+    MsgBox "Runner algorithm checks passed: trial IDs, paired coverage, stress coverage, path ranking, seed boundaries, exact records and cancellation.", vbInformation, "Runner verification"
+    Exit Sub
+Failed:
+    mCancelRequested = False
+    MsgBox "Runner check failed: " & Err.Description, vbExclamation, "Runner verification"
+End Sub
+
+Private Sub AssertRunner(ByVal condition As Boolean, ByVal message As String)
+    If Not condition Then Err.Raise vbObjectError + 5399, "MarketRiskRunnerTests", message
+End Sub

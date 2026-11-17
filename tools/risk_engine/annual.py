@@ -333,9 +333,15 @@ class AnnualModel:
         roth_savings = min(p.roth_target, savings_limit, residual)
         deposit = max(0, residual - roth_savings)
 
+        retained = max(0.0, opening_taxable - draws[0])
         removal = min(state.basis, draws[0] * basis_ratio)
-        state.taxable = max(0, state.taxable - draws[0] + deposit) * (1 + rates[0])
-        basis_addition = deposit + dividends + interest if state.taxable > 0 else 0
+        reinvested_income = dividends + interest
+        if self.scenario.retained_investment_basis:
+            if not retained:
+                removal = state.basis
+            reinvested_income *= retained / opening_taxable if opening_taxable else 0.0
+        state.taxable = (retained + deposit) * (1 + rates[0])
+        basis_addition = deposit + reinvested_income if state.taxable > 0 else 0
         state.basis = max(0, state.basis - removal) + basis_addition if state.taxable > 0 else 0
         state.traditional = max(0, state.traditional + p.deferral + p.match - draws[1]
                                 - funding.conversion) * (1 + rates[1])

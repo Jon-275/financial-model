@@ -26,7 +26,7 @@ All 12 completed topic branches were deleted after matching their final commits 
 
 A fresh clone of main passed the workbook content audit. Its reachable history contains only the approved template and example. Twelve earlier task clones were disabled for normal pushes. The owner's checkout was replaced with a fresh clone, and its complete earlier contents and planning edits were preserved in restricted recovery storage.
 
-GitHub's read-only pull-request references and cached views require separate cleanup. They are outside the retained branch history and remain pending GitHub Support review. The colleague's earlier review clone also needs replacement and confirmation. Previously downloaded copies cannot be verified from this repository.
+GitHub's read-only pull-request references and cached views require separate cleanup. They are outside the retained branch history. The owner authorized the prepared Support request, and GitHub confirmed its submission on November 17, 2026. Support's disposition remains pending. The colleague's earlier review clone also needs replacement and confirmation. Previously downloaded copies cannot be verified from this repository.
 
 The maintainer keeps the affected references, recovery location and Support handoff outside Git. Retire recovery copies after Support cleanup and known clone replacements have been verified. Keep any necessary user files before deleting a recovery copy.
 

@@ -18,9 +18,11 @@ jobs:
   workbook:
     name: Workbook checks
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 60
     env:
       PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONPATH: tools
+      RISK_TEST_WORKBOOK: workbook/retirement-model.xlsm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -31,8 +33,6 @@ jobs:
       - name: Test Gemini review outcomes
         run: node --test tests/gemini_review.test.mjs
       - name: Test workbook content privacy
-        env:
-          PYTHONPATH: tools
         run: python -m unittest discover -s tests -p 'test_workbook_privacy.py'
       - name: Check tracked workbooks for private data
         run: |
@@ -47,15 +47,19 @@ jobs:
           git read-tree "$commit"
           python tools/check_workbook_commit.py
       - name: Check the published workbook
-        run: python tests/model_acceptance.py --release workbook/retirement-model.xlsx
+        run: python tests/model_acceptance.py --release workbook/retirement-model.xlsm
       - name: Install Python dependencies
         run: python -m pip install -r tools/requirements.txt
       - name: Test workbook fixture portability
         run: python -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
-      - name: Run risk and workbook parity tests
-        env:
-          PYTHONPATH: tools
-        run: python -m unittest discover -s tests -p 'test_risk_*.py'
+      - name: Verify the embedded runner matches its published source
+        run: python -c 'import os; from package_macro import verify_project; verify_project(os.environ["RISK_TEST_WORKBOOK"])'
+      - name: Run financial, report and runner tests
+        run: |
+          python -m unittest discover -s tests -p 'test_risk_*.py'
+          python -m unittest discover -s tests -p 'test_native_*.py'
+          python -m unittest discover -s tests -p 'test_macro_runner_contract.py'
+          python -m unittest discover -s tests -p 'test_report_structure.py'
       - name: Install LibreOffice Calc
         run: |
           sudo apt-get update
@@ -63,7 +67,7 @@ jobs:
           soffice --version
       - name: Recalculate representative scenarios
         run: |
-          python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase2-fixtures.json --compact --ledger \
+          python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase2-fixtures.json --compact --ledger \
             --case full_horizon_to125_dashboard \
             --case late_shortfall_reaches_dashboard \
             --case report_explains_missing_retirement_age \
@@ -76,10 +80,18 @@ jobs:
             --case unpaid_spending_rolls_forward_without_double_counting \
             --case later_cash_repays_prior_spending_before_deposits \
             --case confirmed_qualified_workplace_roth_available_while_working
-          python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase2-fixtures.json --compact --ledger \
+          python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase2-fixtures.json --compact --ledger \
             --case legacy_medical_surcharge_allows_negative_joint_magi \
             --case legacy_medical_surcharge_allows_negative_single_magi \
-            --case complete_brokerage_liquidation_removes_its_cost_basis
-          python tests/xlsx_acceptance.py workbook/retirement-model.xlsx tests/phase3-fixtures.json --compact --ledger
-      - name: Refresh and verify the embedded market risk results
-        run: python tests/risk_workbook_acceptance.py workbook/retirement-model.xlsx
+            --case complete_brokerage_liquidation_removes_its_cost_basis \
+            --case partial_brokerage_sale_retains_only_its_share_of_investment_income \
+            --case liquidated_brokerage_reopens_with_only_the_new_deposit_basis \
+            --case unsold_brokerage_retains_income_and_new_deposits \
+            --case social_security_does_not_fall_after_claim_during_deflation \
+            --case existing_social_security_benefit_keeps_its_opening_level
+          python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase3-fixtures.json --compact --ledger
+      - name: Verify market results and report formulas
+        run: |
+          python tests/report_formula_acceptance.py
+          python tests/native_integrity_acceptance.py
+          python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes 1,1001,2205

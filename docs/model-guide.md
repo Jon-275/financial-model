@@ -6,6 +6,7 @@
 2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
 3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Use the **+** signs beside the rows to open optional settings.
 4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
+5. **Run market risk.** Review **Risk_Settings**, then choose **Run market risk** beside Summary’s navigation. Wait for current results before reading the market paths and stress tests. [Risk instructions](risk-analysis.md#run-the-analysis)
 
 Set the year your starting ages and balances apply to in **Inputs B130**. The first full forecast year is the following year.
 
@@ -17,7 +18,7 @@ Set the year your starting ages and balances apply to in **Inputs B130**. The fi
 - **One-time bills.** Enter the calendar year and cost in today’s dollars in rows 75–82. These expenses apply to all scenarios.
 - **Long-term care.** Enter the starting age, annual cost and number of years in rows 58–60. The model adds one period of care to healthcare costs and adjusts the cost for inflation. Use 999 as the starting age to leave it out.
 - **Investment fees.** Enter the annual fee in B131. Use zero if the returns already include the fee. The model applies the fee after investment growth.
-- **Survivor spending and income.** Enter your age at the first death in row 54. Use 999 for a two-person plan. In row 55, enter the share of combined Social Security benefits the survivor will receive. Column B shows the resulting benefit. Set the survivor’s spending and healthcare shares in rows 56–57.
+- **Survivor spending and income.** Enter your age at the first death in row 54. The model applies the survivor assumptions in the following year. Use 999 for a two-person plan throughout. In row 55, enter the survivor’s share of combined Social Security benefits. Column B shows the resulting annual benefit. Set the survivor’s spending and healthcare shares in rows 56–57.
 
 ## Enter retirement account details
 
@@ -34,7 +35,7 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 
 ## Read the results
 
-- **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The five-page report includes the outlook, retirement cash flow, risk and decisions, and two pages that record your inputs.
+- **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The six-page report includes the outlook, retirement cash flow, market risk and decisions, inflation and longevity tests, and two pages that record your inputs.
 - **Planning Metrics** groups the figures behind the report, including the savings target, accessible balances, funding, taxes and healthcare. Open the tab next to **Summary** or use its **Planning metrics** link. Dollar figures are labeled with their units.
 - **Annual Detail** shows the same cash measures and portfolio balance over the full plan. It uses the dollar view on **Summary**. The opening row gives the starting balance. The values and row shading stop at the end age on **Inputs**.
 - **Asset_Allocation**, **Income_Targeting**, **Risk_Settings**, **Risk Results** and **Tax_Tables** come before Appendix. Use them to review decisions and the tax rates the model uses.
@@ -54,7 +55,7 @@ Choose a **Dollar view** on the right side of **Summary** before you print.
 - **Today’s dollars** show what the amounts can buy at the prices in your opening year. Use this view to compare future costs with your current budget.
 - **Future dollars** show the amounts you expect to pay or receive in each projected year. A $42,000 living budget becomes $43,050 after one year at 2.5% inflation. The two views show the same budget at different price levels.
 
-Select **Summary** in desktop Excel, then choose **File → Print → Active Sheets**. The five pages include the results and both decision records. **View input decisions** on Inputs jumps to those records on Summary. Print **Annual Detail** separately for the full timeline in the same dollar view. Check the scenario, opening year, and dollar view before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
+Select **Summary** in desktop Excel, then choose **File → Print → Active Sheets**. The six pages include the results, stress tests and both decision records. **View input decisions** on Inputs jumps to those records on Summary. The record includes account-access years and any unconfirmed workplace Roth access. Print **Annual Detail** separately for the full timeline in the same dollar view. Check the scenario, opening year, dollar view and risk run status before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
 
 
 ## Enter healthcare costs
@@ -63,7 +64,7 @@ Select **Summary** in desktop Excel, then choose **File → Print → Active She
 2. **Enter costs by person if needed.** Set row 101 to 1, then open rows 102–124. Use the coverage codes below and enter each person’s confirmed Medicare start age. Use 126 for someone who will not enroll in the model.
 3. **Enter annual costs at today’s prices.** Use each person’s premium before credits, including their share of a joint policy. Enter basic Medicare premiums for Parts A, B and D or Medicare Advantage in rows 108–109. Use rows 110–111 for Medigap and other supplemental premiums. The model calculates Medicare income surcharges separately.
 4. **Enter out-of-pocket costs after insurance.** Use rows 112–113 for medical bills eligible for health savings account (HSA) reimbursement and rows 114–115 for other bills. Enter premiums in the premium rows. Choose the HSA owner in row 121 and enter the share of long-term care costs confirmed eligible for reimbursement in row 124. Use 0% if unsure.
-5. **Check Marketplace and Medicare inputs.** For Marketplace coverage, confirm whether each person qualifies for a credit and enter the applicable benchmark quotes. For Medicare surcharges, enter the requested years of income in rows 122–123. Open **Healthcare** to resolve missing inputs before reading Summary or running the risk report.
+5. **Check Marketplace and Medicare inputs.** Confirm each person’s eligibility for a Marketplace credit and enter the benchmark premiums. For Medicare surcharges, enter the requested years of income in rows 122–123. Resolve any missing inputs on **Healthcare** before reviewing Summary or choosing **Run market risk**.
 
 | Coverage code in rows 102–103 | Meaning |
 | --- | --- |
@@ -82,7 +83,7 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 ## Compare Roth conversions and market risk
 
 - **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Start with a zero conversion, then test a larger amount in that year’s dollars. Compare how much can convert, the withdrawals needed for bills, and the change in tax and healthcare costs. Select **Open conversion detail** for the full table. Apply a conversion on **Inputs** to see its effect over the full plan. [Conversion comparison](workbook-schedules.md#income_targeting)
-- **Risk_Settings.** Estimate the share of retirement living costs you could reduce and how much you would cut from that share. The next row shows what that means for the full living budget. Refresh market risk after changes. Read the success rate and funding examples on Summary, then open **Risk Results** to see the details. [Portfolio risk analysis](risk-analysis.md)
+- **Risk_Settings.** Estimate the share of non-mortgage retirement living costs you could reduce and how much you would cut from that share. The next row shows the combined reduction. Review the path count, seed and inflation mode, then choose **Run market risk** on Summary after changes. Read the success rate, funding examples and stress tests in the report. **Risk Results** and **Funding_Paths** provide supporting detail. [Portfolio risk analysis](risk-analysis.md)
 - **Portfolio management.** Use the portfolio guide to record tax loss and gain harvesting decisions. [Portfolio management](portfolio-management.md)
 
 ## How the model works
@@ -127,7 +128,7 @@ Payroll taxes use wages by earner. Confirm the wage split in row 126. The model 
 
 Use rows 15–16 to choose investment profiles for working years and retirement. Review stocks, bonds, cash and real assets in each account on **Asset_Allocation**. Each account’s weights must total 100%. The model uses the mix to calculate account returns and income. The market simulations use the volatility and correlations on the same sheet. [Investment assumptions](workbook-schedules.md#asset_allocation)
 
-For taxable investments, enter the cost basis from your brokerage records. Reinvested income and savings increase it. The model reduces it in proportion to what you sell and taxes price gains when realized. The model uses annual investment income and the applicable tax treatment for interest, real estate investment trust distributions and qualified dividends.
+For taxable investments, enter the cost basis from your brokerage records. When the model sells part of the account, it assigns that same share of the opening basis to the sale. New deposits and reinvested income on the remaining investments add to the closing basis. If it sells the entire account and deposits new money that year, the new deposit starts with its own cost basis.
 
 The workbook applies investment returns after deposits and withdrawals. The estimated tax rate in row 61 is used for after-tax net worth.
 

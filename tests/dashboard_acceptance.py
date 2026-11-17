@@ -111,11 +111,33 @@ def validate_dashboard(wb, tolerance):
         assert isclose(total, due, rel_tol=1e-13, abs_tol=tolerance), f'Chart bills do not reconcile in row {row}.'
 
 
+def _validate_stress_page(summary, risk, status, future_view):
+    for row, source_row in zip((*range(104, 109), 113, 114), range(23, 30), strict=True):
+        values = tuple(summary[f'{column}{row}'].value for column in 'EFGH')
+        if status != 'current':
+            assert all(value in (None, '') for value in values), f'Stale stress on row {row}.'
+            continue
+        end_age, funded, first_age, unpaid = values
+        assert end_age == risk[f'M{source_row}'].value
+        assert funded == ('Yes' if risk[f'L{source_row}'].value == 1 else 'No')
+        if funded == 'Yes':
+            assert first_age == 'None' and unpaid in (None, '')
+        else:
+            assert first_age == risk[f'N{source_row}'].value
+            amount = risk[f'O{source_row}'].value
+            if future_view:
+                amount *= risk[f'P{source_row}'].value
+            expected = 'Less than $0.01' if amount < 0.01 else f'${amount:,.2f}'
+            assert unpaid == expected, f'Stress shortfall on row {row} uses the wrong amount or price year.'
+
 
 def _validate_risk_report(results, risk, inputs, projection, data, summary, horizon, tolerance, arranged):
     status = risk['Z1'].value
-    assert status in ('current', 'stale', 'missing'), 'Unknown market risk result status.'
+    assert status in ('current','stale','missing','invalid','running','cancelled','failed','incomplete'), 'Unknown market risk result status.'
     future_view = summary['K18'].value == 'Future dollars'
+    native=str(risk['Z2'].value or '').startswith('retirement-risk-native')
+    if native:
+        _validate_stress_page(summary, risk, status, future_view)
 
     def factor(offset):
         return projection[f'G{offset + 5}'].value if future_view else 1
@@ -136,7 +158,9 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
         assert all(data[f'{col}{row}'].value in (None, '')
                    for row in range(2, 128) for col in ('AF', 'AG', 'AH'))
         if horizon:
-            message = 'Run market risk' if status == 'missing' else 'Refresh market risk'
+            message = {'missing':'Run market risk','stale':'Refresh market risk','invalid':'Review risk settings',
+                       'running':'Running market risk','cancelled':'Run cancelled','failed':'Run failed',
+                       'incomplete':'Run incomplete'}[status]
             if horizon == 1:
                 message = 'Extend the plan to run market risk'
             assert summary['F13'].value == message
@@ -155,7 +179,9 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
     assert isclose(results['F7'].value, flexible, abs_tol=1e-14)
     assert summary['F13'].value == f'{round(fixed * trials):,} of {trials:,} paths paid all costs'
     for printed, source in zip(range(71, 74), range(21, 24)):
-        assert isclose(summary[f'E{printed}'].value, risk[f'AG{source - 16 if arranged else source}'].value * factor(horizon - 1),
+        source_case=source-16 if arranged else source
+        end_factor=risk[f'AZ{source_case}'].value if native and future_view else factor(horizon-1)
+        assert isclose(summary[f'E{printed}'].value, risk[f'AG{source_case}'].value * end_factor,
                        rel_tol=1e-13, abs_tol=tolerance)
         first_age = risk[f'AH{source - 16 if arranged else source}'].value
         if first_age is None:
@@ -163,7 +189,8 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
             assert summary[f'H{printed}'].value in (None, '')
         else:
             assert summary[f'G{printed}'].value == first_age
-            amount = risk[f'AI{source - 16 if arranged else source}'].value * factor(first_age - inputs['B8'].value)
+            gap_factor=risk[f'AY{source_case}'].value if native and future_view else factor(first_age-inputs['B8'].value)
+            amount = risk[f'AI{source_case}'].value * gap_factor
             expected = 'Less than $0.01' if amount < 0.01 else f'${amount:,.2f}'
             assert summary[f'H{printed}'].value == expected
     for offset in range(126):
@@ -177,12 +204,14 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
         low, median, high = (risk[f'{column}{balance_row}'].value for column in balance_cols)
         assert 0 <= low <= median <= high, 'Risk interval points are out of order.'
         assert results[f'B{table_row}'].value == risk[f'B{source_row - 41}' if arranged else f'AG{source_row}'].value == data[f'A{chart_row}'].value
-        assert isclose(data[f'AF{chart_row}'].value, low * factor(offset), abs_tol=tolerance)
-        assert isclose(data[f'AG{chart_row}'].value, (high - low) * factor(offset), abs_tol=tolerance)
-        assert isclose(data[f'AH{chart_row}'].value, median * factor(offset), abs_tol=tolerance)
+        shown=(tuple(risk[f'{column}{balance_row}'].value for column in ('BI','BJ','BK'))
+               if native and future_view else tuple(v*factor(offset) for v in (low,median,high)))
+        assert isclose(data[f'AF{chart_row}'].value,shown[0],abs_tol=tolerance)
+        assert isclose(data[f'AG{chart_row}'].value,shown[2]-shown[0],abs_tol=tolerance)
+        assert isclose(data[f'AH{chart_row}'].value,shown[1],abs_tol=tolerance)
         if results is not risk:
-            for col, amount in zip('FHJ', (low, median, high)):
-                assert isclose(results[f'{col}{table_row}'].value, amount * factor(offset), abs_tol=tolerance)
+            for col,amount in zip('FHJ',shown):
+                assert isclose(results[f'{col}{table_row}'].value,amount,abs_tol=tolerance)
 
 
 def _validate_report(wb, data, summary, status, horizon, retirement, cash_count, tolerance):
@@ -192,9 +221,11 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
     if 'Appendix' in wb.parts and selected in (1, 2, 3):
         if 'Risk_Data' in wb.parts:
             record = summary
-            assert record['B98'].value == 'Input decisions'
-            assert record['B130'].value == 'Spending and account decisions'
-            links = (('B10', 'E107'), ('B53', 'E108'), ('B13', 'E111'), ('B27', 'I107'), ('B36', 'E137'))
+            shift=32 if record['B130'].value=='Input decisions' else 0
+            assert record[f'B{98+shift}'].value=='Input decisions'
+            assert record[f'B{130+shift}'].value=='Spending and account decisions'
+            links=tuple((source,f'{column}{row+shift}') for source,column,row in (
+                ('B10','E',107),('B53','E',108),('B13','E',111),('B27','I',107),('B36','E',137)))
         else:
             record = inputs
             assert record['L139'].value.startswith(f"Scenario: {inputs['B7'].value}")

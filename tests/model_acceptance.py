@@ -139,17 +139,20 @@ def check_plan_print_layout(workbook: Path) -> None:
             assert names.get(('Inputs', '_xlnm.Print_Area')) == 'Inputs!$L$136:$S$194'
             input_breaks = ET.fromstring(archive.read(parts['Inputs'])).find(q('rowBreaks'))
             assert [(point.get('id'), point.get('man')) for point in input_breaks] == [('162', '1')]
-        assert names.get(('Summary', '_xlnm.Print_Area')) == f'Summary!$B$2:$I${157 if consolidated else 92}'
+        summary_root=ET.fromstring(archive.read(parts['Summary']))
+        six_pages=summary_root.find(f".//{q('c')}[@r='B162']") is not None
+        report_last=189 if six_pages else 157 if consolidated else 92
+        assert names.get(('Summary', '_xlnm.Print_Area')) == f'Summary!$B$2:$I${report_last}'
         assert names.get(('Annual Detail', '_xlnm.Print_Titles')) == "'Annual Detail'!$5:$5"
-        root = ET.fromstring(archive.read(parts['Summary']))
+        root = summary_root
         if 'Planning Metrics' in parts:
-            link = root.find(f"{q('hyperlinks')}/{q('hyperlink')}[@ref='K34']")
+            link = root.find(f"{q('hyperlinks')}/{q('hyperlink')}[@ref='{'K38' if six_pages else 'K34'}']")
             assert link is not None and link.get('location') == "'Planning Metrics'!A1"
             addresses = {cell.get('r') for cell in root.iter(q('c'))}
             for address in (f'{column}{row}' for column in 'MNO' for row in range(1, 51)):
                 assert address not in addresses, address
         breaks = root.find(q('rowBreaks'))
-        expected_breaks = ('32', '64', '96', '128') if consolidated else ('32', '64')
+        expected_breaks = ('32','64','96','128','160') if six_pages else ('32','64','96','128') if consolidated else ('32','64')
         assert [(point.get('id'), point.get('man')) for point in breaks] == [(row, '1') for row in expected_breaks]
         assert root.find(q('pageSetup')).get('orientation') == 'portrait'
         if 'Risk Results' in parts:
@@ -173,6 +176,9 @@ def check_schedule_layout(archive, parts):
     cash = ET.fromstring(archive.read(parts['Cash_Flow']))
     if cash.find(f".//{q('c')}[@r='AR4']") is not None:
         sheets['Cash_Flow'] = ('A5:AW130', '$A5', 'C130')
+    projection = ET.fromstring(archive.read(parts['Projection']))
+    if projection.find(f".//{q('c')}[@r='CG4']") is not None:
+        sheets['Projection'] = ('A5:CG130', '$A5', 'C130')
     styles = ET.fromstring(archive.read('xl/styles.xml')).find(q('cellXfs'))
     for sheet, (area, key, address) in sheets.items():
         raw = ET.fromstring(archive.read(parts[sheet]))
@@ -213,7 +219,7 @@ def premium_credit(year: int, magi: float, poverty: float, actual: float, benchm
     return min(actual, max(0, benchmark - contribution))
 
 
-def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
+def validate_model(wb: Workbook, tolerance: float = 0.01, *, include_reports=True) -> dict:
     modern = "Risk_Settings" in wb.parts
     legacy_risk = ("Monte_Carlo", "Sequence_Risk")
     risk_sheets = ("Risk_Settings", "Report_Data") if modern else legacy_risk
@@ -224,7 +230,8 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
         if any(name in wb.parts for name in legacy_risk):
             raise AssertionError("Retired risk worksheets should be absent")
         from dashboard_acceptance import validate_dashboard
-        validate_dashboard(wb, tolerance)
+        if include_reports:
+            validate_dashboard(wb, tolerance)
 
     inputs, projection, cash, roth, checks = (
         wb[name] for name in ("Inputs", "Projection", "Cash_Flow", "Roth_Access", "Checks")
@@ -250,7 +257,7 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
     years = int(years)
     if years == 0:
         require_blank(projection, ("C5", "C6"))
-        if summary[status_address].value == "YES":
+        if include_reports and summary[status_address].value == "YES":
             raise AssertionError("Invalid horizon displayed as a funded plan")
         return {"modeled_years": 0}
 
@@ -379,6 +386,9 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
             first_shortfall = p("B")
         max_shortfall = max(max_shortfall, shortfall)
 
+    result = {"modeled_years": years - 1, "end_age": end_age, "largest_shortfall": max_shortfall, "ending_tax_payable": previous_tax_payable}
+    if not include_reports:
+        return result
     equal("Summary maximum shortfall", expect_number(summary, max_gap), max_shortfall, tolerance)
     if healthcare_review:
         if summary[status_address].value != 'Check healthcare inputs':
@@ -395,7 +405,7 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
         equal("Summary bridge funds", expect_number(summary, bridge_value), bridge, tolerance)
     else:
         require_blank(summary, (bridge_value,))
-    return {"modeled_years": years - 1, "end_age": end_age, "largest_shortfall": max_shortfall, "ending_tax_payable": previous_tax_payable}
+    return result
 
 
 def main() -> int:

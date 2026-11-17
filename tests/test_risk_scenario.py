@@ -16,7 +16,7 @@ from xlsx_read import q, sheet_parts
 
 
 _WORKBOOK = Path(os.environ.get('RISK_TEST_WORKBOOK',
-                                Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsx'))
+                                Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'))
 
 
 def _replace_saved_number(source: Path, destination: Path, sheet: str, coordinate: str, value: float) -> None:

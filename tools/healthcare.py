@@ -67,7 +67,7 @@ def applicable_rate(ratio, first):
         low = f'Tax_Tables!$C${row}'
         high = f'Tax_Tables!$D${row}'
         rate = low if row == first else f'({low}+(({ratio})-{start})*({high}-{low})/({end}-{start}))'
-        expr = f'IF(({ratio})<{end},{rate},{expr})'
+        expr = f'IF(GESTEP(({ratio}),{end})=0,{rate},{expr})'
     return expr
 
 
@@ -77,10 +77,12 @@ def credit_from(magi, actual, benchmark, fpl, year):
     The 100% and 400% endpoints are inclusive under the ordinary rules. The
     inputs to this function already exclude months/persons not eligible for PTC.
     """
+    # Calc's ordinary relational operators treat nearby numbers as equal.
+    # GESTEP compares the numeric values at both inclusive credit boundaries.
     ratio = f'(({magi})/({fpl}))'
     rate = f'IF(({year})>=2027,{applicable_rate(ratio,221)},{applicable_rate(ratio,204)})'
     return (f'IF(OR(({actual})<=0,({benchmark})<=0,({fpl})<=0),0,'
-            f'IF(OR(({magi})<({fpl}),({magi})>4*({fpl})),0,'
+            f'IF(OR(GESTEP(({magi}),({fpl}))=0,GESTEP(4*({fpl}),({magi}))=0),0,'
             f'MIN(({actual}),MAX(0,({benchmark})-({magi})*{rate}))))')
 
 

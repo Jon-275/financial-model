@@ -2,9 +2,9 @@
 
 from openpyxl.formula.tokenizer import Tokenizer
 
-FIRST_ROW = 97
-SECOND_ROW = 129
-LAST_ROW = 157
+FIRST_ROW = 129
+SECOND_ROW = 161
+LAST_ROW = 189
 PAGE_BREAKS = (FIRST_ROW - 1, SECOND_ROW - 1)
 FIRST_HEADERS = FIRST_ROW + 7
 SECOND_HEADERS = SECOND_ROW + 7
@@ -35,7 +35,7 @@ EACH_PAGE = (
         ('Your Medicare start age', 'IF(B101=1,IF(B104=126,"None",B104),"")', 'row', 'Cash share of tax-exempt interest', 89, 'percent'),
         ('Spouse’s Medicare start age', 'IF(B101=1,IF(B105=126,"None",B105),"")', 'row', 'Traditional balance tax estimate', 61, 'percent'),
         ('Long-term care start age', 'IF(B58=999,"",B58)', 'row', 'Survivor’s Social Security share', 'IF(B54=999,"",INDEX(D55:F55,1,B4))', 'percent'),
-        ('Annual long-term care cost', 'IF(B58=999,"",B59)', 'money', 'Age when survivor assumptions start', 'IF(B54=999,"",B54)', 'row'),
+        ('Annual long-term care cost', 'IF(B58=999,"",B59)', 'money', 'Age at first death', 'IF(B54=999,"",B54)', 'row'),
     )),
 )
 
@@ -54,8 +54,8 @@ def configure(put):
 
     valid = 'IF(ISNUMBER(B4),AND(B4>=1,B4<=3,B4=INT(B4)),FALSE())'
     for start, kicker, title in (
-        (FIRST_ROW, '4 / Input decisions', 'Input decisions'),
-        (SECOND_ROW, '5 / Spending decisions', 'Spending and account decisions'),
+        (FIRST_ROW, '5 / Input decisions', 'Input decisions'),
+        (SECOND_ROW, '6 / Spending decisions', 'Spending and account decisions'),
     ):
         display(f'B{start}', _on_inputs(f'IF({valid},"{kicker}   •   "&B7,"{kicker}")'), 'report_kicker')
         display(f'B{start + 1}', title, 'report_title')
@@ -76,10 +76,24 @@ def configure(put):
                               f'IF(ISBLANK(INDEX(D{source}:F{source},1,B4)),"",B{source})')
                 display(f'{label_col}{index}', label, 'report_caption_gutter' if label_col == 'F' else 'report_caption')
                 display(f'{value_col}{index}', _on_inputs(f'IF({valid},{source},"")'), 'report_' + style)
-    display('B119', '¹ Includes inflation.  ² The fee applies to all scenarios.', 'report_caption')
-    display('B150', 'One-time expenses for all scenarios', 'report_section')
+    display(f'B{FIRST_ROW + 22}', '¹ Includes inflation.  ² The fee applies to all scenarios.', 'report_caption')
+    display(f'B{FIRST_ROW + 24}','Roth account access','report_section')
+    access=(
+        ('Your IRA first tax year','IF(B29>0,B29,"Unknown")',
+         'Spouse’s IRA first tax year','IF(B92>0,B92,"Unknown")'),
+        ('Your workplace Roth first year','IF(B28=2,IF(B93>0,B93,"Unknown"),"Not used")',
+         'Spouse’s workplace Roth first year','IF(B28=2,IF(B94>0,B94,"Unknown"),"Not used")'),
+        ('Your first workplace withdrawal age','IF(B28=2,IF(B95=126,"Access unconfirmed",B95),"Not used")',
+         'Spouse’s first workplace withdrawal age','IF(B28=2,IF(B96=126,"Access unconfirmed",B96),"Not used")'),
+    )
+    for row,entries in enumerate(access,FIRST_ROW+25):
+        for label_column,value_column,label,formula in (
+            ('B','E',*entries[:2]),('F','I',*entries[2:])):
+            display(f'{label_column}{row}',label,'report_caption_gutter' if label_column=='F' else 'report_caption')
+            display(f'{value_column}{row}',_on_inputs(f'IF({valid},{formula},"")'),'report_body')
+    display(f'B{SECOND_ROW + 21}', 'One-time expenses for all scenarios', 'report_section')
     for index, source in enumerate(range(75, 83)):
-        row = 152 + index % 4
+        row = SECOND_ROW + 23 + index % 4
         col = 'B' if index < 4 else 'F'
         no_costs = 'IF(COUNT(B75:B82)=0,"None entered","")' if index == 0 else '""'
         display(f'{col}{row}', _on_inputs(
@@ -88,11 +102,14 @@ def configure(put):
 
 
 def merges():
-    ranges = [f'B{row}:I{row}' for row in (97, 98, 100, 102, 119, 129, 130, 132, 134, 150)]
+    ranges = [f'B{row}:I{row}' for row in (
+        FIRST_ROW,FIRST_ROW+1,FIRST_ROW+3,FIRST_ROW+5,FIRST_ROW+22,FIRST_ROW+24,
+        SECOND_ROW,SECOND_ROW+1,SECOND_ROW+3,SECOND_ROW+5,SECOND_ROW+21)]
     for row, _, _, entries in EACH_PAGE:
         ranges += [f'B{row}:E{row}', f'F{row}:I{row}']
         for i in range(row + 1, row + len(entries) + 1):
             ranges += [f'B{i}:D{i}', f'F{i}:H{i}']
-    for row in range(152, 156):
+    for row in range(SECOND_ROW+23, SECOND_ROW+27):
         ranges += [f'B{row}:E{row}', f'F{row}:I{row}']
+    for row in range(FIRST_ROW+25,FIRST_ROW+28):ranges += [f'B{row}:D{row}',f'F{row}:H{row}']
     return ranges

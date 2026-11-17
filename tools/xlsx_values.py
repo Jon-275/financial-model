@@ -1,0 +1,98 @@
+"""Write selected literals without resaving workbook objects."""
+from math import isfinite
+from pathlib import Path
+from zipfile import ZipFile,ZIP_DEFLATED
+
+from lxml import etree as E
+from openpyxl.utils.cell import coordinate_from_string,column_index_from_string
+
+X='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
+R='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
+
+
+def sheet_parts(archive):
+    book=E.fromstring(archive.read('xl/workbook.xml'))
+    relationships=E.fromstring(archive.read('xl/_rels/workbook.xml.rels'))
+    paths={r.get('Id'):r.get('Target') for r in relationships}
+    return {s.get('name'):(lambda p:p.lstrip('/') if p.startswith('/') else 'xl/'+p)(paths[s.get(R+'id')])
+            for s in book.find(X+'sheets')}
+
+
+def update_sheet(root,values,*,shared_text=None):
+    reference_delta=0
+    data=root.find(X+'sheetData')
+    rows={int(r.get('r')):r for r in data}
+    cells={c.get('r'):c for c in data.iter(X+'c')}
+    for address,value in values.items():
+        _,number=coordinate_from_string(address)
+        if address not in cells:
+            if value is None:continue
+            if number not in rows:rows[number]=E.SubElement(data,X+'row',r=str(number))
+            cells[address]=E.SubElement(rows[number],X+'c',r=address)
+        cell=cells[address]
+        formula=cell.find(X+'f')
+        if formula is not None:
+            raise ValueError('The requested value overlaps a calculation formula.')
+        if cell.get('t')=='s':reference_delta-=1
+        for tag in ('v','is'):
+            for previous in cell.findall(X+tag):cell.remove(previous)
+        cell.attrib.pop('t',None)
+        if value is None:continue
+        if type(value) in (int,float) and isfinite(value):
+            E.SubElement(cell,X+'v').text=repr(value)
+        elif isinstance(value,str) and shared_text and value in shared_text:
+            cell.set('t','s')
+            E.SubElement(cell,X+'v').text=str(shared_text[value])
+            reference_delta+=1
+        elif isinstance(value,str):
+            cell.set('t','inlineStr')
+            E.SubElement(E.SubElement(cell,X+'is'),X+'t').text=value
+        else:raise ValueError('The requested cell value has an unsupported type.')
+    for row in rows.values():
+        row[:]=sorted(row,key=lambda c:column_index_from_string(coordinate_from_string(c.get('r'))[0]))
+        row.attrib.pop('spans',None)
+    data[:]=[rows[number] for number in sorted(rows)]
+    dimension=root.find(X+'dimension')
+    last_col=max(column_index_from_string(coordinate_from_string(a)[0]) for a in cells)
+    from openpyxl.utils.cell import get_column_letter
+    dimension.set('ref',f'A1:{get_column_letter(last_col)}{max(rows)}')
+    return reference_delta
+
+
+def write_values(source,destination,values,*,shared_strings=()):
+    source,destination=Path(source),Path(destination)
+    if source.resolve()==destination.resolve() or destination.exists():
+        raise ValueError('Use a new destination for the workbook copy.')
+    with ZipFile(source) as original:
+        parts=sheet_parts(original)
+        if values.keys()-parts.keys():raise ValueError('A requested worksheet is missing.')
+        updates={}
+        shared_part='xl/sharedStrings.xml'
+        shared=None
+        indexes={}
+        delta=0
+        if shared_strings and shared_part in original.namelist():
+            shared=E.fromstring(original.read(shared_part))
+            entries=shared.findall(X+'si')
+            for index,entry in enumerate(entries):
+                if len(entry)==1 and entry[0].tag==X+'t' and entry[0].text in shared_strings:
+                    indexes[entry[0].text]=index
+            insert_at=len(entries)
+            for value in sorted(set(shared_strings)-indexes.keys()):
+                indexes[value]=insert_at
+                entry=E.Element(X+'si')
+                E.SubElement(entry,X+'t').text=value
+                shared.insert(insert_at,entry)
+                insert_at+=1
+        for sheet,items in values.items():
+            root=E.fromstring(original.read(parts[sheet]),E.XMLParser(resolve_entities=False,no_network=True,huge_tree=True))
+            delta+=update_sheet(root,items,shared_text=indexes)
+            updates[parts[sheet]]=E.tostring(root,encoding='UTF-8',xml_declaration=True,standalone=True)
+        if shared is not None:
+            if shared.get('count') is not None:
+                shared.set('count',str(int(shared.get('count'))+delta))
+                shared.set('uniqueCount',str(len(shared.findall(X+'si'))))
+            updates[shared_part]=E.tostring(shared,encoding='UTF-8',xml_declaration=True,standalone=True)
+        destination.parent.mkdir(parents=True,exist_ok=True)
+        with ZipFile(destination,'x',ZIP_DEFLATED,compresslevel=5) as output:
+            for part in original.namelist():output.writestr(part,updates.get(part,original.read(part)))

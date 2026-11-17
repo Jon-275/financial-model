@@ -1,53 +1,47 @@
-# Financial Planning
+# Retirement planner
 
-Build a retirement plan in Excel and see whether your household can pay its bills and taxes through the age you choose, up to 125. [Download the workbook](https://raw.githubusercontent.com/Jon-275/financial-model/main/workbook/retirement-model.xlsx)
+Use Excel to see whether your household can pay its spending and taxes through the age you choose, up to 125. The published workbook includes a fictional household. Save a private copy before entering your own figures. [Download the current workbook](https://raw.githubusercontent.com/Jon-275/financial-model/b40af21ddaa65129bfe7ce180eb336243f5246f9/workbook/retirement-model.xlsx)
 
-1. Save a private copy before entering personal figures. The workbook contains a fictional example.
-2. Open the copy in desktop Excel. Follow **Start Here** and choose a scenario on **Inputs**.
-3. Open **Summary** to see whether the plan covers its costs and how it fares in different markets. The workbook opens with market risk results for the fictional example. [Print your plan with the input decisions](docs/model-guide.md#print-your-plan)
+1. Open **Start Here**, then choose a scenario on **Inputs**. Enter your ages, income, savings and spending.
+2. Open **Summary**. The headline tells you whether the base plan covers its costs. If it falls short, the report gives the first age and year that bills go unpaid.
+3. Review the investment mix, spending policy and market results. Use the dollar selector on **Summary** to switch between today's purchasing power and projected amounts. Print **Summary** to keep a record of the report and your choices. [Model guide](docs/model-guide.md)
 
-Open **Planning Metrics** for the figures behind the report. Use **Income_Targeting** to compare Roth conversions and **Tax_Tables** to look up rates. **Appendix** links to the annual schedules, conversion detail, withdrawal trials, and saved market risk data. All workbook sheets are visible.
+The next edition adds **Run market risk** in desktop Excel and a six-page Summary with stress tests and funding examples. The current download uses the earlier risk refresh process. The new edition is in testing. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Implementation plan](docs/model-improvement-plan.md)
 
-- Enter your assumptions and print the five-page plan from Summary. [Model guide](docs/model-guide.md)
-- Follow the income, account and tax calculations. [Workbook schedules](docs/workbook-schedules.md)
-- Refresh the market risk results after changing your assumptions. Open the refreshed Excel plan to see the success rate and funding examples on **Summary**. [Market risk guide](docs/risk-analysis.md)
-- Review tax loss and gain harvesting. [Portfolio guide](docs/portfolio-management.md)
+## Understand the results
 
-## Contribute
+- **Cash flow and account access.** Follow income, spending, withdrawals and taxes through the annual schedules. All sheets are visible. [Workbook schedules](docs/workbook-schedules.md)
+- **Market risk.** Read the success rate, balance range, spending cuts and funding examples together. [Market risk guide](docs/risk-analysis.md)
+- **Portfolio management.** Review tax gain and loss harvesting as part of managing a taxable account. [Portfolio guide](docs/portfolio-management.md)
 
-Open a pull request into `main`. GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** to pass. Resolve every review thread before merging. Run the local checks before submitting a change and use desktop Excel to verify a workbook release. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+## Build the next edition
 
-### Keep private workbook copies out of Git
-
-Run this command from the repository root once per clone to enable the workbook check before each commit.
-
-```sh
-git config --local core.hooksPath .githooks
-```
-
-Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The template and published workbook use synthetic inputs and investment profiles. The commit check inspects their content, unused text and metadata before comparing approved checksums. [Review a rebuilt workbook before publishing](tests/README.md#microsoft-excel-release-check)
-
-Use your GitHub private email address for commits. If you have a clone from before the November 17, 2026 history cleanup, replace it before contributing. [History cleanup and clone replacement](docs/history-cleanup.md)
-
-## Rebuild the workbook
-
-The build starts from the audited synthetic `workbook/build-template.xlsx` and writes a new workbook. Run the commands from the repository root with Python 3.11 or later and LibreOffice Calc.
-
-Put `soffice` on your path or set `SOFFICE_BIN` to its executable. The public Python dependencies write the formulas and preserve the native Excel charts and workbook layout.
+Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path or set `SOFFICE_BIN` to its executable. From the repository root, run the following commands.
 
 ```sh
 python3 -m pip install -r tools/requirements.txt
 mkdir -p scratch
 build_dir=$(mktemp -d scratch/build.XXXXXXXX)
-bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsx"
+bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsm"
 ```
 
-The script runs 1,000 market paths for the example, saves the results in the workbook, and runs the release check. Keep the file name `retirement-model.xlsx` when building so the Excel charts resolve their references. The [test and release guide](tests/README.md) shows where the schedules are generated and how to verify a candidate before publication.
+The builder enters fictional inputs, calculates 1,000 paired market paths and 33 stress cases, and packages the reviewed VBA source into the workbook. Users run their own scenarios in desktop Excel. [Build and release checks](tests/README.md)
 
-## Maintenance and history
+## Contribute
+
+Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **Gemini Review** must pass, and all review threads must be resolved. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+
+Enable the workbook privacy check once per clone.
+
+```sh
+git config --local core.hooksPath .githooks
+```
+
+Store personal files outside the checkout or in the ignored `private/` folder. The template and shared workbook use fictional inputs and investment profiles. Use your GitHub private email for local commits and hosted merges. Replace clones made before the November 17, 2026 history cleanup. [History cleanup and clone replacement](docs/history-cleanup.md)
+
+## Maintenance
 
 - [Annual tax data review](docs/annual-tax-review.md)
-- [Implementation plan and remaining work](PLAN.md)
-- [Latest financial corrections](docs/release-notes/financial-boundaries.md)
-- [Workbook layout and report release](docs/release-notes/workbook-layout.md)
-- [Earlier release records for Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md)
+- [Project plan](docs/model-improvement-plan.md)
+- [Published financial corrections](docs/release-notes/financial-boundaries.md) and [workbook layout history](docs/release-notes/workbook-layout.md)
+- Earlier releases cover [Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md).

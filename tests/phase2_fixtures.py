@@ -7,6 +7,12 @@ from health_fixtures import CASES as HEALTH
 from targeting_fixtures import CASES as TARGETING
 from tax_fixtures import CASES as TAX
 
+BASIS_YIELDS = {
+    'Asset_Allocation': {**{f'D{row}': .01 for row in range(6, 11)},
+                         **{f'E{row}': .02 for row in range(6, 11)}},
+    'Tax_Tables': {'B23': 10000},
+}
+
 BOUNDARIES=[
     case('legacy_medical_surcharge_allows_negative_joint_magi',
          {'D8':64,'D9':62,'D10':65,'D53':67,'D25':1000,'D51':2000,'D37':1000},
@@ -16,6 +22,21 @@ BOUNDARIES=[
          {'D8':64,'D9':62,'D10':65,'D53':67,'D54':64,'D25':1000,'D51':2000,'D37':1000,'D56':1},
          checks=(*by_age(65,AK=-1000),out('Healthcare!L8',0),out('Cash_Flow!Q8',2000),
                  out('Planning Metrics!B26',2028),out('Summary!B8','First shortfall at age 66 (2028).'),out('Planning Metrics!B25','NO - cash shortfall'))),
+    case('partial_brokerage_sale_retains_only_its_share_of_investment_income',
+         {'D25':10000,'D51':8000,'D37':2500}, BASIS_YIELDS,
+         checks=(*by_age(55,V=2500,CE=2000,CF=225,BD=6225),out('Planning Metrics!B25','YES'))),
+    # Only a full $1,000 sale puts income at the Marketplace credit cutoff.
+    # The credit covers the premium. After $500 of spending, the other
+    # $500 is a fresh deposit; the sold shares' $30 yield adds no basis.
+    case('liquidated_brokerage_reopens_with_only_the_new_deposit_basis',
+         {'D25':1000,'D51':2000,'D37':500,'D52':87530,'D86':0,
+          'D101':1,'D102':1,'D106':10000,'D116':1,'D119':20000},
+         {**BASIS_YIELDS,'Tax_Tables':{f'B{row}':0 for row in (*range(6,13),17,18,19)}},
+         checks=(*by_age(55,V=1000,BB=500,BC=500,BD=500,CE=2000,CF=500),
+                 out('Healthcare!AC6',86560),out('Healthcare!R6',10000),out('Planning Metrics!B25','YES'))),
+    case('unsold_brokerage_retains_income_and_new_deposits',
+         {'D25':10000,'D51':8000,'D46':500}, BASIS_YIELDS,
+         checks=(*by_age(55,V=0,BB=500,CE=0,CF=800,BD=8800),out('Planning Metrics!B25','YES'))),
     case('complete_brokerage_liquidation_removes_its_cost_basis',
          {'D8':60,'D9':58,'D10':61,'D53':62,'D25':4246.77694910289,'D51':8493.55389820578,
           'D26':50000.123,'D37':100000,'D48':2,'D49':1000000},
@@ -26,6 +47,14 @@ BOUNDARIES=[
 ]
 
 PUBLISHED=[
+    case('social_security_does_not_fall_after_claim_during_deflation',
+         {'D14':-.05,'D44':1000,'D45':55,'D53':57},
+         checks=(*by_age(55,N=950),*by_age(56,N=950),*by_age(57,N=950),
+                 out('Projection!CG8',.95),survives('YES'))),
+    case('existing_social_security_benefit_keeps_its_opening_level',
+         {'D14':-.05,'D44':1000,'D45':54,'D53':57},
+         checks=(*by_age(55,N=1000),*by_age(56,N=1000),*by_age(57,N=1000),
+                 out('Projection!CG8',1),survives('YES'))),
     case('published_2027_federal_and_2026_california_floors',{'D52':133200},
         {'Tax_Tables':{'B219':1,**{f'B{r}':v for r,v in enumerate((.10,.12,.22,.24,.32,.35,.37),6)},
                        **{f'B{r}':v for r,v in enumerate((.01,.02,.04,.06,.08,.093,.103,.113,.123),30)}}},

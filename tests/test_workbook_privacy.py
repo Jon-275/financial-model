@@ -103,7 +103,7 @@ class WorkbookPrivacyTests(unittest.TestCase):
                     audit_package(path, template=True)
 
     def test_added_notes_outside_known_ranges_are_rejected(self):
-        release = ROOT / 'workbook/retirement-model.xlsx'
+        release = ROOT / 'workbook/retirement-model.xlsm'
         with ZipFile(release) as source:
             part = sheet_parts(source)['Summary']
             root = E.fromstring(source.read(part))

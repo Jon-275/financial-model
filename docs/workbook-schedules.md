@@ -21,7 +21,9 @@ Columns AR–AW on **Cash_Flow** show the spending obligation roll-forward. Requ
 
 The first page of **Summary** shows the earliest year with at least one cent of unpaid spending or tax. Look up that year on **Cash_Flow** to see which bills were unpaid and what money was available.
 
-When a withdrawal reaches an account's available balance, the model withdraws that exact amount. A fully sold brokerage account closes with zero balance and zero cost basis. This avoids retaining cost basis because of a tiny arithmetic remainder.
+When a withdrawal reaches an account's available balance, the model withdraws that exact amount. A full brokerage sale removes the cost basis of the investments sold. If cash is deposited later that year, the new deposit starts its own cost basis.
+
+On **Projection**, column CE shows how much taxable cost basis a sale removes. Column CF adds new deposits and reinvested income on the share of the opening investments still held. The annual tax estimate uses opening balances to estimate interest and dividends. The model applies annual total returns after withdrawals and deposits.
 
 ## Roth_Access
 
@@ -51,9 +53,17 @@ The comparison starts from the active scenario’s balances and rules for one ye
 
 ## Risk_Settings and Risk Results
 
-List the living costs you could reduce, then decide how much you would cut from those costs and when you would act. The trigger compares the opening balance in a simulated year with the balance for that year in the base plan. Multiply the flexible share by the cut to that share to see the reduction to the full living budget. Mortgage, healthcare, tax and one-time bills remain part of the funding calculation.
+List the living costs you could reduce, then decide how much you would cut from those costs and when you would act. The trigger compares the opening balance in a simulated year with the balance for that year in the base plan. Multiply the flexible share by the cut to that share to see the reduction to non-mortgage living costs. Mortgage, healthcare and one-time bills remain in required costs. Tax follows the revised withdrawals.
 
-Read the success rate and number of runs with spending cuts together. The rule tests the balance each year, so a cut can recur for several years. Check the early stock tests for the age of the first unpaid costs and whether the cut changes it. Excel opens with the fictional example’s results on **Summary**. Run the simulator locally after editing the plan. It returns a refreshed copy of the same workbook with the updated figures on **Summary**. [Market risk guide](risk-analysis.md)
+Read the success rate and number of paths with spending cuts together. The rule tests the balance each year, so a cut can recur for several years. The median years with cuts includes paths with no cuts. Check the early stock tests for the age of the first unpaid costs and whether the cut changes it. Choose **Run market risk** on Summary after editing the plan. The macro runs the visible worksheet engine and refreshes the report after a complete batch. It does not start when you open, save or print. [Market risk guide](risk-analysis.md)
+
+## Funding_Paths and the trial schedules
+
+**Funding_Paths** shows the annual cash flow for the low, median and high fixed-spending paths from Summary. Follow one path from income and bills through withdrawals, closing balances and unpaid costs. Amounts follow the dollar view on Summary and use that path’s price index. To trace a figure to the saved run, open **Funding_Path_Data** and match the trial number and year. The source values use each year’s prices.
+
+**Risk_Trials** records the requested market paths and stress cases. Choose a trial number there to inspect its returns and prices on **Market_Paths** and its annual calculations on the **Trial_** schedules. These schedules are another instance of the base annual compiler. They apply the same tax, healthcare, account-access and obligation rules. Their raw calculations use the selected path’s future dollars. **Random_Numbers** shows the seed and integer random-number calculation.
+
+**Risk_Data** derives report statistics from the captured trial results and compares the active assumptions with the completed run. A failed or incomplete run cannot supply a current report. The report’s real and nominal balance percentiles are calculated separately, so future-dollar bands remain correct when inflation varies across paths.
 
 ## Tax_Tables
 

@@ -14,6 +14,7 @@ import risk_workbook
 import roth_contributions
 import workbook_layout
 import workbook_guide
+import native_risk
 from risk_engine.scenario import HSA_RETURN_ROWS
 import healthcare
 import published_tax
@@ -303,10 +304,13 @@ def projection(wb):
     s='Projection'
     work_hsa, retired_hsa = (f'Inputs!$B${row}' for row in HSA_RETURN_ROWS)
     for a,label in {'M4':'Roth IRA savings funded','Q4':'Cash need before current tax','X4':'Accessible Roth at year start',
-                    'Z4':'Essential funding shortfall','AV4':'Current-year tax','BB4':'Taxable savings deposited'}.items(): put(s,a,label)
+                    'Z4':'Essential funding shortfall','AV4':'Current-year tax','BB4':'Taxable savings deposited',
+                    'CG4':'Social Security price index'}.items(): put(s,a,label)
     for r in range(5,END+1):
         p=r-1; f=group(r)+STEPS-1
         put(s,f'H{r}',active(r,f'(1+Inputs!$B$14)^(B{r}-2026)'))
+        claim_start=f'MAX(1,MIN({r}-4,Inputs!$B$45-Inputs!$B$8+1))'
+        put(s,f'CG{r}',active(r,f'MAX(INDEX($G$5:G{r},{claim_start}):G{r})'),'decimal')
         if r==5:
             put(s,'B5',active(5,'Inputs!$B$130'))
             put(s,'X5',active(r,rt('T',r))); put(s,'BF5',active(r,rt('AM',r)))
@@ -316,6 +320,7 @@ def projection(wb):
             'J':f'IF(E{r}="Working",MIN(MAX(0,I{r}),Inputs!$B$32*G{r}),0)',
             'K':f'IF(E{r}="Working",MIN(MAX(0,I{r}-J{r}),Inputs!$B$34*G{r}),0)',
             'M':cf('R',r),'O':f'IF(AND(C{r}>=Inputs!$B$87,C{r}<=Inputs!$B$88),Inputs!$B$52*G{r},0)',
+            'N':f'IF(C{r}>=Inputs!$B$45,IF(F{r}="Single",Inputs!$B$55,Inputs!$B$44)*CG{r},0)',
             'Q':f'MAX(0,{cf("W",r)})','X':rt('T',r),'Z':cf('V',r),'BB':cf('T',r),'BF':rt('AM',r),
             'BG':f'MAX(0,BG{p}+K{r}-P{r})*(1+IF(E{r}="Working",{work_hsa},{retired_hsa}))',
             'U':f'MAX(0,Inputs!$B$49*G{r}+AL{r}-(T{r}+O{r}+AC{r}+0.85*N{r}))',
@@ -403,7 +408,7 @@ def guidance(start_sheet):
         'B11': ('Choose the scenario to edit, then enter ages, income, savings and spending.', 'report_body'),
         'B12': ('Open Inputs', 'report_link'),
         'B14': ('3. Review your plan', 'report_section'),
-        'B15': ('Read the funding result and print the five-page plan directly from Summary.', 'report_body'),
+        'B15': ('Read the funding result and print the six-page plan from Summary.', 'report_body'),
         'B16': ('Open Summary', 'report_link'),
         'B19': ('=HYPERLINK("https://github.com/Jon-275/financial-model/blob/main/docs/model-guide.md","Read the model guide")', 'report_link'),
     }
@@ -573,12 +578,14 @@ def main():
         value = cells['Tax_Tables'].get(address, wb['Tax_Tables'][address].value)
         return isinstance(value, str) and value.startswith('=')
     risk_workbook.configure_freshness(put, is_tax_formula=is_tax_formula)
+    native_risk.configure(m, wb)
     plan_report.configure_index(put)
     input_record.configure(put)
     workbook_guide.configure(put)
     workbook_layout.write_scenarios(put)
     order = workbook_layout.sheet_order([s for s in wb.sheetnames if s not in risk_cleanup.LEGACY_SHEETS] + MODULES)
-    out.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared},separators=(',',':')))
+    out.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared,
+                              'native_names':getattr(m,'native_names',{})},separators=(',',':')))
     print('Authored cells by module:',{s:len(c) for s,c in cells.items()})
 
 if __name__=='__main__': main()

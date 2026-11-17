@@ -204,7 +204,7 @@ def configure(m, wb):
     for col,label in {'AB':'Basis per taxable dollar','AE':'Realized gain or loss','AQ':'Additional federal AMT',
                       'AR':'Payroll tax by earner','BT':'Primary wages','BU':'Spouse wages',
                       **{col:EXTRA_HEADERS[key] for key,col in PROJECTION_EXTRA.items()},
-                      'CE':'Taxable basis removed','CF':'Taxable basis added'}.items():
+                      'CE':'Taxable basis removed','CF':'Basis added to retained investments'}.items():
         m.put(s,f'{col}4',label,'header')
     for r in range(5,m.END+1):
         prev=r-1
@@ -213,8 +213,8 @@ def configure(m, wb):
                    else f'IF(BC{prev}>0,BD{prev}/BC{prev},0)'),
             'BT': f'IF(OR(F{r}="Single",Inputs!$B$11=1),I{r},I{r}*Inputs!$B$126)',
             'BU': f'I{r}-BT{r}',
-            'CE': '0' if r==5 else f'MIN(BD{prev},V{r}*AB{r})',
-            'CF': '0' if r==5 else f'IF(BC{r}>0,SUM(BB{r},AF{r},AC{r}),0)',
+            'CE': '0' if r==5 else f'IF(V{r}>=BC{prev},BD{prev},MIN(BD{prev},V{r}*AB{r}))',
+            'CF': '0' if r==5 else f'IF(BC{r}>0,BB{r}+IF(BC{prev}>0,(AF{r}+AC{r})*(MAX(0,BC{prev}-V{r})/BC{prev}),0),0)',
         }
         if r>5:
             year=f'B{r}'; idx=f'H{r}'

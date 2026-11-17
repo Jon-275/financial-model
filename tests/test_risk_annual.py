@@ -16,7 +16,7 @@ from risk_engine.scenario import HSA_RETURN_ROWS, load_scenario
 class AnnualRiskTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        default = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsx'
+        default = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'
         cls.scenario = load_scenario(os.environ.get('RISK_TEST_WORKBOOK', default))
         cls.model = AnnualModel(cls.scenario)
 
