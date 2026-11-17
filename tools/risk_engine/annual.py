@@ -374,7 +374,7 @@ class AnnualModel:
                     'AR': p.payroll, 'AU': p.sdi, 'AV': tax.total_tax, 'AZ': surcharge, 'BA': healthcare,
                     'BB': deposit, 'BC': state.taxable, 'BD': state.basis, 'BE': state.traditional,
                     'BF': sum(state.roth), 'BG': state.hsa, 'BH': balance,
-                    'BJ': balance - state.traditional * i[61] - state.payable,
+                    'BJ': balance - state.traditional * i[61] - state.payable - state.spending_payable,
                     'BL': tax.aca_magi, 'BN': balance / p.cpi, 'BW': state.federal_loss,
                     'BY': state.ca_loss, 'CE': removal, 'CF': basis_addition,
                 },
