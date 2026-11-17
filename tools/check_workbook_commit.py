@@ -14,10 +14,10 @@ from workbook_privacy import audit_fixture, audit_package
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsm'
-RELEASE_SHA256 = 'b997ea0ddfa8a99702b49b9f6b2e54cba3dacea27e3aa7dcb44ef8ef2e5e00cb'
+RELEASE_SHA256 = '9759ffcb36e1063e3871d3d7d0bd7f28725b5d53e0f85fac81343e5b6d1016d9'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = 'fdf966bd8556733b946ce6c1ee36b812c8a1b1abe901c17fc94bb76b90e45221'
-EXAMPLE_RISK_SHA256 = '535785a1db6f1fd8fcb128386dbee467cd0586830b9ed9bef413077db0d086a3'
+EXAMPLE_RISK_SHA256 = '0d0bf65e8f3db724a9f74fa8053ea568b1da6732601a4346cddd7dcae2a17937'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
@@ -45,7 +45,7 @@ def risk_snapshot_digest(workbook):
 
 
 def check_native_package(path):
-    """Verify the file type, VBA relationship and its on-demand Summary button."""
+    """Verify the file type, VBA relationship and the two on-demand Summary actions."""
     with ZipFile(path) as archive:
         types = ElementTree.fromstring(archive.read('[Content_Types].xml'))
         main = types.find("{*}Override[@PartName='/xl/workbook.xml']")
@@ -56,9 +56,9 @@ def check_native_package(path):
         if len(projects) != 1 or projects[0].get('Target') != 'vbaProject.bin' or 'xl/vbaProject.bin' not in archive.namelist():
             raise ValueError('The workbook is missing its embedded VBA project.')
         drawing = ElementTree.fromstring(archive.read('xl/drawings/drawing1.xml'))
-        buttons = [shape for shape in drawing.findall('.//{*}sp') if shape.get('macro') == '[0]!RunMarketRisk']
-        if len(buttons) != 1:
-            raise ValueError('Expected one Run market risk button on Summary.')
+        actions = sorted(shape.get('macro') for shape in drawing.findall('.//{*}sp') if shape.get('macro'))
+        if actions != ['[0]!CancelMarketRisk', '[0]!RunMarketRisk']:
+            raise ValueError('Expected one Run market risk button and one Cancel button on Summary.')
 
 
 def audit_sample_workbook(path):

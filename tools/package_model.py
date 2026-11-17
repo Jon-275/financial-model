@@ -13,6 +13,8 @@ from plan_report import APPENDIX, CONVERSION_DETAIL, INDEX
 from targeting import FIRST_TRIAL, LAST_TRIAL
 import workbook_layout
 import workbook_metadata
+import input_validation
+from workbook_protection import WorksheetProtection
 import native_risk
 import native_layout
 import native_package
@@ -74,7 +76,7 @@ def main():
             xf=deepcopy(xfs[int(style_ids[source] or 0)]); xf.set('numFmtId',str(fmt)); xf.set('applyNumberFormat','1')
             style_ids[name]=str(len(xfs)); xfs.append(xf)
         active_fill, number_formats = report_layout.install_styles(style_root, style_ids)
-        changes['xl/styles.xml']=pack(style_root)
+        protection = WorksheetProtection(style_root)
         overlay = {}
         revised_sst = []
         if len(sys.argv)>5:
@@ -181,8 +183,11 @@ def main():
             workbook_layout.apply_sheet_layout(layout_name, root)
             report_layout.apply(layout_name, root, style_ids, number_formats, active_fill)
             native_layout.apply(n, root, style_ids, number_formats, active_fill)
+            input_validation.apply(n, root)
+            protection.apply(n, root)
             workbook_metadata.clear_revision_ids(root)
             changes[part]=pack(root); print(n,len(edits),flush=True)
+        changes['xl/styles.xml'] = pack(style_root)
         app = read(src, 'docProps/app.xml')
         workbook_layout.apply_tab_order(wb, app)
         report_layout.install_print_names(wb)

@@ -7,6 +7,8 @@ from openpyxl.utils.cell import get_column_letter as L, coordinate_from_string, 
 import dashboard
 import plan_report
 import input_record
+import input_validation
+import starter_illustration
 import funding_search
 import risk_cleanup
 import risk_presentation
@@ -93,7 +95,7 @@ def inputs(wb):
     put('Inputs','B99',f'=IFERROR(IF(AND({checks}),"OK","Check cash and Roth inputs"),"Check cash and Roth inputs")','note')
     put('Inputs','A83',"Use today's dollars. Shared by all scenarios.", 'note')
     put('Inputs','A84','One-time expense check','label')
-    put('Inputs','B84','=IF(COUNTA(B83:C83)=0,"OK","Move one-time expenses to Inputs rows 75–82")','note')
+    put('Inputs','B84',input_validation.expense_check(),'note')
     put('Inputs','A130','Opening year for plan and balances','label')
     put('Inputs','B130',2026,'input')
     put('Inputs','A131','Annual investment fee','label')
@@ -117,9 +119,11 @@ def inputs(wb):
         (f'AND({working},COUNT(INDEX(D36:F36,1,B4))<>1)', 'Enter annual spending now on Inputs'),
         (f'AND({retired},COUNT(INDEX(D37:F37,1,B4))<>1)', 'Enter retirement spending on Inputs'),
         ('OR(Asset_Allocation!B94<>"OK",Asset_Allocation!B95<>"OK")', 'Check the selected mixes on Asset_Allocation'),
+        ('IFERROR(OR(COUNT(Asset_Allocation!B6:E10)<>20,MIN(Asset_Allocation!B6:B10)<=-1,'
+         'MIN(Asset_Allocation!C6:E10)<0),TRUE())', 'Check asset returns, volatility and income on Asset_Allocation'),
     ]
     readiness = '"OK"'
-    for condition, message in reversed(age_checks + required):
+    for condition, message in reversed(age_checks + required + input_validation.core_input_checks()):
         readiness = f'IF({condition},"{message}",{readiness})'
     put('Inputs', 'B71', f'=IFERROR(IF({selector},{readiness},"Choose scenario 1, 2 or 3"),"Check scenario and ages")')
     put('Inputs','B70','=IF(AND(B71="OK",B84="OK",B99="OK",B125="OK",B129="OK",B133="OK"),B53-B8+1,0)')
@@ -417,6 +421,8 @@ def guidance(start_sheet):
     for (cell,) in start_sheet.iter_rows(max_col=1):
         if cell.value is not None and cell.coordinate not in quick_start:
             put('README', cell.coordinate, '')
+
+    starter_illustration.configure(put)
 
     styles['Inputs'].update({f'G{row}': 'note' for row in (14, 55, 130, 131, 132)})
     notes = {

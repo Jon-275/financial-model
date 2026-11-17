@@ -343,7 +343,8 @@ def _style_inputs(root, styles, number_formats, active_fill):
                 elif column in 'DEF' and not formula and (content or row_index in (8, 10, 12, 36, 37, 53)):
                     style = ('input_value', code)
                     editable.append(coordinate)
-                elif column in 'BC' and row_index in (*range(75, 83), 130, 131, 132) and not formula:
+                elif not formula and ((column in 'ABC' and 75 <= row_index <= 82)
+                                      or (column == 'B' and 130 <= row_index <= 132)):
                     style = ('input_value', code)
                 elif column == 'B' and formula:
                     style = ('input_selected', code)
@@ -415,11 +416,9 @@ def apply(name, root, style_ids, numbers, active_fill):
         properties.remove(color_node)
     if name == 'README':
         _columns(root, (3, 11, 11, 11, 11, 11, 11, 11, 11))
-        _rows(root, 21, 18, {3: 39, 5: 35, 8: 26, 11: 26, 15: 27})
-        _merges(root, [f'B{row}:I{row}' for row in (3, 5, 7, 8, 10, 11, 12, 14, 15, 16, 19)])
         _select_top(root, 'B3')
-        root.find(X + 'dimension').set('ref', 'A1:I21')
-        _link(root, {'B12': 'Inputs!A1', 'B16': 'Summary!B3'})
+        from starter_illustration import layout as apply_starter_layout
+        apply_starter_layout(root, style_ids, numbers)
     elif name == 'Inputs':
         _style_inputs(root, style_ids, numbers, active_fill)
     elif name == 'Summary':

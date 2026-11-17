@@ -4,11 +4,17 @@
 
 1. **Save a private copy.** The saved scenarios use fictional figures.
 2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
-3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Use the **+** signs beside the rows to open optional settings.
+3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Optional settings are visible below the main assumptions.
 4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
 5. **Run market risk.** Review **Risk_Settings**, then choose **Run market risk** beside Summary’s navigation. Wait for current results before reading the market paths and stress tests. [Risk instructions](risk-analysis.md#run-the-analysis)
 
+Select any formula cell to read its calculation in the formula bar. You can edit scenario inputs, investment assumptions, the conversion comparison, risk settings and published tax values while the sheets are protected. To change a formula in your own copy, choose **Review → Unprotect Sheet**. No password is needed.
+
 Set the year your starting ages and balances apply to in **Inputs B130**. The first full forecast year is the following year.
+
+## Try a saving illustration
+
+On **Start Here**, select **Try the saving illustration**. Enter your age, annual pay, saving percentage, return after inflation and fees, and retirement age. Compare starting now with waiting five years. The table separates what you deposit from what the investments earn or lose. Figures use today’s buying power and assume year-end deposits, constant pay after inflation, and no taxes or account contribution limits. Select **Open Inputs** to set up your household plan.
 
 ## Enter income, spending and savings
 

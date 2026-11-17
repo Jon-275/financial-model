@@ -179,6 +179,33 @@ class MacroRunnerContractTests(unittest.TestCase):
             self.assertIn(f'Application.{prop} =', restored)
         self.assertIn('Application.EnableCancelKey = settings.CancelKey', cleanup)
 
+    def test_capture_waits_for_dependencies_and_reconciles_before_storage(self):
+        capture = procedure('CaptureTrial')
+        order = ('selector.Value2 = code', 'FinishTrialCalculation (attempt = 2)', 'source.Calculate',
+                 'values = source.Value2', 'CaptureBalancesAgree(', 'If attempt > 2 Then RaiseRunError',
+                 'CaptureTrial = values')
+        self.assertEqual(sorted(map(capture.index, order)), list(map(capture.index, order)))
+        self.assertIn('If attempt = 2 Or Not primary Then Exit For', capture)
+        self.assertIn('RepeatsPriorEnding(values, batch, previousRow)', capture)
+        self.assertIn('2 * ANNUAL_CAPACITY - 1', procedure('RepeatsPriorEnding'))
+        finish = procedure('FinishTrialCalculation')
+        for step in ('Application.CalculateFull', 'Application.CalculationState = xlCalculating', 'CheckCancelled'):
+            self.assertIn(step, finish)
+        self.assertNotIn('xlPending Then Application.Calculate', finish)
+        self.assertNotIn('CalculationState <> xlDone', finish)
+        compare = procedure('CaptureBalancesAgree')
+        self.assertIn('For period = 1 To years', compare)
+        self.assertIn('batch(pairedRow, field)', compare)
+        for name, label in (('ENDING_NOMINAL_FIELD', 'Ending portfolio, future dollars'),
+                            ('CUT_YEARS_FIELD', 'Years with spending cuts'),
+                            ('REFRESH_DATE_FIELD', 'Refresh date')):
+            self.assertEqual(int(constant(name)), native_capture.FIELDS.index(label) + 1)
+        self.assertEqual(int(constant('FIRST_YEAR_FIELD')), native_capture.ANNUAL_FIRST - 1)
+        self.assertEqual(int(constant('ANNUAL_CAPACITY')), native_capture.ANNUAL_CAPACITY)
+        self.assertEqual(int(constant('FUNDING_YEAR_WIDTH')), native_funding_paths.FIELD_COUNT)
+        closing = [item[0] for item in native_funding_paths.FIELDS].index('Total closing portfolio') + 1
+        self.assertEqual(int(constant('FUNDING_BALANCE_FIELD')), closing)
+
     def test_run_timestamp_is_numeric_and_handles_either_excel_date_system(self):
         run = procedure('RunMarketRisk')
         self.assertIn('metadata(2, 1) = CDbl(Now)', run)

@@ -32,6 +32,7 @@ The workbook builder uses an independent annual model to populate the fictional 
 | Brokerage sales | Three Excel for Mac cases passed all 20 checks for retained shares, a sale followed by a deposit and investment income when no shares were sold. Five direct worksheet trials also matched 15,803 fields in the full fictional example. |
 | Native refresh and printing | Excel for Mac completed three paired paths and all 33 stresses in a development build. The 25,407 compared financial and funding fields agreed with the independent saved example to the cent. Excel printed Summary in six pages. |
 | Mac run times | Ten market pairs and 33 stresses completed in 64 seconds. One hundred pairs and 33 stresses completed in 84 seconds. Both timings include other tests running on the Mac. |
+| Repeated trial values | In the earlier 1,000-pair desktop run, seven fixed paths carried values from the preceding path and changed the three selected funding examples. The revised runner reconciles the annual capture and retries a repeated positive ending after a changed history. A fresh 100-pair Mac run completed all 233 outcomes in 78 seconds. All 65,706 primary fields and 378 ranked annual balances matched the independent calculation. |
 
 ## Release checks
 

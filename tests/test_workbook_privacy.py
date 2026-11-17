@@ -26,8 +26,8 @@ class WorkbookPrivacyTests(unittest.TestCase):
                 output.writestr(part, payload)
         return destination
 
-    def change_cell(self, sheet, address, value):
-        with ZipFile(TEMPLATE) as source:
+    def change_cell(self, sheet, address, value, source_path=TEMPLATE):
+        with ZipFile(source_path) as source:
             part = sheet_parts(source)[sheet]
             root = E.fromstring(source.read(part))
         cell = root.find(f".//{X}c[@r='{address}']")
@@ -63,6 +63,14 @@ class WorkbookPrivacyTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             path = self.copy_with(directory, self.change_cell('Inputs', 'D25', 123456))
             with Workbook(path) as workbook, self.assertRaisesRegex(ValueError, 'synthetic'):
+                audit_fixture(workbook)
+
+    def test_changed_starter_salary_is_rejected(self):
+        release = ROOT / 'workbook/retirement-model.xlsm'
+        with TemporaryDirectory() as directory:
+            changes = self.change_cell('Start Here', 'E27', 123456, release)
+            path = self.copy_with(directory, changes, release)
+            with Workbook(path) as workbook, self.assertRaisesRegex(ValueError, 'Start Here!E27.*synthetic'):
                 audit_fixture(workbook)
 
     def test_unused_shared_string_is_rejected(self):

@@ -4,7 +4,7 @@ import re
 from xml.etree import ElementTree as E
 from zipfile import ZipFile
 
-from example_inputs import example_asset_cells, example_cells, example_risk_cells
+from example_inputs import STARTER_EXAMPLE, example_asset_cells, example_cells, example_risk_cells
 
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -64,6 +64,8 @@ def audit_fixture(workbook):
     fixtures = [
         ('Inputs', example_cells()), ('Asset_Allocation', example_asset_cells()),
     ]
+    if 'Start Here' in workbook.parts:
+        fixtures.append(('Start Here', STARTER_EXAMPLE))
     if 'Risk_Settings' in workbook.parts:
         fixtures.append(('Risk_Settings', example_risk_cells()))
     for sheet_name, expected in fixtures:

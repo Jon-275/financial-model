@@ -4,7 +4,7 @@ Public Sub VerifyMarketRiskRunner()
     Dim counts As Variant, item As Variant, count As Long, index As Long
     Dim seen(1 To 2207) As Boolean, code As Long, errorNumber As Long
     Dim data As Variant, ids As Variant, order() As Long, expected As Variant
-    Dim row As Long, ignored As Double
+    Dim row As Long, ignored As Double, captured As Variant, previous As Variant
     On Error GoTo Failed
 
     counts = Array(1, 37, 1000)
@@ -51,6 +51,18 @@ Public Sub VerifyMarketRiskRunner()
     For row = 1 To 8
         AssertRunner order(row) = expected(row - 1), "Representative-path ordering differs from the independently specified order."
     Next row
+
+    ReDim captured(1 To 1, 1 To FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY)
+    ReDim previous(1 To 1, 1 To FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY)
+    captured(1, ENDING_REAL_FIELD) = 100#: previous(1, ENDING_REAL_FIELD) = 100#
+    captured(1, ENDING_NOMINAL_FIELD) = 150#: previous(1, ENDING_NOMINAL_FIELD) = 150#
+    AssertRunner Not RepeatsPriorEnding(captured, previous, 1), "Identical trajectories should not require a retry."
+    previous(1, FIRST_YEAR_FIELD + 1) = 90#: captured(1, FIRST_YEAR_FIELD + 1) = 120#
+    AssertRunner RepeatsPriorEnding(captured, previous, 1), "A mixed, positive ending should trigger full recalculation."
+    captured(1, ENDING_REAL_FIELD) = 110#
+    AssertRunner Not RepeatsPriorEnding(captured, previous, 1), "A different ending should not retry."
+    captured(1, ENDING_REAL_FIELD) = 0#: previous(1, ENDING_REAL_FIELD) = 0#
+    AssertRunner Not RepeatsPriorEnding(captured, previous, 1), "Depletion of both portfolios should not retry."
 
     AssertRunner SeedNumber(0) = 0, "Zero seed was not preserved."
     AssertRunner SeedNumber(4294967295#) = 4294967295#, "The largest seed was not preserved."

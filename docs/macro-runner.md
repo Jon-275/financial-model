@@ -8,7 +8,7 @@ The source-built project ran in desktop Excel for Mac. Its three-pair test inclu
 
 1. Finish Inputs, Asset_Allocation and Risk_Settings.
 2. Select **Run market risk** on Summary. Progress appears in Excel's status bar.
-3. Use **Cancel** or press Esc to stop. An incomplete run does not replace the last completed batch.
+3. To stop early, choose **Cancel** beside the run button or press Esc. Excel keeps the previous completed batch. Run the scenarios again to update the report.
 4. Read the refreshed Summary. The workbook records the completed run's date, assumptions, seed and number of paths.
 5. Inspect Risk_Trials for individual outcomes and Funding_Paths for the complete low, median and high paths. Their calculations remain visible behind Appendix.
 
@@ -18,7 +18,7 @@ A run uses the workbook's own formulas and needs no external service or Python p
 
 The public procedures are `RunMarketRisk` and `CancelMarketRisk` in [RunMarketRisk.bas](../tools/vba/RunMarketRisk.bas). The first prevents a second overlapping run; the second requests cancellation at the next progress update. Esc uses Excel's normal error-18 interruption mechanism. [Microsoft cancellation guidance](https://learn.microsoft.com/en-us/office/vba/api/excel.application.enablecancelkey)
 
-A run calculates only the requested fixed and paired flexible paths, followed by 26 early-loss tests and seven inflation, longevity and medical tests. All outputs are collected in memory. It ranks fixed paths by ending real balance, then earlier failure age, larger unpaid balance and trial identifier. The low, median and high examples use the nearest 10th, 50th and 90th ranks, including both endpoints.
+A run calculates only the requested fixed and paired flexible paths, followed by 26 early-loss tests and seven inflation, longevity and medical tests. All outputs are collected in memory. It ranks fixed paths by ending real balance, then earlier failure age, larger unpaid balance and trial identifier. The low, median and high examples use the paths nearest the 10th, 50th and 90th percentiles of ending balances. A one-path run uses that path for all three examples.
 
 The complete annual schedules for those three paths are captured before publication. The runner then replaces the primary results, their identifiers, the three full paths and the completed-run record. It keeps backups until the workbook confirms that the results are current. A publication error restores those backups and records failure. Ordinary cancellation before publication leaves them untouched.
 
@@ -62,3 +62,5 @@ The public builder uses `tools/native_bootstrap.py` to populate the synthetic ex
 The build recalculates the report and checks its completion status, number of captured rows and the three selected funding-path IDs. It preserves the original Excel package and transfers calculated values and chart data from the verification copy. To compare a built example with individual worksheet trials, run `python tests/native_capture_acceptance.py example.xlsx --codes 1,1001,2001,2101,2205`. Use `--codes all` to verify each captured trial. Excel users refresh their own plans with **Run market risk** on Summary.
 
 Completion checks also verify that each row has its expected trial number. The three stored funding paths must match the workbook's independently calculated low, median and high ranks. If a trial identifier or ranked path is changed manually, the Summary marks the batch incomplete. To test the integrity checks, run `python tests/native_integrity_acceptance.py`.
+
+During a refresh, Excel completes the annual calculation before the runner reads a trial. The runner compares each year's balance in both dollar views with the trial ledger. A flexible path with no spending cuts must match its fixed counterpart. A changed path that repeats the previous positive ending balance is recalculated and checked again. Each of the three ranked funding paths must also match the selected fixed path’s annual closing balances. If the values disagree, the runner recalculates once. A second mismatch stops the run before it replaces the saved results. To check the saved no-cut pairs, run `python tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes pairs`.

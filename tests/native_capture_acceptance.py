@@ -43,6 +43,29 @@ def compare_rows(sheet, saved_sheet, live, saved, last, code, *, first=1, refres
     return count
 
 
+def validate_uncut_pairs(data, positions):
+    """Without a spending cut, the flexible policy must reproduce its fixed path."""
+    compared = 0
+    for code, row in positions.items():
+        if 1001 <= code <= 2000:
+            fixed = code - 1000
+        elif 2101 <= code <= 2113:
+            fixed = code - 100
+        else:
+            continue
+        if data[f'I{row}'].value != 0:
+            continue
+        fixed_row = positions[fixed]
+        for index in range(3, trial.SIGNATURE_COLUMN):
+            if index == 28:  # The two trials can run on opposite sides of midnight.
+                continue
+            column = col_letter(index)
+            if data[f'{column}{row}'].value != data[f'{column}{fixed_row}'].value:
+                raise AssertionError(f'No-cut trial {code} differs from fixed trial {fixed} in {column}{row}.')
+        compared += 1
+    print(f'PASS {compared} no-cut flexible paths exactly match their fixed paths.')
+
+
 def prepare_trial_copy(workbook, destination):
     """Run the live worksheet formulas with empty capture areas, as on first use.
 
@@ -83,6 +106,9 @@ def validate(workbook, requested, office, jobs=1):
         for row in range(trial.FIRST + len(codes), trial.LAST + 1):
             if data[f'A{row}'].value is not None or data[f'C{row}'].value is not None:
                 raise AssertionError('Unused trial capacity contains results.')
+        validate_uncut_pairs(data, positions)
+        if requested == 'pairs':
+            return
         funding = book[paths.DATA_SHEET]
         representatives = {r: int(funding[f'A{r}'].value) for r in range(paths.FIRST_ROW, paths.LAST_ROW + 1)}
     checked = tuple(codes if requested == 'all' else map(int, requested.split(',')))
@@ -127,7 +153,7 @@ def validate(workbook, requested, office, jobs=1):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('workbook', type=Path)
-    parser.add_argument('--codes', default='all', help='Comma-separated trial codes or all.')
+    parser.add_argument('--codes', default='all', help='Comma-separated trial codes, pairs for saved no-cut paths, or all.')
     parser.add_argument('--soffice', default='soffice')
     parser.add_argument('--jobs', type=int, default=1)
     options = parser.parse_args()

@@ -15,13 +15,17 @@ PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_report_structure.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_native_*.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_macro_runner_contract.py'
+PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_protection.py'
+python3 tests/starter_illustration_acceptance.py workbook/retirement-model.xlsm
+python3 tests/input_validation_acceptance.py
+python3 tests/workbook_protection_acceptance.py workbook/retirement-model.xlsm
 python3 tests/native_integrity_acceptance.py
 python3 tests/report_formula_acceptance.py
 python3 -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
 node --test tests/gemini_review.test.mjs
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Node tests cover when Gemini should pass or fail a pull request.
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Start Here checks compare deposits, investment gains and ending balances against independently calculated amounts and verify the instructions for invalid entries. Protection tests check which inputs can be edited and whether formulas remain visible. The Node tests cover when Gemini should pass or fail a pull request.
 
 These instructions cover the macro-enabled edition in development. Run the release, scenario and capture checks against your build until the new workbook is published. Set `RISK_TEST_WORKBOOK` to check a specific candidate.
 
@@ -46,6 +50,7 @@ Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory,
 Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
 
 ```sh
+python3 tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes pairs
 python3 tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes 1,1001,2205
 ```
 
@@ -75,7 +80,7 @@ A maintainer can retry a review from **Actions â†’ Gemini 4 Hydrogen PR Review â
 
 ## Microsoft Excel release check
 
-Use the candidate workbook from the [build instructions](../README.md#rebuild-the-workbook). Set its path below. The commands create a copy with cleared formula results, leaving the candidate available for publication.
+Use the candidate workbook from the [build instructions](../README.md#build-the-next-edition). Set its path below. The commands create a copy with cleared formula results, leaving the candidate available for publication.
 
 ```sh
 candidate=/absolute/path/to/retirement-model.xlsm
@@ -95,7 +100,13 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsm"
 ```
 
-Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks the template and release inputs, investment profiles, stored text and metadata independently of their checksums. The template also requires empty formula and chart caches.
+Compare an Excel-saved run with the independently prepared example, including its annual balances and funding path details. Use a shorter run with the same assumptions and seed for a subset comparison. The command reports mismatches by trial and field without printing household amounts.
+
+```sh
+python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-model.xlsm"
+```
+
+Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks household inputs, the five Start Here assumptions, investment profiles, stored text and file metadata. These checks run before the file checksum is approved. The template also requires empty formula and chart caches.
 
 After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` and `RELEASE_SHA256` in `tools/check_workbook_commit.py`. The trial checksum covers the saved report, the individual trials and the three full funding histories. The full-file checksum includes notes, charts, VBA and every other part of the file. The build template has its own checksum, `TEMPLATE_SHA256`. Audit each artifact before updating its checksum.
 
@@ -121,3 +132,14 @@ print(audit_sample_workbook(sys.argv[1]))
 print(sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
 PY
 ```
+
+## Check the fictional sample PDF
+
+Use the workbook that produced the sample. The check compares the six printed pages with the saved Summary, checks the portfolio chart against its source values and inspects the PDF for personal information and active content. It runs without Excel. The chart must retain its vector lines and shaded band for the comparison.
+
+```sh
+python3 -m pip install pypdf==6.21.4 pdfplumber==0.11.9
+python3 tests/example_pdf_acceptance.py workbook/retirement-model.xlsm docs/examples/retirement-plan-example.pdf
+```
+
+To preview a new edition in Excel, select **Summary**, confirm the fictional scenario and completed market run, and print the active sheet on US Letter paper. Confirm six pages in print preview. The public PDF includes a dated fictional-example footer, six bookmarks and a text description of the chart. Review the pages at print size before sharing.

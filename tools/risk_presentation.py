@@ -149,7 +149,7 @@ def configure(put, display_dollars, price_index_at, future_view):
         ), 'report_caption')
 
     cell('B10', 'Funding in three market paths', 'report_section')
-    cell('B11','Actual fixed-spending paths near the 10th, 50th and 90th ending ranks in today’s dollars.','report_caption')
+    cell('B11','Three fixed-spending paths near the 10th, 50th and 90th percentiles of ending balances in today’s dollars.','report_caption')
     cell('B12', 'Funding measure', 'report_table_head')
     for col, (label, _) in zip('FHJ', CASES):
         cell(f'{col}12', label, 'report_table_head')

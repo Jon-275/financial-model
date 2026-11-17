@@ -2,10 +2,12 @@
 from collections import defaultdict
 import unittest
 
+from lxml import etree
 from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import get_column_letter, range_boundaries
 
 import input_record
+import native_package
 import plan_report
 import report_layout
 import risk_presentation
@@ -69,6 +71,30 @@ class ReportStructureTests(unittest.TestCase):
                 if isinstance(value,str) and value.startswith('='):
                     self.assertLessEqual(len(value),8192,(sheet,address))
                     Tokenizer(value)
+
+    def test_run_and_cancel_remain_distinct_accessible_nonprinting_controls(self):
+        d = native_package.D
+        drawing = etree.Element(d + 'wsDr')
+        native_package.install_buttons(drawing)
+        native_package.install_buttons(drawing)
+        self.assertEqual(len(drawing), 2)
+        right_edge = 0
+        ids = set()
+        for anchor, name, procedure in zip(drawing, ('Run market risk', 'Cancel'),
+                                           ('RunMarketRisk', 'CancelMarketRisk'), strict=True):
+            shape = anchor.find(d + 'sp')
+            self.assertEqual(shape.get('macro'), '[0]!' + procedure)
+            properties = shape.find('.//' + d + 'cNvPr')
+            self.assertEqual(properties.get('name'), name)
+            self.assertTrue(properties.get('descr'))
+            ids.add(properties.get('id'))
+            self.assertEqual(anchor.findtext(d + 'from/' + d + 'col'), '10')
+            self.assertEqual(anchor.findtext(d + 'from/' + d + 'row'), '19')
+            left = int(anchor.findtext(d + 'from/' + d + 'colOff'))
+            self.assertGreaterEqual(left, right_edge)
+            right_edge = left + int(anchor.find(d + 'ext').get('cx'))
+            self.assertEqual(anchor.find(d + 'clientData').get('fPrintsWithSheet'), '0')
+        self.assertEqual(len(ids), 2)
 
     def test_appendix_links_each_funding_path_view_once(self):
         items = [

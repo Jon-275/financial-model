@@ -232,7 +232,7 @@ def configure(put):
     summary('B66', 'What could change the outcome', 'report_title')
     summary('B68', risk.display('"Funding in three market paths"', '"Key plan decisions"'), 'report_section')
     summary('B69', risk.display(
-        '"Actual fixed-spending paths near the 10th, 50th and 90th ending ranks in today’s dollars."',
+        '"Three fixed-spending paths near the 10th, 50th and 90th percentiles of ending balances in today’s dollars."',
         f'IF({opening_only},"Set an end age after the opening age to run market risk.",'
         f'IF({ok},{risk.status_message()},"Resolve the plan item on page 1 to see funding results."))',
     ), 'report_caption')

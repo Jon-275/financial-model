@@ -11,6 +11,13 @@ Private Const VALID_FIELD As Long = 2
 Private Const FAILURE_AGE_FIELD As Long = 4
 Private Const MAX_UNPAID_FIELD As Long = 5
 Private Const ENDING_REAL_FIELD As Long = 6
+Private Const ENDING_NOMINAL_FIELD As Long = 7
+Private Const CUT_YEARS_FIELD As Long = 8
+Private Const REFRESH_DATE_FIELD As Long = 27
+Private Const FIRST_YEAR_FIELD As Long = 33
+Private Const ANNUAL_CAPACITY As Long = 126
+Private Const FUNDING_YEAR_WIDTH As Long = 38
+Private Const FUNDING_BALANCE_FIELD As Long = 28
 Private Const RUN_ERROR As Long = vbObjectError + 5200
 
 Private Type ExcelState
@@ -43,7 +50,7 @@ Public Sub RunMarketRisk()
     Dim batch As Variant, ids As Variant, paths As Variant, chosenIDs As Variant
     Dim oldBatch As Variant, oldIDs As Variant, oldPaths As Variant
     Dim oldPathIDs As Variant, oldMetadata As Variant, metadata As Variant
-    Dim captured As Variant, order() As Long
+    Dim captured As Variant, order() As Long, pairedRow As Long
     Dim count As Long, total As Long, width As Long, pathWidth As Long
     Dim seed As Double, context As String, code As Long, index As Long
     Dim rank As Long, caseIndex As Long, column As Long, started As Double
@@ -111,7 +118,10 @@ Public Sub RunMarketRisk()
 
     For index = 1 To total
         code = TrialCode(index, count)
-        captured = CaptureTrial(book, selector, trialCurrent, code, context)
+        pairedRow = 0
+        If code >= 1001 And code <= 2000 Then pairedRow = index - count
+        If code >= 2101 And code <= 2113 Then pairedRow = index - 13
+        captured = CaptureTrial(book, selector, trialCurrent, code, context, batch, pairedRow, index - 1)
         For column = 1 To width
             batch(index, column) = captured(1, column)
         Next column
@@ -129,7 +139,7 @@ Public Sub RunMarketRisk()
             Case 3: rank = 1 + Int(0.9 * (count - 1) + 0.5)
         End Select
         code = CLng(ids(order(rank), 1))
-        captured = CaptureTrial(book, selector, pathCurrent, code, context)
+        captured = CaptureTrial(book, selector, pathCurrent, code, context, batch, order(rank), 0)
         For column = 1 To pathWidth
             paths(caseIndex, column) = captured(1, column)
         Next column
@@ -247,13 +257,24 @@ CleanExit:
     End If
 End Sub
 
-Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String) As Variant
-    Dim values As Variant, column As Long
+Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
+    Dim values As Variant, column As Long, attempt As Long, primary As Boolean
     CheckCancelled
     selector.Value2 = code
-    Application.Calculate
-    RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
-    values = source.Value2
+    primary = (source.Parent Is selector.Parent)
+    For attempt = 1 To 2
+        ' Complete the workbook dependency chain before refreshing its terminal output row.
+        FinishTrialCalculation (attempt = 2)
+        source.Calculate
+        CheckCancelled
+        RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
+        values = source.Value2
+        If CaptureBalancesAgree(book, values, primary, batch, pairedRow) Then
+            If attempt = 2 Or Not primary Then Exit For
+            If Not RepeatsPriorEnding(values, batch, previousRow) Then Exit For
+        End If
+    Next attempt
+    If attempt > 2 Then RaiseRunError "Trial " & CStr(code) & " did not reconcile after a full recalculation. No results were published."
     For column = 1 To source.Columns.Count
         If IsError(values(1, column)) Then RaiseRunError "Trial " & CStr(code) & " contains a calculation error. Inspect Trial_Checks and the trial schedules."
     Next column
@@ -262,6 +283,81 @@ Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, B
     If Not IsNumeric(values(1, VALID_FIELD)) Then RaiseRunError "Trial " & CStr(code) & " has no valid calculation status."
     If CDbl(values(1, VALID_FIELD)) <> 1 Then RaiseRunError "Trial " & CStr(code) & " did not pass its calculation checks. Inspect Trial_Checks and healthcare inputs."
     CaptureTrial = values
+End Function
+
+Private Sub FinishTrialCalculation(ByVal full As Boolean)
+    Dim started As Double, elapsed As Double
+    started = Timer
+    If full Then
+        Application.CalculateFull
+    Else
+        Application.Calculate
+    End If
+    ' In manual mode xlPending can remain set for unrelated dirty cells.
+    ' The synchronous calculation above has returned. Wait only while Excel is
+    ' actively calculating, then verify our own ledger and terminal row.
+    Do While Application.CalculationState = xlCalculating
+        DoEvents
+        CheckCancelled
+        elapsed = Timer - started
+        If elapsed < 0 Then elapsed = elapsed + 86400
+        If elapsed > 120 Then RaiseRunError "Excel did not finish calculating the trial. No results were published."
+    Loop
+End Sub
+
+Private Function CaptureBalancesAgree(ByVal book As Workbook, ByRef values As Variant, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long) As Boolean
+    Dim ledger As Variant, years As Long, period As Long, field As Long
+    years = WholeNumber(book.Worksheets("Trial_Inputs").Range("B70").Value2, 2, ANNUAL_CAPACITY, "The trial horizon is invalid.")
+    ledger = book.Worksheets("Trial_Projection").Range("BH5").Resize(years, 7).Value2
+    If primary Then
+        ' BH is the closing portfolio; BN is the same balance in opening-year dollars.
+        For period = 1 To years
+            field = FIRST_YEAR_FIELD + period - 1
+            If Not SameCaptureValue(values(1, field), ledger(period, 7)) Then Exit Function
+            If Not SameCaptureValue(values(1, field + ANNUAL_CAPACITY), ledger(period, 1)) Then Exit Function
+        Next period
+        If Not SameCaptureValue(values(1, ENDING_REAL_FIELD), ledger(years, 7)) Then Exit Function
+        If Not SameCaptureValue(values(1, ENDING_NOMINAL_FIELD), ledger(years, 1)) Then Exit Function
+        If pairedRow > 0 And SameCaptureValue(values(1, CUT_YEARS_FIELD), 0#) Then
+            ' Identical returns and no spending cuts must reproduce the complete fixed path.
+            For field = VALID_FIELD To UBound(values, 2) - 1
+                If field <> REFRESH_DATE_FIELD Then
+                    If Not SameCaptureValue(values(1, field), batch(pairedRow, field)) Then Exit Function
+                End If
+            Next field
+        End If
+    Else
+        ' Each representative funding ledger must reproduce its already ranked fixed path.
+        For period = 1 To years
+            field = 2 + FUNDING_BALANCE_FIELD + (period - 1) * FUNDING_YEAR_WIDTH
+            If Not SameCaptureValue(values(1, field), ledger(period, 1)) Then Exit Function
+            If Not SameCaptureValue(values(1, field), batch(pairedRow, FIRST_YEAR_FIELD + ANNUAL_CAPACITY + period - 1)) Then Exit Function
+        Next period
+    End If
+    CaptureBalancesAgree = True
+End Function
+
+Private Function RepeatsPriorEnding(ByRef values As Variant, ByRef batch As Variant, ByVal previousRow As Long) As Boolean
+    ' A nonzero identical ending after a different trajectory can be genuine.
+    ' Verify it once with a full calculation before publishing it.
+    Dim field As Long
+    If previousRow < 1 Then Exit Function
+    If Not IsNumeric(values(1, ENDING_REAL_FIELD)) Then Exit Function
+    If values(1, ENDING_REAL_FIELD) <= 0 Then Exit Function
+    If Not SameCaptureValue(values(1, ENDING_REAL_FIELD), batch(previousRow, ENDING_REAL_FIELD)) Then Exit Function
+    If Not SameCaptureValue(values(1, ENDING_NOMINAL_FIELD), batch(previousRow, ENDING_NOMINAL_FIELD)) Then Exit Function
+    For field = FIRST_YEAR_FIELD To FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY - 1
+        If Not SameCaptureValue(values(1, field), batch(previousRow, field)) Then
+            RepeatsPriorEnding = True
+            Exit Function
+        End If
+    Next field
+End Function
+
+Private Function SameCaptureValue(ByVal first As Variant, ByVal second As Variant) As Boolean
+    If IsError(first) Or IsError(second) Then Exit Function
+    If VarType(first) <> VarType(second) Then Exit Function
+    SameCaptureValue = (first = second)
 End Function
 
 Private Function TrialCode(ByVal index As Long, ByVal count As Long) As Long
@@ -444,7 +540,12 @@ Private Function RestoreExcelState(ByRef state As ExcelState) As String
     If Err.Number <> 0 Then AddNote notes, "The prior calculation mode could not be restored.": Err.Clear
     Application.Cursor = state.Cursor
     If Err.Number <> 0 Then AddNote notes, "The cursor could not be restored.": Err.Clear
-    Application.StatusBar = state.StatusText
+    If VarType(state.StatusText) = vbBoolean Then
+        ' False gives the status bar back to Excel after it displayed progress.
+        Application.StatusBar = False
+    Else
+        Application.StatusBar = state.StatusText
+    End If
     If Err.Number <> 0 Then AddNote notes, "The prior status bar text could not be restored.": Err.Clear
     Application.DisplayStatusBar = state.StatusVisible
     If Err.Number <> 0 Then AddNote notes, "The status bar visibility could not be restored.": Err.Clear

@@ -76,6 +76,9 @@ def configure(put):
                               f'IF(ISBLANK(INDEX(D{source}:F{source},1,B4)),"",B{source})')
                 display(f'{label_col}{index}', label, 'report_caption_gutter' if label_col == 'F' else 'report_caption')
                 display(f'{value_col}{index}', _on_inputs(f'IF({valid},{source},"")'), 'report_' + style)
+    profiles = [f'SUBSTITUTE(SUBSTITUTE(Asset_Allocation!A{row},"PROFILE ","")," example","")'
+                for row in (24, 33, 42)]
+    display(f'B{FIRST_ROW + 21}', '="Investment profiles   "&' + '&"   •   "&'.join(profiles), 'report_caption')
     display(f'B{FIRST_ROW + 22}', '¹ Includes inflation.  ² The fee applies to all scenarios.', 'report_caption')
     display(f'B{FIRST_ROW + 24}','Roth account access','report_section')
     access=(
@@ -103,7 +106,7 @@ def configure(put):
 
 def merges():
     ranges = [f'B{row}:I{row}' for row in (
-        FIRST_ROW,FIRST_ROW+1,FIRST_ROW+3,FIRST_ROW+5,FIRST_ROW+22,FIRST_ROW+24,
+        FIRST_ROW,FIRST_ROW+1,FIRST_ROW+3,FIRST_ROW+5,FIRST_ROW+21,FIRST_ROW+22,FIRST_ROW+24,
         SECOND_ROW,SECOND_ROW+1,SECOND_ROW+3,SECOND_ROW+5,SECOND_ROW+21)]
     for row, _, _, entries in EACH_PAGE:
         ranges += [f'B{row}:E{row}', f'F{row}:I{row}']
