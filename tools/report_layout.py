@@ -1,6 +1,7 @@
 """Generate Excel styling, navigation and print settings for the planning views."""
 
 from copy import deepcopy
+import investment_results
 
 from lxml import etree as E
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string, get_column_letter
@@ -19,7 +20,7 @@ PALE = 'E9F2F8'
 LINE = 'C9D9E4'
 TAB_COLORS = {
     'README': ACCENT, 'Inputs': BLUE, 'Summary': INK,
-    APPENDIX: '48617A', INDEX: '718090', risk.SHEET: '3E686A',
+    APPENDIX: '48617A', INDEX: '718090', risk.SHEET: '48617A',
     **dict.fromkeys(DECISION_TABS, '3E686A'),
 }
 DETAIL_SHEETS = {*DECISION_TABS, *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules)}
@@ -314,6 +315,22 @@ def _select_top(root, cell):
     E.SubElement(view, X + 'selection', activeCell=cell, sqref=cell)
 
 
+def _collapse_empty_return_rows(root):
+    # Keep saved scenario addresses stable. Only entirely empty retired rows may be collapsed.
+    for row in root.find(X + 'sheetData'):
+        if int(row.get('r')) in investment_results.RETIRED_ROWS:
+            if any(cell.find(X + 'f') is not None or cell.find(X + 'v') is not None or
+                   ''.join(cell.itertext()).strip() for cell in row):
+                raise ValueError(f"Retired input row {row.get('r')} still contains data")
+            for cell in list(row):
+                row.remove(cell)
+            row.attrib.pop('outlineLevel', None)
+            row.attrib.pop('collapsed', None)
+            row.set('hidden', '1')
+            row.set('ht', '0')
+            row.set('customHeight', '1')
+
+
 def _style_inputs(root, styles, number_formats, active_fill):
     view = root.find(f'{X}sheetViews/{X}sheetView')
     view.set('showGridLines', '0')
@@ -354,6 +371,7 @@ def _style_inputs(root, styles, number_formats, active_fill):
                     style = ('input_section' if row_index in sections else 'input_label', code)
             if style:
                 cell.set('s', styles[style])
+    _collapse_empty_return_rows(root)
     _merges(root, ['A2:G2', 'A3:G3', 'C4:F4', 'G4:H4'])
     _link(root, {
         'G4': "'Summary'!B3", 'J5': 'Inputs!A8', 'J6': 'Inputs!A25',
@@ -417,8 +435,11 @@ def apply(name, root, style_ids, numbers, active_fill):
     if name == 'README':
         _columns(root, (3, 11, 11, 11, 11, 11, 11, 11, 11))
         _select_top(root, 'B3')
-        from starter_illustration import layout as apply_starter_layout
-        apply_starter_layout(root, style_ids, numbers)
+        from start_here import CONTENT, LINKS
+        _merges(root, [f'{address}:I{address[1:]}' for address in CONTENT])
+        _rows(root, 20, 18, {3: 38, 5: 30, 8: 30, 11: 34, 15: 36, 19: 30})
+        _link(root, LINKS)
+        root.find(X + 'dimension').set('ref', 'A1:I20')
     elif name == 'Inputs':
         _style_inputs(root, style_ids, numbers, active_fill)
     elif name == 'Summary':
@@ -493,8 +514,10 @@ def apply(name, root, style_ids, numbers, active_fill):
         _merges(root, [f'B{row}:I{row}' for row in (3, 5, 6, *sections)]
                 + [f'{left}{row}:{right}{row}' for row in (INDEX_LINK_ROW, *(row for row, _ in items))
                    for left, right in (('B', 'D'), ('E', 'I'))])
-        _link(root, {**{f'B{row}': f"'{sheet}'!{TABLE_GUIDES[sheet][0]+'1' if sheet in TABLE_GUIDES else 'A1'}" for row, sheet in items},
-                     f'B{INDEX_LINK_ROW}': 'Summary!B3', f'E{INDEX_LINK_ROW}': "'Annual Detail'!B2"})
+        targets = {sheet: guide[0]+'1' for sheet, guide in TABLE_GUIDES.items()}
+        targets.update({APPENDIX: 'B2', risk.SHEET: 'B2'})
+        _link(root, {**{f'B{row}': f"'{sheet}'!{targets.get(sheet, 'A1')}" for row, sheet in items},
+                     f'B{INDEX_LINK_ROW}': 'Summary!B3'})
         _select_top(root, 'B3')
     elif name == risk.SHEET:
         _columns(root, (3, 15, 9, 15, 9, 15, 9, 15, 9, 15, 12, 4, 23, 20))
@@ -566,6 +589,10 @@ def apply(name, root, style_ids, numbers, active_fill):
             if heights:
                 row.set('ht', str(max(float(row.get('ht', '0')), *heights)))
                 row.set('customHeight', '1')
+        if name == 'Asset_Allocation':
+            existing = [item.get('ref') for item in root.iter(X + 'mergeCell')]
+            _merges(root, existing + ['A97:E97', 'A106:E106', 'A107:E107'])
+            _rows(root, 107, 22, {97: 26, 98: 25, 106: 26, 107: 26}, first=97)
         if name in {'Asset_Allocation', 'Income_Targeting', 'Risk_Settings'}:
             for cell in data.iter(X + 'c'):
                 style = style_ids.get(('advanced_input', cell.get('s', '0')))

@@ -20,8 +20,12 @@ DOLLAR_VIEW_CELL = 'K18'
 TODAY_DOLLARS = 'Today’s dollars'
 FUTURE_DOLLARS = 'Future dollars'
 FUTURE_VIEW = f'{SUMMARY}!$K$18="{FUTURE_DOLLARS}"'
-DECISION_TABS = (METRICS, 'Asset_Allocation', 'Income_Targeting', 'Risk_Settings', risk.SHEET, 'Tax_Tables')
+DECISION_TABS = (METRICS, 'Asset_Allocation', 'Income_Targeting', 'Risk_Settings', 'Tax_Tables')
 DETAIL_GROUPS = (
+    ('Report detail', (
+        (APPENDIX, 'Annual detail', 'Income, spending, withdrawals, taxes and unpaid costs for every year.'),
+        (risk.SHEET, 'Market risk detail', 'Compare funding by path, early market losses and balances by age.'),
+    )),
     ('Annual schedules', (
         ('Cash_Flow', 'Annual cash flow', 'Income, tax, spending, withdrawals and unpaid costs.'),
         ('Projection', 'Full projection', 'Year-by-year income, assets and portfolio balances.'),
@@ -409,4 +413,3 @@ def configure_index(put):
             put(INDEX, f'B{row + offset}', label, 'report_link')
             put(INDEX, f'E{row + offset}', description, 'report_caption')
     put(INDEX, f'B{INDEX_LINK_ROW}', 'Back to Summary', 'report_link')
-    put(INDEX, f'E{INDEX_LINK_ROW}', 'Open Annual Detail', 'report_link')

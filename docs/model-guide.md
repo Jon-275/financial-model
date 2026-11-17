@@ -2,7 +2,7 @@
 
 ## Run your first plan
 
-1. **Save a private copy.** The saved scenarios use fictional figures.
+1. **Save a private copy.** The saved scenarios use fictional figures. Select **Open Inputs** on **Start Here** to begin.
 2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
 3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Optional settings are visible below the main assumptions.
 4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
@@ -11,10 +11,6 @@
 Select any formula cell to read its calculation in the formula bar. You can edit scenario inputs, investment assumptions, the conversion comparison, risk settings and published tax values while the sheets are protected. To change a formula in your own copy, choose **Review → Unprotect Sheet**. No password is needed.
 
 Set the year your starting ages and balances apply to in **Inputs B130**. The first full forecast year is the following year.
-
-## Try a saving illustration
-
-On **Start Here**, select **Try the saving illustration**. Enter your age, annual pay, saving percentage, return after inflation and fees, and retirement age. Compare starting now with waiting five years. The table separates what you deposit from what the investments earn or lose. Figures use today’s buying power and assume year-end deposits, constant pay after inflation, and no taxes or account contribution limits. Select **Open Inputs** to set up your household plan.
 
 ## Enter income, spending and savings
 
@@ -43,9 +39,9 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 
 - **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The six-page report includes the outlook, retirement cash flow, market risk and decisions, inflation and longevity tests, and two pages that record your inputs.
 - **Planning Metrics** groups the figures behind the report, including the savings target, accessible balances, funding, taxes and healthcare. Open the tab next to **Summary** or use its **Planning metrics** link. Dollar figures are labeled with their units.
-- **Annual Detail** shows the same cash measures and portfolio balance over the full plan. It uses the dollar view on **Summary**. The opening row gives the starting balance. The values and row shading stop at the end age on **Inputs**.
-- **Asset_Allocation**, **Income_Targeting**, **Risk_Settings**, **Risk Results** and **Tax_Tables** come before Appendix. Use them to review decisions and the tax rates the model uses.
-- **Appendix** links to the detailed schedules that support the report.
+- **Asset_Allocation**, **Income_Targeting**, **Risk_Settings** and **Tax_Tables** come before Appendix. Use them to review investment assumptions, compare Roth conversions, choose market tests and check tax rates.
+- **Appendix** links to every supporting schedule. The first two detail tabs are **Annual Detail** and **Risk Results**. Both follow the dollar view on Summary.
+- **Annual Detail** starts with your opening balance and shows cash flow and savings through your selected end age. **Risk Results** shows the individual market tests and the range of balances at each age.
 - **Cash_Flow** shows tax, spending and withdrawals by year. Use the first shortfall year on Summary to find the unpaid amounts.
 - **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
 - **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Conversion Detail** shows the results for each conversion amount. **Targeting_Calc** and **Funding_Calc** show the steps behind the results. **Report_Data** holds the annual values used in Summary.
@@ -132,7 +128,7 @@ Payroll taxes use wages by earner. Confirm the wage split in row 126. The model 
 
 ### Investment mix and account values
 
-Use rows 15–16 to choose investment profiles for working years and retirement. Review stocks, bonds, cash and real assets in each account on **Asset_Allocation**. Each account’s weights must total 100%. The model uses the mix to calculate account returns and income. The market simulations use the volatility and correlations on the same sheet. [Investment assumptions](workbook-schedules.md#asset_allocation)
+Use rows 15–16 to choose investment profiles for working years and retirement. Review stocks, bonds, cash and real assets in each account on **Asset_Allocation**. Each account’s weights must total 100%. The table at the bottom shows each account’s expected return after fees for each stage of the plan. The market simulations use the volatility and correlations on the same sheet. [Investment assumptions](workbook-schedules.md#asset_allocation)
 
 For taxable investments, enter the cost basis from your brokerage records. When the model sells part of the account, it assigns that same share of the opening basis to the sale. New deposits and reinvested income on the remaining investments add to the closing basis. If it sells the entire account and deposits new money that year, the new deposit starts with its own cost basis.
 

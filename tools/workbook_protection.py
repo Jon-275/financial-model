@@ -11,7 +11,6 @@ from risk_engine.scenario import (
     RISK_RETURN_BASIS_ROW, RISK_STRESS_ROWS, SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW,
     asset_profile_start,
 )
-from starter_illustration import EDITABLE_CELLS
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 
@@ -21,8 +20,6 @@ def _grid(columns, rows):
 
 
 def _entry_cells(name, root):
-    if name in ('README', 'Start Here'):
-        return set(EDITABLE_CELLS)
     if name == 'Inputs':
         return ({'B4', 'B130', 'B131', 'B132'} | _grid('DEF', SCENARIO_INPUT_ROWS)
                 | _grid('ABC', ONE_TIME_EXPENSE_ROWS))

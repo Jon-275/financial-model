@@ -9,13 +9,17 @@ import math
 from pathlib import Path
 import re
 import shutil
-import subprocess
+import sys
 import tempfile
 import zipfile
 
 from lxml import etree as E
 
 from xlsx_read import Workbook, address_parts, q, scan_errors, sheet_parts
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+from prepare_native_cache import prepare_cache_copy
+from workbook_recalc import recalculate
 
 
 def _xml_root(payload):
@@ -130,17 +134,6 @@ def prepare_xlsx(source: Path, destination: Path, overrides: dict, compact=False
             copy.writestr(item, payload)
 
 
-def recalculate(source: Path, target_dir: Path, profile_dir: Path, executable: str, timeout: int) -> Path:
-    result = subprocess.run(
-        [executable, f"-env:UserInstallation={profile_dir.as_uri()}", "--headless", "--convert-to", "xlsx", "--outdir", str(target_dir), str(source)],
-        capture_output=True, text=True, timeout=timeout, check=False,
-    )
-    calculated = target_dir / source.name
-    if result.returncode or not calculated.is_file():
-        raise RuntimeError(f"Recalculation failed: {result.stdout.strip()} {result.stderr.strip()}")
-    return calculated
-
-
 def cell_value(wb, address: str):
     sheet, coord = address.rsplit("!", 1)
     return wb[sheet][coord].value
@@ -236,6 +229,26 @@ def run_case(args, case: dict, shared: dict, row_rules: dict) -> str:
     return name
 
 
+def scenario_source(source: Path, directory: Path) -> Path:
+    """Verify and encode repeated saved-run text once for all financial fixtures."""
+    with Workbook(source) as book:
+        if 'Funding_Path_Data' not in book.parts:
+            return source
+        results = book['Risk_Data']
+        context = results['Z8'].value
+        count = results['Z10'].value
+        if results['Z6'].value != 'complete':
+            return source
+        if not isinstance(context, str) or not context:
+            raise ValueError('The completed batch lacks its assumption record.')
+        if type(count) is not int or not 1 <= count <= 1000:
+            raise ValueError('A completed workbook has an invalid path count.')
+    encoded = directory / source.name
+    checked = prepare_cache_copy(source, encoded, count, context)
+    print(f'Verified {checked:,} saved assumption records before calculating financial fixtures.', flush=True)
+    return encoded
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("workbook", type=Path)
@@ -256,7 +269,9 @@ def main() -> int:
         parser.error("No matching cases")
     args.scratch.mkdir(parents=True, exist_ok=True)
     failures = 0
-    with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as executor:
+    with tempfile.TemporaryDirectory(dir=args.scratch, prefix="verified-fixture-") as scratch, \
+            concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as executor:
+        args.workbook = scenario_source(args.workbook, Path(scratch))
         futures = {executor.submit(run_case, args, case, fixtures.get("common_overrides", {}), fixtures.get("row_rules", {})): case["name"] for case in cases}
         for future in concurrent.futures.as_completed(futures):
             name = futures[future]

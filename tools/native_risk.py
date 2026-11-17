@@ -1,4 +1,5 @@
 """Build a native Excel trial model from the same annual financial compiler."""
+import investment_results
 from copy import deepcopy
 import re
 from openpyxl.formula.tokenizer import Tokenizer
@@ -67,7 +68,9 @@ def _clone_annual(m, baseline):
     """Instantiate the compiled financial formulas; do not maintain a second policy."""
     for source, target in MODEL_SHEETS.items():
         if source == 'Inputs':
-            for row in range(4,136):
+            for row in range(4,134):
+                if row in investment_results.RETIRED_ROWS:
+                    continue
                 m.put(target,f'A{row}',f'=Inputs!A{row}','label')
                 m.put(target,f'B{row}',f'=IF(ISBLANK(Inputs!B{row}),"",Inputs!B{row})','money')
             continue
@@ -173,7 +176,7 @@ def _calendar_and_returns(m):
                 weight=f'INDEX(Asset_Allocation!${mixcol}$26:${mixcol}$48,{asset+1}+9*({profile}-1))'
                 terms.append(f'({weight})*(1+{L(22+asset)}{row})')
                 expected.append(f'({weight})*(1+Asset_Allocation!$B${asset+6})')
-            nominal=f'IF(D{row}="Working",Inputs!$B${working},Inputs!$B${retired})'
+            nominal=f'IF(D{row}="Working",{investment_results.reference(working)},{investment_results.reference(retired)})'
             sample=f'(({"+".join(terms)})/({"+".join(expected)}))*(1+{nominal})-1'
             emit(L(27+account),f'IF(AND({random},Risk_Settings!$B$31=0),{nominal},{sample})','percent_active')
         # The cut formula is bound after the trial engine has been instantiated.
@@ -252,7 +255,7 @@ def _bind_annual(m):
         replacements={}
         for working, retired, market_col in ((17,18,'AA'),(19,20,'AB'),(21,22,'AC'),(134,135,'AD')):
             for phase in (f'E{row}',f'{projection}!$E${row}'):
-                original=f'IF({phase}="Working",Trial_Inputs!$B${working},Trial_Inputs!$B${retired})'
+                original=f'IF({phase}="Working",{investment_results.reference(working)},{investment_results.reference(retired)})'
                 replacements[original]=f'{MARKET}!${market_col}${market_row}'
         medical=(f'(1+IF(ISNUMBER(Trial_Inputs!$B$132),Trial_Inputs!$B$132,'
                  f'Trial_Inputs!$B$14))^{projection}!$A${row}')

@@ -33,7 +33,24 @@ The workbook builder uses an independent annual model to populate the fictional 
 | Native refresh and printing | Excel for Mac completed three paired paths and all 33 stresses in a development build. The 25,407 compared financial and funding fields agreed with the independent saved example to the cent. Excel printed Summary in six pages. |
 | Mac run times | Ten market pairs and 33 stresses completed in 64 seconds. One hundred pairs and 33 stresses completed in 84 seconds. Both timings include other tests running on the Mac. |
 | Repeated trial values | In the earlier 1,000-pair desktop run, seven fixed paths carried values from the preceding path and changed the three selected funding examples. The revised runner reconciles the annual capture and retries a repeated positive ending after a changed history. A fresh 100-pair Mac run completed all 233 outcomes in 78 seconds. All 65,706 primary fields and 378 ranked annual balances matched the independent calculation. |
+| Full native run | Excel for Mac completed 1,000 pairs and 33 stresses in 12 minutes 7 seconds with other tests running. All 2,033 outcomes agreed with the independent example, including 573,306 primary fields, all three selected path IDs, 378 annual balances and 14,367 funding-ledger fields. The run was compared with the finished report workbook. The final change only adjusted the nonprinting Run and Cancel labels. |
+
+## What takes time in Excel
+
+A separate Excel for Mac profiling run covered 100 pairs and all 33 stresses. Of its 70.13 seconds, Excel spent 67.22 seconds (95.85%) calculating and waiting for worksheets. Explicit worksheet reads and writes, including publication, took 0.21 seconds. The final report recalculation took 0.43 seconds and progress updates took 0.66 seconds. There were no retries. Improving worksheet calculation time has the greatest potential to bring the full run closer to the two-minute goal.
+
+These tests used the same example inputs and retained the visible annual worksheets as the reference.
+
+| Excel for Mac experiment | Result |
+| --- | --- |
+| Remove unused withdrawal-search formulas for this plan | The saved test workbook had 173,186 search formulas, down from 560,571. The 100-pair run took 70.47 seconds, including 67.19 seconds of worksheet calculation and one full retry. All outcomes and ranked funding schedules matched. Removing unused formulas gave no measurable gain in this run. |
+| Calculate in a temporary workbook containing only the 21 required sheets | Excel completed all 233 outcomes and three ranked funding schedules. Every saved result matched the reference run. This test recorded the completion time only, so its duration is unknown. |
+| Calculate market paths and account balances in VBA arrays | Generating all 2,033 market paths took 2.49 seconds for 122,005 modeled years. Replaying 80,500 annual account closings took 0.19 seconds. Thirteen trials matched the worksheet reference for returns, prices and balances. The test used withdrawals and cash flows already calculated by the worksheets. Withdrawals, taxes and healthcare still ran on the worksheets. |
+
+For a quick comparison, set **Paired market paths** on **Risk_Settings** to 100 and run the scenarios. Set it to 1,000 and run again for the final report. Both runs include the 33 stress cases. More paths reduce the sampling variation in the reported funding rate.
+
+One possible improvement is to check for a spending cut while calculating each fixed-spending path. If no year would trigger a cut, the flexible path has the same cash flows and balances. In the full example, 515 of 1,013 fixed paths stayed above or at the spending threshold throughout retirement. Each corresponding flexible path finished without a cut. Reusing those results would require proving the condition for every year, preserving both trial records and reconciling each against a full worksheet run. Savings in runtime have not been measured.
 
 ## Release checks
 
-Verify a successful run after cancellation, changed assumptions, error handling, repeated runs, saved results after reopening and the unchanged base plan. Measure 1,000 paired paths for the example and repeat the 10-, 100- and 1,000-pair runs at the longest supported horizon. Record the Excel version and test conditions. Recheck the finished workbook and printed report on the supported desktop platforms. [Release checklist](model-improvement-plan.md)
+Verify a successful run after cancellation, changed assumptions, error handling, repeated runs, saved results after reopening and the unchanged base plan. Measure runs at the longest supported horizon and investigate the difference between the 12-minute full example run and the two-minute goal. Record the Excel version and test conditions. Recheck the finished workbook and printed report on the supported desktop platforms. [Release checklist](model-improvement-plan.md)

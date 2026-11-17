@@ -2,7 +2,7 @@
 
 Use Excel to see whether your household can pay its spending and taxes through the age you choose, up to 125. The published workbook includes a fictional household. Save a private copy before entering your own figures. [Download the current workbook](https://raw.githubusercontent.com/Jon-275/financial-model/b40af21ddaa65129bfe7ce180eb336243f5246f9/workbook/retirement-model.xlsx)
 
-1. Open **Start Here**. The draft includes a five-input saving illustration. To build a household plan, choose a scenario on **Inputs**. Enter your ages, income, savings and spending.
+1. Open **Start Here** and save a private copy. Choose **Open Inputs**, select a scenario and enter your ages, income, savings and spending.
 2. Open **Summary**. The headline tells you whether the base plan covers its costs. If it falls short, the report gives the first age and year that bills go unpaid.
 3. Review the investment mix, spending policy and market results. Use the dollar selector on **Summary** to switch between today's purchasing power and projected amounts. Print **Summary** to keep a record of the report and your choices. [Model guide](docs/model-guide.md)
 

@@ -16,7 +16,6 @@ PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_report_structure
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_native_*.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_macro_runner_contract.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_protection.py'
-python3 tests/starter_illustration_acceptance.py workbook/retirement-model.xlsm
 python3 tests/input_validation_acceptance.py
 python3 tests/workbook_protection_acceptance.py workbook/retirement-model.xlsm
 python3 tests/native_integrity_acceptance.py
@@ -43,7 +42,7 @@ python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsm \
   tests/phase3-fixtures.json --compact --ledger
 ```
 
-Each case runs on a temporary copy in LibreOffice. The runner applies test inputs, clears saved formula results, and checks the recalculated values. Cases use fictional inputs. The Phase 2 file includes the earlier tests for the current workbook. The Phase 3 case checks that required spending can go unpaid in a year even when all taxes are paid.
+Each case runs on a temporary copy in LibreOffice. For a completed native run, the runner first checks every saved assumption record against the full value. It uses one short key for those repeated comparisons in the temporary copies. All financial values, formula checks and stale-input comparisons remain in the tests. The runner applies test inputs, clears saved formula results, and checks the recalculated values. Cases use fictional inputs. The Phase 2 file includes the earlier tests for the current workbook. The Phase 3 case checks that required spending can go unpaid in a year even when all taxes are paid.
 
 Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
 
@@ -106,7 +105,7 @@ Compare an Excel-saved run with the independently prepared example, including it
 python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-model.xlsm"
 ```
 
-Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks household inputs, the five Start Here assumptions, investment profiles, stored text and file metadata. These checks run before the file checksum is approved. The template also requires empty formula and chart caches.
+Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks household inputs, the fixed text on Start Here, investment profiles, stored text and file metadata. These checks run before the file checksum is approved. The template also requires empty formula and chart caches.
 
 After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` and `RELEASE_SHA256` in `tools/check_workbook_commit.py`. The trial checksum covers the saved report, the individual trials and the three full funding histories. The full-file checksum includes notes, charts, VBA and every other part of the file. The build template has its own checksum, `TEMPLATE_SHA256`. Audit each artifact before updating its checksum.
 

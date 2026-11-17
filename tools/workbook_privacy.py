@@ -4,7 +4,8 @@ import re
 from xml.etree import ElementTree as E
 from zipfile import ZipFile
 
-from example_inputs import STARTER_EXAMPLE, example_asset_cells, example_cells, example_risk_cells
+from start_here import CONTENT as START_HERE_CONTENT
+from example_inputs import example_asset_cells, example_cells, example_risk_cells
 
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -59,13 +60,24 @@ def audit_package(path, *, template=False):
                 raise ValueError('Workbook contains unused or invalid shared strings.')
 
 
+def audit_start_here(sheet):
+    """Only the approved navigation text belongs on the distributed introduction."""
+    for row in sheet.rows.values():
+        for cell in row.values():
+            if cell.formula is not None or (cell.value not in (None, '') and cell.coordinate not in START_HERE_CONTENT):
+                raise ValueError(f'Start Here!{cell.coordinate} contains unexpected data.')
+    for address, (text, _) in START_HERE_CONTENT.items():
+        if sheet[address].value != text:
+            raise ValueError(f'Start Here!{address} differs from the approved introduction.')
+
+
 def audit_fixture(workbook):
     """Require synthetic inputs and allocations in every published source."""
     fixtures = [
         ('Inputs', example_cells()), ('Asset_Allocation', example_asset_cells()),
     ]
     if 'Start Here' in workbook.parts:
-        fixtures.append(('Start Here', STARTER_EXAMPLE))
+        audit_start_here(workbook['Start Here'])
     if 'Risk_Settings' in workbook.parts:
         fixtures.append(('Risk_Settings', example_risk_cells()))
     for sheet_name, expected in fixtures:

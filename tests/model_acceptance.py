@@ -117,7 +117,15 @@ def check_plan_print_layout(workbook: Path) -> None:
         names = {(tabs[int(name.get('localSheetId'))], name.get('name')): name.text
                  for name in book.find(q('definedNames')) if name.get('localSheetId') is not None}
         consolidated = 'Risk_Data' in parts
-        if 'Conversion Detail' in parts:
+        if 'Risk_Trials' in parts:
+            assert tabs[:11] == ['Start Here', 'Inputs', 'Summary', 'Planning Metrics', 'Asset_Allocation',
+                                 'Income_Targeting', 'Risk_Settings', 'Tax_Tables', 'Appendix',
+                                 'Annual Detail', 'Risk Results']
+            technical = ('Cash_Flow', 'Projection', 'Roth_Access', 'Healthcare', 'Checks', 'Conversion Detail',
+                         'Report_Data', 'Funding_Calc', 'Targeting_Calc', 'Risk_Data', 'Risk_Trials',
+                         'Market_Paths', 'Random_Numbers', 'Funding_Path_Data', 'Funding_Paths')
+            assert all(tabs.index(name) > tabs.index('Appendix') for name in technical)
+        elif 'Conversion Detail' in parts:
             expected_tabs = ['Start Here', 'Inputs', 'Summary', 'Asset_Allocation', 'Income_Targeting',
                              'Risk_Settings', 'Risk Results', 'Tax_Tables', 'Annual Detail', 'Appendix']
             if 'Planning Metrics' in parts:

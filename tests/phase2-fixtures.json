@@ -3673,7 +3673,7 @@
           "equals": 990
         },
         {
-          "cell": "Inputs!B18",
+          "cell": "Asset_Allocation!C99",
           "equals": -0.01
         }
       ]
@@ -3718,19 +3718,19 @@
       },
       "expects": [
         {
-          "cell": "Inputs!B23",
+          "cell": "Asset_Allocation!B103",
           "equals": 0.06425
         },
         {
-          "cell": "Inputs!B24",
+          "cell": "Asset_Allocation!C103",
           "equals": 0.0494
         },
         {
-          "cell": "Inputs!B134",
+          "cell": "Asset_Allocation!B102",
           "equals": 0.0395
         },
         {
-          "cell": "Inputs!B135",
+          "cell": "Asset_Allocation!C102",
           "equals": 0.0098
         },
         {

@@ -13,6 +13,7 @@ from typing import Mapping
 from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile
 
+import investment_results
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.exceptions import InvalidFileException
@@ -198,7 +199,16 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
         _matches(data[row]['B'], value, f'Inputs!B{row}')
         inputs[row] = value
 
+    selected_rates = raw['Asset_Allocation']['B99'].data_type == 'f'
+    if selected_rates:
+        grid = _grid(cached['Asset_Allocation'], 99, 105, 3)
+        for row, address in investment_results.CELLS.items():
+            value = grid[int(address[1:])][address[0]]
+            inputs[row] = _number(value, f'Asset_Allocation!{address}')
+
     for row in CACHED_INPUT_ROWS:
+        if selected_rates and row in investment_results.CELLS:
+            continue
         value = data[row]['B']
         if row in (71, 99, 125, 129):
             if value != 'OK':
@@ -217,7 +227,7 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             _invalid('Inputs!B131:B132', 'fee or healthcare inflation is outside the supported range')
         if _cell(cached['Inputs']['B133'], 'Inputs!B133') != 'OK':
             _invalid('Inputs!B133', 'planning assumptions have not passed validation')
-    if raw['Inputs']['B134'].data_type == 'f':
+    if not selected_rates and raw['Inputs']['B134'].data_type == 'f':
         for row in HSA_RETURN_ROWS:
             location = f'Inputs!B{row}'
             inputs[row] = _number(_cell(cached['Inputs'][f'B{row}'], location), location)
@@ -283,6 +293,13 @@ def _allocation(raw, inputs) -> Allocation:
     def numbers(col, indexes):
         return tuple(_number(rows[row][col], f'Asset_Allocation!{col}{row}') for row in indexes)
 
+    selected_rates = sheet['B99'].data_type == 'f'
+
+    def rate_location(row):
+        if selected_rates:
+            return f'Asset_Allocation!{investment_results.CELLS[row]}'
+        return f'Inputs!B{row}'
+
     asset_rows = ASSET_ROWS
     names = tuple(rows[row]['A'] for row in asset_rows)
     if any(not isinstance(name, str) or not name.strip() for name in names) or len(set(names)) != 5:
@@ -324,9 +341,9 @@ def _allocation(raw, inputs) -> Allocation:
                 continue
             gross = math.fsum(x * y for x, y in zip(weight, means))
             net = (1 + gross) * (1 - inputs.get(131, 0)) - 1
-            _matches(inputs[row], net, f'Inputs!B{row}')
+            _matches(inputs[row], net, rate_location(row))
         for row, yields in ((qualified_row, qualified), (ordinary_row, ordinary)):
-            _matches(inputs[row], math.fsum(x * y for x, y in zip(weights[0], yields)), f'Inputs!B{row}')
+            _matches(inputs[row], math.fsum(x * y for x, y in zip(weights[0], yields)), rate_location(row))
     return Allocation(names, means, vols, ordinary, qualified, corr, working, retirement)
 
 

@@ -9,10 +9,10 @@ The published workbook includes the funding corrections from PRs 16 and 17. The 
 | Phase | Completed | Still open |
 | --- | --- | --- |
 | 1. Privacy and history | Replaced the publication sources with synthetic data, cleaned the working clones and enabled GitHub email privacy. PR 17 uses the verified noreply address. | GitHub Support’s response, replacement of the colleague’s clone and a prior merge’s author metadata. The private recovery record identifies the affected commit. |
-| 2. Annual funding and account access | PRs 16 and 17 corrected account depletion, Medicare surcharges and the first shortfall shown in the printed report. All 88 financial scenarios and four Mac Excel release cases passed for PR 17. The draft corrects cost basis after brokerage sales. Its independent ledger, three Mac Excel cases and all 93 financial scenarios passed. | Repeat representative cases on the final protected workbook. |
+| 2. Annual funding and account access | PRs 16 and 17 corrected account depletion, Medicare surcharges and the first shortfall shown in the printed report. All 88 financial scenarios and four Mac Excel release cases passed for PR 17. The draft corrects cost basis after brokerage sales. Its independent ledger, three Mac Excel cases and all 93 financial scenarios passed. The protected calculation sheets passed all 93 cases and the final workbook passed three direct trials. | Publish the brokerage correction with the reviewed workbook. |
 | 3. Calculation size and performance | The public builder generated 1,000 fixed paths, their 1,000 flexible counterparts and all 33 stress cases. Three full funding histories accompany the results. | Record desktop timing separately for the example and longest horizon. |
-| 4. Workbook risk calculation | The on-demand VBA runner works in Excel for Mac. A three-pair run included every stress and matched the independent example across 25,407 compared fields. The revised runner completed 100 pairs and all 33 stresses in 78 seconds. All 65,706 primary fields and 378 ranked annual balances matched the independent model. | Verify 1,000 pairs after fixing values carried over from the prior path. Test interruption and recovery on the final file. |
-| 5. Design and first use | Summary now has six printable pages. The Excel for Mac Letter proof contains six pages. Six-page Letter and A4 proofs were also checked in LibreOffice. Start Here includes a five-input saving illustration. The draft protects formulas and lets readers inspect them. | Complete a first-time reader review and repeat the desktop print and edit checks on the final workbook. |
+| 4. Workbook risk calculation | The on-demand VBA runner works in Excel for Mac. A three-pair run included every stress and matched the independent example across 25,407 compared fields. The revised Mac runner passed at 100 and 1,000 pairs. The full run matched all 2,033 outcomes, all three selected funding paths and their ledgers. | The 1,000-pair run took 12 minutes 7 seconds with other tests running. The target is two minutes. Test interruption and recovery on the final file. |
+| 5. Design and first use | Summary now has six printable pages. The Excel for Mac Letter proof contains six pages. Six-page Letter and A4 proofs were also checked in LibreOffice. Start Here directs readers to Inputs, Summary and the Appendix. The draft protects formulas and lets readers inspect them. | Complete a first-time reader review and repeat the desktop print and edit checks on the final workbook. |
 | 6. Release and enablement | The public build creates a macro-enabled workbook directly from the reviewed VBA source. The dated fictional PDF passed its financial, page and metadata checks. The original Mac-authored test project contained a local profile path and was excluded. | Final release and checks on its exact revision, including desktop Excel for Windows. Licensing remains pending at the owner’s request. |
 
 The published file remains the macro-free workbook. The release candidate should replace it after the outstanding workbook and release checks pass. [Runner evidence](native-risk-implementation.md) · [Release checks](../tests/README.md)
@@ -241,7 +241,7 @@ Summary contains the complete printable plan. A separate stress page gives each 
 | 5. Input decisions | What assumptions did I choose? | Ages, income, saving, return and inflation conventions, investment profiles and access settings |
 | 6. Spending and account decisions | What commitments and restrictions did I enter? | Living costs, medical costs, one-time expenses, coverage, account rules and unresolved inputs |
 
-Risk Results can remain a supporting view before Appendix while it contributes distinct detail. Summary must contain the findings, stresses and explanation needed to read the plan on its own. Keep full trial calculations behind Appendix.
+Summary contains the findings, stress tests and decision record. Put the full annual timeline and market outcome tables immediately after Appendix. Keep the underlying annual schedules, trial calculations and source data with them.
 
 Planning Metrics remains its own supporting tab. Sequence and format every added block within that tab or the report's established page structure. Reserve the report's side navigation for links and controls.
 
@@ -261,11 +261,7 @@ Planning Metrics remains its own supporting tab. Sequence and format every added
 
 ### A short first-use route
 
-Extend Start Here with a compact **Start investing** illustration using five inputs — age, pay, saving percentage, assumed real return and retirement age. Give it one chart comparing an earlier and later start on the same basis, and distinguish contributions from growth.
-
-Keep this illustration in the main workbook. Label it as a simplified saving illustration and state its tax and account assumptions. Link the user into the full Inputs workflow for spending, taxes, benefits and risk. Read any displayed IRA limit from the maintained year-specific tax table and explain that eligibility can reduce it.
-
-Use navigation and progressive detail to make the workbook approachable. Keep the full schedules available for users who want to inspect them.
+Use Start Here for a short introduction. Readers enter household figures on Inputs, read and print the plan on Summary, and use the Appendix to inspect the calculations.
 
 ### A credible fictional example
 
@@ -339,7 +335,7 @@ Use Workbook checks, Greptile Review and Gemini Review on each relevant PR. Reso
 | N10. Access defaults | Phase 2 makes workplace access confirmation explicit and documents the whole-year convention | Unknown-access and age-boundary tests |
 | N11. Workbook size | Phase 3 addresses annual solver duplication and selected-year trial cost while retaining capacity to 125 | Before/after measurements and interactive horizon test |
 | N12. Protection and Windows QA | Phases 5 and 6 protect editable boundaries and finish platform checks | Formula visibility and Mac/Windows print evidence |
-| Starter experience | Phase 5 adds the five-input illustration and a clear route into the full plan | First-time-reader test |
+| First use | Start Here links to Inputs, Summary and the Appendix | First-time-reader test |
 | Lighter sharing copy | Phase 6 supplies a sample PDF and measures the canonical workbook before adding another editable edition | Preview matches the released workbook |
 
 ### Plan preparation completed

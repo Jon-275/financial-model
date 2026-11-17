@@ -2,7 +2,7 @@
 
 The withdrawal and conversion calculation sheets link their source values in columns BD onward. These visible links let the trial rows reuse formulas and reduce file size. Clear the calculation table's filter to inspect all source rows. The annual model retains capacity through age 125.
 
-Use **Summary** to read and print the plan. Use **Annual Detail** for the full timeline in the same dollar view. The decision tools and **Tax_Tables** are before **Appendix**. Use the appendix links to open the annual schedules, conversion detail, withdrawal trials, and saved risk data.
+Use **Inputs** for household decisions and **Summary** to read and print the plan. The tabs before **Appendix** cover the results, investment assumptions, Roth conversion choices, market settings and tax tables. **Annual Detail** and **Risk Results** follow the divider. They show the yearly cash flows and market paths behind the report, in the dollar view selected on Summary. The appendix index links to each supporting table.
 
 ## Planning Metrics
 
@@ -39,9 +39,9 @@ Negative income can result from investment losses. It does not trigger a Medicar
 
 ## Asset_Allocation
 
-Start with the investments you expect to hold in taxable, pre-tax, Roth and HSA accounts. Compare the working and retirement profiles on **Inputs**, then inspect the stock, bond, cash and real-asset weights on **Asset_Allocation**. Edit the blue cells and make each account column total 100%. The selected profile checks flag a missing or invalid mix before the projection runs.
+Start with the investments you expect to hold in taxable, pre-tax, Roth and HSA accounts. Choose the working and retirement profiles on **Inputs**, then inspect the stock, bond, cash and real-asset weights on **Asset_Allocation**. Edit the blue cells and make each account column total 100%. The selected profile checks flag a missing or invalid mix before the projection runs.
 
-Expected returns are annual rates before adjusting for inflation. The workbook weights the rates for each account, including the HSA, and applies the fee on Inputs. Taxable account yields also determine interest and dividends used in the tax calculation. Volatility and how assets move together affect the market simulations. Use these assumptions to explore how a different mix changes the plan’s funding result and balance range.
+**Investment assumptions used by the plan** shows the annual return for each account after the investment fee, before inflation. The portfolio return weights these account returns by their opening balances. Interest and qualified dividends are part of the taxable account return. The workbook uses their yields to calculate tax. Volatility and how assets move together affect the market simulations. Use these assumptions to explore how a different mix changes the plan’s funding result and balance range.
 
 ## Income_Targeting
 

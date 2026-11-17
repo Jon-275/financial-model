@@ -83,6 +83,10 @@ class ReportStructureTests(unittest.TestCase):
         for anchor, name, procedure in zip(drawing, ('Run market risk', 'Cancel'),
                                            ('RunMarketRisk', 'CancelMarketRisk'), strict=True):
             shape = anchor.find(d + 'sp')
+            body = shape.find(d + 'txBody').find(native_package.A + 'bodyPr')
+            self.assertEqual(body.get('wrap'), 'none')
+            self.assertEqual((body.get('lIns'), body.get('rIns')), ('12700', '12700'))
+            self.assertEqual(shape.find('.//' + native_package.A + 'rPr').get('sz'), '1000')
             self.assertEqual(shape.get('macro'), '[0]!' + procedure)
             properties = shape.find('.//' + d + 'cNvPr')
             self.assertEqual(properties.get('name'), name)

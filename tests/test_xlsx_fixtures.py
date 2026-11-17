@@ -3,6 +3,8 @@ from hashlib import sha256
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
+from unittest.mock import patch
 import unittest
 from zipfile import ZipFile
 
@@ -68,6 +70,22 @@ class FixturePackageTests(unittest.TestCase):
                 inputs = E.fromstring(after.read(parts['Inputs']))
                 self.assertEqual(inputs.findtext(f'.//{q("c")}[@r="D53"]/{q("v")}'), '100')
             self.assertEqual(sha256(source.read_bytes()).digest(), original_hash)
+
+    def test_macro_enabled_input_uses_the_xlsx_exported_by_calc(self):
+        from workbook_recalc import recalculate
+        with TemporaryDirectory() as directory:
+            base = Path(directory)
+            source = base / 'test.xlsm'
+            source.touch()
+            output = base / 'result'
+            output.mkdir()
+            exported = output / 'test.xlsx'
+            def run_calc(*args, **kwargs):
+                with ZipFile(exported, 'w') as result:
+                    result.writestr('[Content_Types].xml', '<Types/>')
+                return SimpleNamespace(returncode=0)
+            with patch('workbook_recalc.subprocess.run', side_effect=run_calc):
+                self.assertEqual(recalculate(source, output, base / 'profile', 'soffice', 30), exported)
 
     def test_fixture_cannot_replace_its_source(self):
         with TemporaryDirectory() as directory:

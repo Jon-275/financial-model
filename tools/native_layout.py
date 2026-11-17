@@ -1,7 +1,7 @@
 """Use the workbook's shared design for native risk calculation details."""
 from lxml import etree as E
 from openpyxl.utils.cell import get_column_letter as L,column_index_from_string as C
-from report_layout import X,_columns,_rows,_merges,_stripe,_style_table,_replace,_link
+from report_layout import X,_columns,_rows,_merges,_stripe,_style_table,_replace,_link,_collapse_empty_return_rows
 from native_risk import MODEL_SHEETS,TRIAL,MARKET,RANDOM
 from native_capture import LAST,SIGNATURE_COLUMN
 import native_results
@@ -91,8 +91,9 @@ def apply(name, root, styles, numbers, active_fill):
     if name=='Trial_Inputs':
         _columns(root,(49,24,4))
         _merges(root,['A1:C1','A2:C2','A3:C3'])
-        _rows(root,135,21,{1:32,2:30,3:26})
-        _stripe(root,'A4:B135','$A4',active_fill+2)
+        _rows(root,133,21,{1:32,2:30,3:26})
+        _collapse_empty_return_rows(root)
+        _stripe(root,'A4:B133','$A4',active_fill+2)
     elif name==MARKET:
         _columns(root,[13,11,11,15,*([16]*28),*([4]*8),*([19]*11)])
         _merges(root,['A1:J1','A2:J2','AO6:AS6','AO15:AS15'])

@@ -16,10 +16,10 @@ All 12 completed topic branches were deleted after matching their final commits 
    git clone https://github.com/Jon-275/financial-model.git
    cd financial-model
    git config --local core.hooksPath .githooks
-   python3 -S -B tools/check_workbook_commit.py
+   python3 -S -B tools/check_workbook_commit.py --tracked
    ```
 
-4. Use your GitHub private email address for future commits. Confirm that the new checkout has the current synthetic workbook before using it.
+4. Confirm that the audit verified both tracked workbook files. Set this clone's commit email to the noreply address shown in your GitHub email settings. Use `git config --local user.email` to check the address before committing.
 5. Remove the earlier clone after preserving any work you need. A maintainer who must retain a recovery copy should keep it in restricted storage with pushes disabled.
 
 ## Verification and remaining exposure

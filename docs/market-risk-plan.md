@@ -1,10 +1,12 @@
 # Market risk and funding decisions
 
+This document records the design of the earlier five-page, macro-free workbook. For the current six-page report and Excel scenario runner, see the [market risk guide](risk-analysis.md) and [workbook schedules](workbook-schedules.md).
+
 The printed plan shows whether the base case covers its costs, how often it does so when markets vary, and which spending choices affect the result. **Risk Results** shows the first shortfall age when one occurs, the bills that went unpaid, and the income and savings the plan could use.
 
 ## Printed plan
 
-All five pages print from **Summary**. **Risk Results** sits before **Appendix** and shows the simulation settings and detailed outcomes. **Risk_Data** sits behind **Appendix** and holds the saved run. All sheets are visible.
+In that edition, all five pages printed from **Summary**. **Risk Results** appeared before **Appendix**. **Risk_Data** held the saved run.
 
 | Page | Content |
 | --- | --- |

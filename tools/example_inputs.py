@@ -1,7 +1,5 @@
 """Fictional household assumptions for the distributed workbook."""
 
-STARTER_EXAMPLE = {'E26': 30, 'E27': 50_000, 'E28': 0.10, 'E29': 0.04, 'E30': 65}
-
 BASE_SCENARIO = {
     8: 35, 9: 33, 10: 60, 11: 2, 12: 95_000, 13: 0.035, 14: 0.025,
     15: 1, 16: 2,

@@ -60,7 +60,7 @@ class ProtectionTests(unittest.TestCase):
 
     def test_trial_sheets_and_output_cells_cannot_be_edited(self):
         root = ET.Element(X + 'worksheet')
-        for name in ('Risk_Data','Funding_Path_Data','Trial_Inputs','Projection','Checks','Annual Detail'):
+        for name in ('Start Here','README','Risk_Data','Funding_Path_Data','Trial_Inputs','Projection','Checks','Annual Detail'):
             self.assertEqual(_entry_cells(name, root), set(), name)
         self.assertEqual(_entry_cells('Risk_Trials', root), {'B3'})
 

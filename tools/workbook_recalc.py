@@ -65,7 +65,7 @@ def clear_formula_results(source: Path, destination: Path) -> None:
 
 def recalculate(source: Path, target_dir: Path, profile_dir: Path, executable: str, timeout: int) -> Path:
     """Calculate the disposable input with an isolated LibreOffice profile."""
-    calculated = target_dir / source.name
+    calculated = target_dir / source.with_suffix('.xlsx').name
     if calculated.exists() or calculated.resolve() == source.resolve():
         raise RecalculationError('Use a new LibreOffice output location.')
     try:

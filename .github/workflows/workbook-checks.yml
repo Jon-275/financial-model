@@ -35,17 +35,7 @@ jobs:
       - name: Test workbook content privacy
         run: python -m unittest discover -s tests -p 'test_workbook_privacy.py'
       - name: Check tracked workbooks for private data
-        run: |
-          # Use an empty temporary Git repository so the staged-file guard checks every tracked workbook.
-          commit=$(git rev-parse HEAD)
-          objects=$(git rev-parse --path-format=absolute --git-path objects)
-          check_git=$(mktemp -d)
-          trap 'rm -rf "$check_git"' EXIT
-          git init --quiet --bare "$check_git"
-          export GIT_DIR="$check_git"
-          export GIT_ALTERNATE_OBJECT_DIRECTORIES="$objects"
-          git read-tree "$commit"
-          python tools/check_workbook_commit.py
+        run: python tools/check_workbook_commit.py --tracked
       - name: Check the published workbook
         run: python tests/model_acceptance.py --release workbook/retirement-model.xlsm
       - name: Install Python dependencies
@@ -67,9 +57,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libreoffice-calc
           soffice --version
-      - name: Check the saving illustration and input validation in Calc
+      - name: Check input validation in Calc
         run: |
-          python tests/starter_illustration_acceptance.py "$RISK_TEST_WORKBOOK"
           python tests/input_validation_acceptance.py
       - name: Recalculate representative scenarios
         run: |

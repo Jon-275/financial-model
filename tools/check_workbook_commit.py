@@ -1,5 +1,6 @@
 """Check staged Excel workbooks before a repository commit."""
 
+import argparse
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -14,10 +15,10 @@ from workbook_privacy import audit_fixture, audit_package
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsm'
-RELEASE_SHA256 = '9759ffcb36e1063e3871d3d7d0bd7f28725b5d53e0f85fac81343e5b6d1016d9'
+RELEASE_SHA256 = 'c9b4edea48c476cdfb7a1309f31aa276b2657632682b552db005e8ada3f53f83'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = 'fdf966bd8556733b946ce6c1ee36b812c8a1b1abe901c17fc94bb76b90e45221'
-EXAMPLE_RISK_SHA256 = '0d0bf65e8f3db724a9f74fa8053ea568b1da6732601a4346cddd7dcae2a17937'
+EXAMPLE_RISK_SHA256 = 'e23b01909c9dedbd751b0217c24ae8f701482d405ff4d2d2c861e22d7b41cc3d'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
@@ -92,9 +93,15 @@ def check_sample_workbook(path):
         raise ValueError('The release workbook differs from the approved synthetic artifact.')
 
 
-def main():
-    data = git('diff', '--cached', '--name-only', '--diff-filter=AMT', '--no-renames', '-z')
-    for raw_path in filter(None, data.split(b'\0')):
+def main(*, tracked=False):
+    data = (git('ls-files', '--cached', '-z') if tracked else
+            git('diff', '--cached', '--name-only', '--diff-filter=AMT', '--no-renames', '-z'))
+    names = set(filter(None, data.split(b'\0')))
+    if tracked and not {RELEASE.encode(), TEMPLATE.encode()} <= names:
+        print('The index must contain both the shared workbook and its build template.', file=sys.stderr)
+        return 1
+    checked = 0
+    for raw_path in sorted(names):
         name = raw_path.decode('utf-8', errors='surrogateescape')
         if Path(name).suffix.lower() not in SPREADSHEET_EXTENSIONS:
             continue
@@ -117,11 +124,17 @@ def main():
                         raise ValueError('The audited build template differs from its approved checksum.')
                 else:
                     check_sample_workbook(staged)
+            checked += 1
         except (AssertionError, BadZipFile, ElementTree.ParseError, KeyError, ValueError) as exc:
             print(f'{name}: {exc}', file=sys.stderr)
             return 1
+    if tracked:
+        print(f'Verified {checked} tracked workbook files.')
     return 0
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tracked', action='store_true',
+                        help='Audit every workbook in the Git index, including unchanged files.')
+    raise SystemExit(main(tracked=parser.parse_args().tracked))

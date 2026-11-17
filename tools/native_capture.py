@@ -5,6 +5,7 @@ second instance of the annual financial compiler. The main plan stays fixed.
 """
 from openpyxl.utils.cell import get_column_letter as L
 
+import investment_results
 from risk_engine.scenario import SCENARIO_INPUT_ROWS, ASSET_ROWS, TAX_TABLE_LAST_ROW
 
 SHEET='Risk_Trials'
@@ -42,8 +43,11 @@ def _context(m,baseline):
     refs=[('Active scenario','Inputs!B4')]
     refs.extend((f'Selected input {row}',f'INDEX(Inputs!D{row}:F{row},1,Inputs!B4)')
                 for row in SCENARIO_INPUT_ROWS if row!=7)
-    refs.extend((f'Effective input {row}',f'Inputs!B{row}')
-                for row in (*range(17,25),*range(63,67),130,131,132,134,135))
+    for row in (*range(17,25), *range(63,67), 130, 131, 132, 134, 135):
+        if row in investment_results.CELLS:
+            refs.append((investment_results.LABELS[row], investment_results.reference(row)))
+        else:
+            refs.append((f'Effective input {row}', f'Inputs!B{row}'))
     refs.extend((f'Expense {col}{row}',f'Inputs!{col}{row}')
                 for row in range(75,84) for col in 'BC')
     refs.extend((f'Asset {col}{row}',f'Asset_Allocation!{col}{row}')

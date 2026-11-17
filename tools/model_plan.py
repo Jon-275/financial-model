@@ -8,7 +8,8 @@ import dashboard
 import plan_report
 import input_record
 import input_validation
-import starter_illustration
+import investment_results
+import start_here
 import funding_search
 import risk_cleanup
 import risk_presentation
@@ -91,7 +92,7 @@ def inputs(wb):
                      'OR(B97=1,B97=2)','OR(B98=0,B98=1)','OR(B28=1,B28=2)',
                      'MIN(B25:B27,B30:B38,B42:B44,B46:B47,B52,B59)>=0',
                      'ISNUMBER(CHOOSE(B4,D55,E55,F55))','CHOOSE(B4,D55,E55,F55)>=0','CHOOSE(B4,D55,E55,F55)<=1',
-                     'OR(B28=2,B30<=B27)','B13>=-1','B14>-1','MIN(B17:B22,B134:B135)>-1'))
+                     'OR(B28=2,B30<=B27)','B13>=-1','B14>-1','MIN(Asset_Allocation!B99:C102)>-1'))
     put('Inputs','B99',f'=IFERROR(IF(AND({checks}),"OK","Check cash and Roth inputs"),"Check cash and Roth inputs")','note')
     put('Inputs','A83',"Use today's dollars. Shared by all scenarios.", 'note')
     put('Inputs','A84','One-time expense check','label')
@@ -127,19 +128,7 @@ def inputs(wb):
         readiness = f'IF({condition},"{message}",{readiness})'
     put('Inputs', 'B71', f'=IFERROR(IF({selector},{readiness},"Choose scenario 1, 2 or 3"),"Check scenario and ages")')
     put('Inputs','B70','=IF(AND(B71="OK",B84="OK",B99="OK",B125="OK",B129="OK",B133="OK"),B53-B8+1,0)')
-    for r in range(17,23):
-        rate = original(wb['Inputs'], f'B{r}')
-        put('Inputs',f'B{r}',f'=(1+({rate}))*(1-$B$131)-1')
-    for hsa_row, profile_row, taxable_row, pretax_row, roth_row, blended_row, stage in zip(
-        HSA_RETURN_ROWS, (15, 16), (17, 18), (19, 20), (21, 22), (23, 24), ('working years', 'retirement')
-    ):
-        put('Inputs', f'A{roth_row}', f'Roth return in {stage}', 'label')
-        put('Inputs', f'A{hsa_row}', f'HSA return in {stage}', 'label')
-        gross = f'INDEX(Asset_Allocation!$B$54:$B$65,($B${profile_row}-1)*4+4)'
-        put('Inputs', f'B{hsa_row}', f'=(1+{gross})*(1-$B$131)-1', 'percent_active')
-        put('Inputs', f'G{hsa_row}', 'Uses the HSA investment mix and annual investment fee.', 'note')
-        weighted = (f'B25*B{taxable_row}+B26*B{pretax_row}+B27*B{roth_row}+B31*B{hsa_row}')
-        put('Inputs', f'B{blended_row}', f'=IFERROR(({weighted})/SUM(B25:B27,B31),B{taxable_row})')
+    investment_results.configure(put)
     for col in 'DEF':
         styles['Inputs'][f'{col}55'] = 'percent_input'
     put('Inputs','A55','Survivor’s share of combined Social Security','label')
@@ -259,7 +248,7 @@ def roth():
              f'IF(AND(C{r}>=60,O{r}>0,A{r}>=O{r}+5),E{r},MIN(E{r},I{r}+M{r}))',
              f'IF(AND(B{r}>=MAX(60,Inputs!$B$95),Inputs!$B$95<126,Inputs!$B$93>0,A{r}>=Inputs!$B$93+5),F{r},0)',
              f'IF(AND(C{r}>=MAX(60,Inputs!$B$96),Inputs!$B$96<126,Inputs!$B$94>0,A{r}>=Inputs!$B$94+5),G{r},0)',f'SUM(P{r}:S{r})']
-        y=p('Y'); m=p('M'); cv=p('AA'); rate=f'IF({p("E")}="Working",Inputs!$B$21,Inputs!$B$22)'
+        y=p('Y'); m=p('M'); cv=p('AA'); rate=f'IF({p("E")}="Working",{investment_results.reference(21)},{investment_results.reference(22)})'
         alloc=primary_share(r)
         moves=['0']*8 if r==5 else [f'MIN({y},P{r})',f'MIN(MAX(0,{y}-U{r}),Q{r})',
             f'MIN(MAX(0,{y}-SUM(U{r}:V{r})),R{r})',f'MIN(MAX(0,{y}-SUM(U{r}:W{r})),S{r})',
@@ -306,7 +295,13 @@ def funding(wb):
 
 def projection(wb):
     s='Projection'
-    work_hsa, retired_hsa = (f'Inputs!$B${row}' for row in HSA_RETURN_ROWS)
+    work_hsa, retired_hsa = (investment_results.reference(row) for row in HSA_RETURN_ROWS)
+    for row in wb[s].iter_rows(min_row=5, max_row=END):
+        for cell in row:
+            if cell.data_type == 'f':
+                formula = investment_results.from_template(cell.value)
+                if formula != cell.value:
+                    put(s, cell.coordinate, formula)
     for a,label in {'M4':'Roth IRA savings funded','Q4':'Cash need before current tax','X4':'Accessible Roth at year start',
                     'Z4':'Essential funding shortfall','AV4':'Current-year tax','BB4':'Taxable savings deposited',
                     'CG4':'Social Security price index'}.items(): put(s,a,label)
@@ -379,7 +374,7 @@ def reconciliation():
         prior = lambda col: pj(col, r - 1)
         cash = lambda col: cf(col, r)
         roth = lambda col: rt(col, r)
-        rate = f'IF({p("E")}="Working",Inputs!$B$21,Inputs!$B$22)'
+        rate = f'IF({p("E")}="Working",{investment_results.reference(21)},{investment_results.reference(22)})'
         errors = {
             'C': f'{cash("C")}+SUM({p("V")},{p("W")},{p("Y")})-SUM({cash("N")},{cash("P")},{cash("R")},{cash("T")})',
             'D': f'SUM({cash("F")},{cash("M")})-SUM({cash("N")},{cash("O")})',
@@ -403,26 +398,12 @@ def reconciliation():
 
 def guidance(start_sheet):
     """Replace the template's long introduction and explain editable inputs."""
-    quick_start = {
-        'B3': ('Retirement planner', 'report_title'),
-        'B5': ('See whether your income and savings can cover spending and taxes through the age you choose.', 'report_body'),
-        'B7': ('1. Save a private copy', 'report_section'),
-        'B8': ('The example uses fictional figures. Save a copy before entering yours.', 'report_body'),
-        'B10': ('2. Set up your scenario', 'report_section'),
-        'B11': ('Choose the scenario to edit, then enter ages, income, savings and spending.', 'report_body'),
-        'B12': ('Open Inputs', 'report_link'),
-        'B14': ('3. Review your plan', 'report_section'),
-        'B15': ('Read the funding result and print the six-page plan from Summary.', 'report_body'),
-        'B16': ('Open Summary', 'report_link'),
-        'B19': ('=HYPERLINK("https://github.com/Jon-275/financial-model/blob/main/docs/model-guide.md","Read the model guide")', 'report_link'),
-    }
-    for address, (value, style) in quick_start.items():
+    for address, (value, style) in start_here.CONTENT.items():
         put('README', address, value, style)
-    for (cell,) in start_sheet.iter_rows(max_col=1):
-        if cell.value is not None and cell.coordinate not in quick_start:
-            put('README', cell.coordinate, '')
-
-    starter_illustration.configure(put)
+    for row in start_sheet.iter_rows():
+        for cell in row:
+            if cell.value is not None and cell.coordinate not in start_here.CONTENT:
+                put('README', cell.coordinate, '')
 
     styles['Inputs'].update({f'G{row}': 'note' for row in (14, 55, 130, 131, 132)})
     notes = {
@@ -441,10 +422,10 @@ def guidance(start_sheet):
             'G12': 'Enter total yearly pay before taxes and deductions.',
             'G13': 'Enter the full annual pay increase, including inflation.',
             'G14': 'Enter expected yearly inflation for general expenses.',
-            'G15': 'Choose a working-years profile from Asset_Allocation.',
-            'G16': 'Choose a retirement profile. Open rows 17–24 for returns.',
-            'G17': 'This return comes from Asset_Allocation.',
-            'G23': 'This average uses today’s balances across all accounts.',
+            'A15': 'Investment profile during working years',
+            'A16': 'Investment profile in retirement',
+            'G15': 'Choose 1, 2 or 3. Compare profiles on Asset_Allocation.',
+            'G16': 'Choose 1, 2 or 3. See returns for both profiles on Asset_Allocation.',
             'G25': 'Enter the current value of investments in taxable accounts.',
             'G26': 'Enter the pre-tax IRA and 401(k) balance for the owner in row 97.',
             'G27': 'Enter the combined Roth balance today.',
@@ -484,8 +465,6 @@ def guidance(start_sheet):
             'G61': 'Enter the tax rate for estimating after-tax net worth.',
             'A62': 'Legacy Marketplace income reference',
             'G62': 'This value supplies the reference ratio on Projection.',
-            'G63': 'This yield comes from the taxable account’s investment mix.',
-            'G65': 'This yield comes from cash and bonds in the taxable account.',
             'G67': 'Enter the age when required withdrawals begin.',
             'G68': 'Use 1 for fixed early withdrawals or 0 to leave them out.',
             'G69': 'Enter the annual rate used to set the fixed payment.',
@@ -575,6 +554,10 @@ def main():
     put('Income_Targeting','C38','Counts sweep rows that fully fund the requested conversion.','note')
     put('Income_Targeting','C39','Counts requests limited by cash, balances or the withdrawal policy.','note')
     guidance(wb['README'])
+    for row in investment_results.RETIRED_ROWS:
+        for cell in wb['Inputs'][row]:
+            if cell.value is not None or cell.coordinate in cells['Inputs']:
+                put('Inputs', cell.coordinate, '')
     dashboard.configure(put)
     plan_report.move_metrics(wb['Summary'], cells['Summary'], styles['Summary'], put)
     plan_report.configure(put)
