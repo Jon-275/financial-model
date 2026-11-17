@@ -37,6 +37,7 @@ async function run({
   reviewError = false,
   reply,
   beforeResponse,
+  afterLog,
 } = {}) {
   const pr = {
     number: 17,
@@ -52,7 +53,7 @@ async function run({
     serverUrl: 'https://github.com',
     runId: 39,
   };
-  const results = { statuses: [], sent: [], reviews: [], errors: [] };
+  const results = { statuses: [], sent: [], reviews: [], errors: [], logs: [] };
   let reads = 0;
   const github = {
     paginate: (method, args) => method(args),
@@ -102,7 +103,7 @@ async function run({
   };
   await reviewPullRequest({
     github, context, apiKey, fetchApi,
-    core: { notice() {}, setFailed: message => results.errors.push(message) },
+    core: { notice() {}, info: message => { results.logs.push(message); afterLog?.(); }, setFailed: message => results.errors.push(message) },
   });
   assert.equal(results.statuses.length, 2);
   assert.equal(results.statuses[0].state, 'pending');
@@ -263,7 +264,7 @@ function cleanBatchReply(request, index) {
     : { findings: [] }) };
 }
 
-const largeFiles = ['tools/a.py', 'tools/b.bas'].map(name => newFile(name, ['x'.repeat(65_000)]));
+const largeFiles = ['tools/a.py', 'tools/b.bas'].map(name => newFile(name, ['x'.repeat(patchLimit * 0.6)]));
 
 test('one large hunk and a single long Unicode line are completely preserved in bounded requests', () => {
   for (const lines of [Array.from({ length: 150 }, (_,i) => 'number_' + i + '_'.repeat(18)),
@@ -364,7 +365,7 @@ test('a truncated hunk, duplicate filename or missing VBA patch fails before any
 });
 
 test('a partial file review cannot cite material outside its own hunk fragment', async () => {
-  const file = newFile('tools/runner.bas', Array.from({ length: 300 }, (_,i) => 'a'.repeat(800) + i));
+  const file = newFile('tools/runner.bas', Array.from({ length: 300 }, (_,i) => 'a'.repeat(300) + i));
   const result = await run({ files: [file], reply: () => ({
     text: JSON.stringify({ findings: [{...finding, path: file.filename, line: 300}], overview: 'Reviewed this fragment.' }),
   }) });
@@ -374,7 +375,7 @@ test('a partial file review cannot cite material outside its own hunk fragment',
 });
 
 test('integration findings can cite either end of a file split over multiple requests', async () => {
-  const file = newFile('tools/runner.bas', Array.from({ length: 300 }, (_,i) => 'a'.repeat(800) + i));
+  const file = newFile('tools/runner.bas', Array.from({ length: 300 }, (_,i) => 'a'.repeat(300) + i));
   const result = await run({ files: [file], reply: (request,i) => {
     if (request.generationConfig.responseJsonSchema.required.includes('overview')) return cleanBatchReply(request,i);
     return { text: JSON.stringify({ findings: [{ ...finding, path: file.filename, line: 300 }] }) };
@@ -406,21 +407,21 @@ test('renaming an old path and introducing a new file at that name preserves eac
 });
 
 test('cross-file notes are reduced in bounded passes without dropping findings or any final notes', async () => {
-  const files = Array.from({ length: 53 }, (_,i) => newFile('tools/file-' + String(i).padStart(2,'0') + '.py',
-    ['x'.repeat(61_000)]));
+  const files = Array.from({ length: 19 }, (_,i) => newFile('tools/file-' + String(i).padStart(2,'0') + '.py',
+    ['x'.repeat(patchLimit * 0.6)]));
   const result = await run({files, reply: (request,i) => {
     const integration = request.systemInstruction.parts[0].text.includes('spanning files or patches');
     const final = !request.generationConfig.responseJsonSchema.required.includes('overview');
     const note = (integration ? 'group-' : 'leaf-') + i;
     return { text: JSON.stringify(final ? { findings: [] } :
-      { findings: i === 54 ? [{ ...finding, path: files[0].filename, severity: 'medium' }] : [],
+      { findings: i === 20 ? [{ ...finding, path: files[0].filename, severity: 'medium' }] : [],
         overview: note.padEnd(integration ? 15 : 2_395, '.') }) };
   } });
-  assert.equal(result.sent.length, 56); // 53 patch batches, two groups of notes, one final review.
+  assert.equal(result.sent.length, 22); // 19 patch batches, two groups of notes, one final review.
   assert.ok(result.sent.every(req => textOf(req).length <= patchLimit));
-  const groups = textOf(result.sent[53]) + textOf(result.sent[54]);
-  for (let i = 1; i <= 53; i++) assert.ok(groups.includes('leaf-' + i + '.'), String(i));
-  assert.match(textOf(result.sent[55]), /group-54[\s\S]*group-55/);
+  const groups = textOf(result.sent[19]) + textOf(result.sent[20]);
+  for (let i = 1; i <= 19; i++) assert.ok(groups.includes('leaf-' + i + '.'), String(i));
+  assert.match(textOf(result.sent[21]), /group-20[\s\S]*group-21/);
   assert.equal(result.reviews[0].comments.length, 1);
   assert.equal(result.statuses[1].state, 'success');
   assert.match(result.reviews[0].body, /3 cross-file/);
@@ -429,7 +430,7 @@ test('cross-file notes are reduced in bounded passes without dropping findings o
 test('an aborted fetch after a successful batch fails the check and never posts a partial review', async t => {
   let controller;
   t.mock.method(AbortSignal, 'timeout', ms => {
-    assert.ok(ms > 0 && ms <= 120_000);
+    assert.ok(ms > 0 && ms <= 240_000);
     controller = new AbortController();
     return controller.signal;
   });
@@ -454,10 +455,54 @@ test('expiration of the shared deadline between batches fails before another req
   t.mock.method(Date, 'now', () => time);
   const result = await run({
     files: largeFiles, reply: cleanBatchReply,
-    beforeResponse: () => { time += 25 * 60_000; },
+    afterLog: () => { time += 25 * 60_000; },
   });
   assert.equal(result.sent.length, 1);
   assert.equal(result.statuses[1].state, 'failure');
   assert.match(result.errors[0], /before the deadline/);
   assert.equal(result.reviews.length, 0);
+});
+
+test('a patch fits exactly at the 40,000-character limit and splits above it', () => {
+  assert.equal(patchLimit, 40_000);
+  const file = newFile('tools/boundary.py', ['']);
+  const overhead = collectBatches([file], 1).batches[0].text.length;
+  const contentLength = patchLimit - overhead;
+  for (const extra of [0, 1]) {
+    const input = newFile(file.filename, ['a'.repeat(contentLength + extra)]);
+    const { batches } = collectBatches([input], 1);
+    assert.equal(batches.length === 1, extra === 0);
+    assert.ok(batches.every(batch => batch.text.length <= patchLimit));
+    const patch = batches.map(batch => batch.text.replace(/^File:[^\n]+\n(?:Continuing @@[^\n]+\n)?/, '')).join('');
+    assert.equal(patch, input.patch);
+  }
+});
+
+test('a request receives up to four minutes and caps its timeout at the remaining total budget', async t => {
+  let time = 0;
+  const timeouts = [];
+  t.mock.method(Date, 'now', () => time);
+  t.mock.method(AbortSignal, 'timeout', ms => {
+    timeouts.push(ms);
+    return new AbortController().signal;
+  });
+  const files = Array.from({ length: 7 }, (_, i) => newFile('tools/part-' + i + '.py', ['x'.repeat(24_000)]));
+  const result = await run({ files, reply: cleanBatchReply, beforeResponse: (_signal, i) => {
+    time += i < 7 ? 230_000 : 10_000;
+  } });
+  assert.deepEqual(timeouts, [240_000,240_000,240_000,240_000,240_000,240_000,120_000,110_000]);
+  assert.equal(result.statuses[1].state, 'success');
+  assert.deepEqual(result.logs, [...Array.from({ length: 6 }, (_, i) => 'Patch batch ' + (i+1) + '/7: 230000 ms.'),
+    'Patch batch 7/7: 10000 ms.', 'Cross-file batch 1/1: 10000 ms.']);
+});
+
+
+test('a final response arriving at the shared deadline cannot publish a successful review', async t => {
+  let time = 0;
+  t.mock.method(Date, 'now', () => time);
+  const result = await run({ beforeResponse: () => { time = 25 * 60_000; } });
+  assert.equal(result.sent.length, 1);
+  assert.equal(result.statuses[1].state, 'failure');
+  assert.equal(result.reviews.length, 0);
+  assert.match(result.errors[0], /before the deadline/);
 });
