@@ -4,6 +4,8 @@ import { collectBatches, patchLimit } from './gemini_review_batches.mjs';
 const checkName = 'Gemini Review';
 const findingMarker = 'financial-model-gemini-finding';
 const summaryLimit = 2_400;
+const requestLimitMs = 4 * 60_000;
+const reviewLimitMs = 25 * 60_000;
 const severities = ['critical', 'high', 'medium', 'low'];
 const stringFields = ['path', 'issue', 'evidence', 'fix'];
 
@@ -70,7 +72,7 @@ async function requestReview(apiKey, text, paths, fetchApi, { overview = false, 
         contents: [{ parts: [{ text }] }],
         generationConfig: { responseMimeType: 'application/json', responseJsonSchema: overview ? summarySchema : responseSchema },
       }),
-      signal: AbortSignal.timeout(Math.min(120_000, remaining)),
+      signal: AbortSignal.timeout(Math.min(requestLimitMs, remaining)),
     },
   );
   if (!response.ok) {
@@ -110,10 +112,10 @@ async function requestReview(apiKey, text, paths, fetchApi, { overview = false, 
   return { findings, note };
 }
 
-async function reviewBatches(apiKey, batches, allPaths, fetchApi) {
+async function reviewBatches(apiKey, batches, allPaths, fetchApi, core) {
   const findings = [];
   let integrationPasses = 0;
-  const deadline = Date.now() + 25 * 60_000;
+  const deadline = Date.now() + reviewLimitMs;
   let inputs = batches, integration = false;
   while (inputs.length) {
     const overview = inputs.length > 1;
@@ -121,7 +123,15 @@ async function reviewBatches(apiKey, batches, allPaths, fetchApi) {
     let group;
     for (const [index, input] of inputs.entries()) {
       if (integration) integrationPasses++;
-      const result = await requestReview(apiKey, input.text, input.paths, fetchApi, { overview, integration, deadline });
+      const start = Date.now();
+      let result;
+      try {
+        result = await requestReview(apiKey, input.text, input.paths, fetchApi, { overview, integration, deadline });
+        if (Date.now() >= deadline) throw new Error('Gemini did not complete all review batches before the deadline.');
+      } finally {
+        const kind = integration ? 'Cross-file' : 'Patch';
+        core.info(`${kind} batch ${index + 1}/${inputs.length}: ${Date.now() - start} ms.`);
+      }
       findings.push(...result.findings);
       if (overview) {
         const note = 'Review note ' + (index + 1) + ':\n' + result.note;
@@ -265,7 +275,7 @@ export async function reviewPullRequest({ github, context, core, apiKey, fetchAp
       throw new Error('The GEMINI_API_KEY repository secret is missing.');
     }
 
-    const { findings, integrationPasses } = await reviewBatches(apiKey, batches, paths, fetchApi);
+    const { findings, integrationPasses } = await reviewBatches(apiKey, batches, paths, fetchApi, core);
     const { data: latest } = await github.rest.pulls.get(pull);
     if (latest.head.sha !== sha || latest.base.sha !== pr.base.sha || latest.state !== 'open' || latest.draft || latest.base.ref !== 'main') {
       await publish('error', 'The pull request changed before the review finished.');
