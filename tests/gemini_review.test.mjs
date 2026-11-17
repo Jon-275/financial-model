@@ -336,10 +336,9 @@ test('serious findings from an early batch and the integration pass both block m
   assert.deepEqual(result.reviews[0].comments.map(c => c.path), [issue.path, cross.path]);
 });
 
-test('failure, missing overview or invalid findings in any batch cannot publish a partial review', async () => {
+test('API failures or invalid findings in any batch cannot publish a partial review', async () => {
   const badReplies = [
-    [2, { status: 503 }], [2, { finishReason: 'MAX_TOKENS' }], [1, { text: '{"findings":[]}' }],
-    [2, { text: JSON.stringify({ findings: [], overview: 'x'.repeat(2401) }) }],
+    [2, { status: 503 }], [2, { finishReason: 'MAX_TOKENS' }],
     [1, { text: JSON.stringify({ findings: [{ ...finding, path: largeFiles[1].filename }], overview: 'Invalid location.' }) }],
     [3, { text: '{}' }], [3, { text: 'incomplete JSON' }],
   ];
@@ -349,6 +348,39 @@ test('failure, missing overview or invalid findings in any batch cannot publish 
     assert.equal(result.statuses[1].state, 'failure');
     assert.equal(result.reviews.length, 0);
     assert.equal(result.sent.length, at);
+  }
+});
+
+test('a complete note beyond the requested length reaches cross-file review without truncation', async () => {
+  const note = 'Longer complete note '.repeat(150) + 'unique last words';
+  const result = await run({ files: largeFiles, reply: (request, i) =>
+    i === 1 ? { text: JSON.stringify({ findings: [], overview: note }) } : cleanBatchReply(request, i) });
+  assert.equal(result.statuses[1].state, 'success');
+  assert.equal(result.sent.length, 3);
+  assert.ok(textOf(result.sent[2]).includes(note));
+});
+
+test('one note repair keeps findings from the first response and the retry', async () => {
+  const first = { ...finding, path: largeFiles[0].filename }, second = { ...first, issue: 'Second separate defect' };
+  const result = await run({ files: largeFiles, reply: (request, i) => {
+    if (i === 1) return { text: JSON.stringify({ findings: [first] }) };
+    if (i === 2) return { text: JSON.stringify({ findings: [second], overview: 'Both call the funding module.' }) };
+    return cleanBatchReply(request, i);
+  } });
+  assert.equal(result.sent.length, 4);
+  assert.equal(textOf(result.sent[0]), textOf(result.sent[1]));
+  assert.match(result.sent[1].systemInstruction.parts[0].text, /100 words/);
+  assert.equal(result.statuses[1].state, 'failure');
+  assert.equal(result.reviews[0].comments.length, 2);
+});
+
+test('invalid notes on the retry fail without posting partial results', async () => {
+  for (const note of [undefined, '  ', 'x'.repeat(patchLimit)]) {
+    const result = await run({ files: largeFiles, reply: () => ({ text: JSON.stringify({ findings: [], overview: note }) }) });
+    assert.equal(result.sent.length, 2);
+    assert.equal(result.statuses[1].state, 'failure');
+    assert.equal(result.reviews.length, 0);
+    assert.match(result.errors[0], /unusable cross-file note twice/);
   }
 });
 
