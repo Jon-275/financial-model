@@ -49,6 +49,7 @@ Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory,
 Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
 
 ```sh
+python3 tests/native_flexible_policy_acceptance.py workbook/retirement-model.xlsm
 python3 tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes pairs
 python3 tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes 1,1001,2205
 ```

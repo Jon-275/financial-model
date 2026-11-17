@@ -4,6 +4,7 @@ import argparse
 from collections import Counter
 from math import isclose
 from pathlib import Path
+import re
 import sys
 
 from native_capture_acceptance import same
@@ -42,9 +43,31 @@ def positions(book):
     return rows
 
 
-def compare(reference, desktop):
+def check_reuse_note(message, visible_message, no_cut_pairs, expected=None):
+    if not isinstance(message, str) or message != visible_message:
+        raise AssertionError('The run details on Risk_Settings differ from the saved result.')
+    match = re.search(r' ([0-9]+(?:[, .\u00a0\u202f][0-9]{3})?) flexible paths used their verified fixed results\.$',
+                      message)
+    if not match:
+        raise AssertionError('The desktop run has no count of verified flexible paths.')
+    reused = int(''.join(ch for ch in match[1] if ch.isdigit()))
+    if reused > no_cut_pairs:
+        raise AssertionError('The run reports more reused paths than its saved no-cut flexible records.')
+    if expected is not None and reused != expected:
+        raise AssertionError(f'Expected {expected} verified flexible paths in this benchmark, found {reused}.')
+    return reused
+
+
+def compare(reference, desktop, expected_reused=None):
     with Workbook(reference) as expected, Workbook(desktop) as actual:
         ref_rows, test_rows = positions(expected), positions(actual)
+        if expected_reused is not None or actual['Market_Paths']['AH7'].formula:
+            table = actual[trials.SHEET]
+            no_cuts = sum(table[f'I{row}'].value == 0 for code, row in test_rows.items()
+                          if 1001 <= code <= 2000 or 2101 <= code <= 2113)
+            count = check_reuse_note(actual['Risk_Data']['Z9'].value, actual['Risk_Settings']['A44'].value,
+                                     no_cuts, expected_reused)
+            print(f'PASS run details report {count} verified flexible paths among {no_cuts} with no cut.')
         if not test_rows.keys() <= ref_rows.keys():
             raise AssertionError('The reference must contain all the desktop trials.')
         if actual['Risk_Data']['Z7'].value == expected['Risk_Data']['Z7'].value:
@@ -110,5 +133,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('reference', type=Path, help='Independently populated fictional example')
     parser.add_argument('desktop', type=Path, help='Disposable copy saved after running Excel')
+    parser.add_argument('--expect-reused', type=int, help='Require an independently verified reuse count for this example')
     args = parser.parse_args()
-    sys.exit(0 if compare(args.reference, args.desktop) else 1)
+    sys.exit(0 if compare(args.reference, args.desktop, args.expect_reused) else 1)

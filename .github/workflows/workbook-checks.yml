@@ -89,5 +89,6 @@ jobs:
         run: |
           python tests/report_formula_acceptance.py
           python tests/native_integrity_acceptance.py
+          python tests/native_flexible_policy_acceptance.py "$RISK_TEST_WORKBOOK"
           python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes pairs
           python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes 1,1001,2205

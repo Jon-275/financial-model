@@ -49,7 +49,18 @@ These tests used the same example inputs and retained the visible annual workshe
 
 For a quick comparison, set **Paired market paths** on **Risk_Settings** to 100 and run the scenarios. Set it to 1,000 and run again for the final report. Both runs include the 33 stress cases. More paths reduce the sampling variation in the reported funding rate.
 
-One possible improvement is to check for a spending cut while calculating each fixed-spending path. If no year would trigger a cut, the flexible path has the same cash flows and balances. In the full example, 515 of 1,013 fixed paths stayed above or at the spending threshold throughout retirement. Each corresponding flexible path finished without a cut. Reusing those results would require proving the condition for every year, preserving both trial records and reconciling each against a full worksheet run. Savings in runtime have not been measured.
+### Fixed and flexible spending on the same market path
+
+The runner checks whether flexible spending would change any year's cash flow. It compares the opening portfolio with the spending-cut threshold and reads the possible reduction from **Market_Paths**. When every check passes, it records the verified amounts under both trial numbers. If any year could differ, Excel calculates the flexible path separately. Users can still select either trial and inspect its annual formulas.
+
+Excel for Mac 16.115 on macOS 26.6.2 ran the same fictional plan with the same seed and assumptions. The clock covered the workbook run through publication and restoration of Excel's settings. Timing stopped before Excel saved the test copy.
+
+| Paired market paths | Earlier worksheet runner | With the paired-path check | Flexible results reused | Results checked |
+| ---: | ---: | ---: | ---: | --- |
+| 100 | 71.16 seconds | 58.07 seconds | 46 | 233 outcomes and three detailed funding examples matched across 80,454 fields. |
+| 1,000 | 12 min 7 sec | 7 min 55 sec | 515 | 2,033 outcomes and three detailed funding examples matched across 588,054 fields. |
+
+The 100-pair comparison used the same timing procedure for both runs. The earlier 1,000-pair measurement was taken with other tests running. All runs include the 33 stress cases. The full example still exceeds the two-minute target.
 
 ## Release checks
 

@@ -17,6 +17,8 @@ The macro selects each trial, recalculates the visible annual engine and capture
 
 Earlier `.xlsx` releases used the local Python runner. Use the documentation from the matching release for those files.
 
+To compare spending policies, enter a fixed trial number in **Risk_Trials** cell B3, then enter its flexible partner. For random paths, add 1,000 to the fixed number. For early-loss tests 2001–2013, add 100. Both records are saved even when their outcomes match. Columns I and J show how many years spending was cut and the total reduction in today’s dollars. The seven inflation, longevity and medical tests use fixed spending.
+
 ## Read the Summary
 
 - **Success rate.** The percentage and count of simulated paths that paid every year’s required spending and taxes through the selected end age. At least one cent unpaid in any modeled year makes a path unsuccessful, including an amount repaid later. The rate depends on the entered assumptions and the sampled paths.

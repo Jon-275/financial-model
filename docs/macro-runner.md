@@ -18,7 +18,13 @@ A run uses the workbook's own formulas and needs no external service or Python p
 
 The public procedures are `RunMarketRisk` and `CancelMarketRisk` in [RunMarketRisk.bas](../tools/vba/RunMarketRisk.bas). The first prevents a second overlapping run; the second requests cancellation at the next progress update. Esc uses Excel's normal error-18 interruption mechanism. [Microsoft cancellation guidance](https://learn.microsoft.com/en-us/office/vba/api/excel.application.enablecancelkey)
 
-A run calculates only the requested fixed and paired flexible paths, followed by 26 early-loss tests and seven inflation, longevity and medical tests. All outputs are collected in memory. It ranks fixed paths by ending real balance, then earlier failure age, larger unpaid balance and trial identifier. The low, median and high examples use the paths nearest the 10th, 50th and 90th percentiles of ending balances. A one-path run uses that path for all three examples.
+A run records both spending policies for every requested market path. It also records 26 early-loss tests and seven inflation, longevity and medical tests. The runner collects the results in memory before updating the report.
+
+Each fixed and flexible pair uses the same market returns and inflation. Spending can differ only in years when the flexible policy cuts living costs. While calculating the fixed path, the workbook checks each year's possible cut and the balance at which the cut would begin. If every possible cut is zero and each opening balance meets its threshold, the runner can copy the verified amounts to the flexible path's own result row. A balance exactly at the threshold passes. A missing, invalid or inconclusive check sends the flexible path through the full worksheet calculation.
+
+To inspect a pair, enter its fixed trial number on **Risk_Trials**. On **Market_Paths**, column AH shows the possible flexible cut and AI shows its opening-balance threshold. Select the flexible trial to see the spending actually used in column AE. **Risk_Settings** shows how many flexible results reused their fixed partner in the last Excel run. Both policies count toward their respective funding rates.
+
+The runner ranks fixed paths by ending balance in today's dollars. Ties are resolved by earlier failure age, larger unpaid balance and trial number. The low, middle and high funding examples are the paths nearest the 10th, 50th and 90th percentiles. A one-path run uses that path for all three examples.
 
 The complete annual schedules for those three paths are captured before publication. The runner then replaces the primary results, their identifiers, the three full paths and the completed-run record. It keeps backups until the workbook confirms that the results are current. A publication error restores those backups and records failure. Ordinary cancellation before publication leaves them untouched.
 

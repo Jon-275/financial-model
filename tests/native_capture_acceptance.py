@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from math import isclose
+from math import isclose, isfinite
 from pathlib import Path
 import sys
 from tempfile import TemporaryDirectory
@@ -43,8 +43,63 @@ def compare_rows(sheet, saved_sheet, live, saved, last, code, *, first=1, refres
     return count
 
 
+def _number(value, location, maximum=None):
+    if type(value) not in (int, float) or not isfinite(value) or value < 0 or (maximum is not None and value > maximum):
+        raise AssertionError(f'{location} must contain a finite number in the expected range.')
+    return value
+
+
+def expected_cut(fixed_openings, plan_years, threshold, fraction, share):
+    """Before the first cut, a flexible path has the fixed path's opening balances."""
+    _number(threshold, 'Risk_Settings!B6', 1)
+    _number(fraction, 'Risk_Settings!B7', 1)
+    _number(share, 'Risk_Settings!B8', 1)
+    cut = False
+    for fixed, (base, has_flexible_spending) in zip(fixed_openings, plan_years, strict=True):
+        _number(fixed, 'Fixed opening balance')
+        _number(base, 'Base opening balance')
+        cut |= bool(fraction and share and has_flexible_spending and fixed < threshold * base)
+    return cut
+
+
+def validate_cut_decisions(book, data, positions):
+    inputs, projection, settings = (book[name] for name in ('Inputs', 'Projection', 'Risk_Settings'))
+    horizon = _number(inputs['B70'].value, 'Inputs!B70', trial.ANNUAL_CAPACITY)
+    if horizon != int(horizon) or horizon < 2:
+        raise AssertionError('The paired trials require a valid plan horizon.')
+    budget = _number(inputs['B37'].value, 'Inputs!B37')
+    mortgage = _number(inputs['B38'].value, 'Inputs!B38')
+    survivor = _number(inputs['B56'].value, 'Inputs!B56')
+    threshold, fraction, share = (settings[f'B{row}'].value for row in (6, 7, 8))
+    plan_years = []
+    for row in range(6, 5 + int(horizon)):
+        stage, filing = projection[f'E{row}'].value, projection[f'F{row}'].value
+        if stage not in ('Working', 'Bridge', 'Pre-Medicare', 'Medicare') or filing not in ('MFJ', 'Single'):
+            raise AssertionError(f'Projection row {row} has an unknown stage or filing status.')
+        # Only the nonmortgage part of retirement living costs can be cut.
+        # Its sign is unchanged by the positive simulated price index.
+        eligible = stage != 'Working' and budget > mortgage and (filing != 'Single' or survivor > 0)
+        plan_years.append((projection[f'BH{row-1}'].value, eligible))
+    nominal_start = trial.ANNUAL_FIRST + trial.ANNUAL_CAPACITY
+    openings = [col_letter(nominal_start + offset) for offset in range(len(plan_years))]
+    pairs = 0
+    for code, row in positions.items():
+        if 1 <= code <= 1000:
+            partner = code + 1000
+        elif 2001 <= code <= 2013:
+            partner = code + 100
+        else:
+            continue
+        fixed = (data[f'{col}{row}'].value for col in openings)
+        actual = data[f'I{positions[partner]}'].value
+        if expected_cut(fixed, plan_years, threshold, fraction, share) != (actual > 0):
+            raise AssertionError(f'Flexible trial {partner} cut decision disagrees with its fixed path.')
+        pairs += 1
+    print(f'PASS independent first-cut decisions for {pairs} fixed and flexible pairs.')
+
+
 def validate_uncut_pairs(data, positions):
-    """Without a spending cut, the flexible policy must reproduce its fixed path."""
+    """Compare complete paired financial histories and their capture metadata."""
     compared = 0
     for code, row in positions.items():
         if 1001 <= code <= 2000:
@@ -53,9 +108,26 @@ def validate_uncut_pairs(data, positions):
             fixed = code - 100
         else:
             continue
-        if data[f'I{row}'].value != 0:
-            continue
         fixed_row = positions[fixed]
+        signature = col_letter(trial.SIGNATURE_COLUMN)
+        context = data[f'B{fixed_row}'].value
+        if not isinstance(context, str) or not context:
+            raise AssertionError(f'Fixed trial {fixed} has no captured assumption record.')
+        for number, saved in ((code, row), (fixed, fixed_row)):
+            for col in ('B', signature):
+                if data[f'{col}{saved}'].value != context:
+                    raise AssertionError(f'Trial {number} has a different captured assumption record in {col}.')
+            date = _number(data[f'AB{saved}'].value, f'Trial {number} refresh date')
+            if date <= 0 or date != int(date):
+                raise AssertionError(f'Trial {number} has an invalid refresh date.')
+        years = _number(data[f'I{row}'].value, f'Flexible trial {code} cut years', trial.ANNUAL_CAPACITY - 1)
+        amount = _number(data[f'J{row}'].value, f'Flexible trial {code} spending reduction')
+        if years != int(years) or bool(years) != bool(amount):
+            raise AssertionError(f'Flexible trial {code} has inconsistent spending cuts.')
+        if data[f'I{fixed_row}'].value != 0 or data[f'J{fixed_row}'].value != 0:
+            raise AssertionError(f'Fixed trial {fixed} recorded a spending cut.')
+        if years:
+            continue
         for index in range(3, trial.SIGNATURE_COLUMN):
             if index == 28:  # The two trials can run on opposite sides of midnight.
                 continue
@@ -107,6 +179,7 @@ def validate(workbook, requested, office, jobs=1):
             if data[f'A{row}'].value is not None or data[f'C{row}'].value is not None:
                 raise AssertionError('Unused trial capacity contains results.')
         validate_uncut_pairs(data, positions)
+        validate_cut_decisions(book, data, positions)
         if requested == 'pairs':
             return
         funding = book[paths.DATA_SHEET]

@@ -44,7 +44,7 @@ def _rename(value):
 def _settings(m):
     m.put('Risk_Settings', 'A28', 'Market simulation', 'detail_band')
     settings = (
-        (29, 'Paired market paths', 1000, 'Enter 1 to 1,000. Both spending policies use the same paths.', 'input'),
+        (29, 'Paired market paths', 1000, 'Enter 1 to 1,000. Use 100 while editing and 1,000 for the final report.', 'input'),
         (30, 'Random seed', 2026, 'A whole number from 0 to 4,294,967,295. Keep it fixed to compare plans.', 'input'),
         (31, 'Market variation multiplier', 1, '1 uses the asset volatility assumptions. 0 repeats the expected returns.', 'decimal_input'),
         (32, 'Vary annual inflation?', 0, '0 = expected inflation only. 1 = annual variation around that expectation.', 'input'),
@@ -117,7 +117,8 @@ def _calendar_and_returns(m):
                'Correlated normal 1','Correlated normal 2','Correlated normal 3','Correlated normal 4','Correlated normal 5',
                'US stock return','International stock return','Bond return','Cash return','Property return',
                'Taxable account return','Traditional account return','Roth account return','HSA return',
-               'Living-cost cut','Cut in today’s dollars','Benefit price index')
+               'Living-cost cut','Cut in today’s dollars','Benefit price index',
+               'Possible flexible spending cut','Cut threshold, prior balance')
     for index,title in enumerate(headers,1):put(f'{L(index)}5',title,'header')
     _correlation(m)
     for row in range(6,132):
@@ -251,7 +252,10 @@ def _bind_annual(m):
         m.put(projection,f'G{row}',f'=IF({active},{MARKET}!G{market_row},"")','decimal')
         m.put(projection,f'H{row}',f'=IF({active},{MARKET}!J{market_row},"")','decimal')
         m.put(projection,f'CG{row}',f'=IF({active},{MARKET}!AG{market_row},"")','decimal')
-        if row==5:continue
+        if row==5:
+            for column in ('AH','AI'):
+                m.put(MARKET,f'{column}{market_row}',f'=IF(AND(0<$D$3,$J$3="OK"),0,"")','money')
+            continue
         replacements={}
         for working, retired, market_col in ((17,18,'AA'),(19,20,'AB'),(21,22,'AC'),(134,135,'AD')):
             for phase in (f'E{row}',f'{projection}!$E${row}'):
@@ -275,11 +279,15 @@ def _bind_annual(m):
         fixed=(f'Trial_Inputs!$B$38*IF(B{row}<Trial_Inputs!$B$39,1,'
                f'IF(B{row}=Trial_Inputs!$B$39,Trial_Inputs!$B$40/12,0))*'
                f'IF(F{row}="Single",Trial_Inputs!$B$56,1)')
-        cut=(f'IF($H$3,IF(AND(D{market_row}<>"Working",{projection}!BH{row-1}<'
-             f'Risk_Settings!$B$6*Projection!BH{row-1}),'
+        # The applied cut and the fixed-path comparison share one policy formula.
+        active_year=f'AND({market_row}-6<$D$3,$J$3="OK")'
+        threshold=f'IF(D{market_row}="Working",0,Risk_Settings!$B$6*Projection!BH{row-1})'
+        cut=(f'IF(AND(D{market_row}<>"Working",{projection}!BH{row-1}<AI{market_row}),'
              f'MAX(0,{projection}!CH{row}-({fixed.replace("B"+str(row),projection+"!B"+str(row)).replace("F"+str(row),projection+"!F"+str(row))}))'
-             f'*Risk_Settings!$B$7*Risk_Settings!$B$8,0),0)')
-        m.put(MARKET,f'AE{market_row}',f'=IF(AND({market_row}-6<$D$3,$J$3="OK"),{cut},"")','money')
+             f'*Risk_Settings!$B$7*Risk_Settings!$B$8,0)')
+        m.put(MARKET,f'AI{market_row}',f'=IF({active_year},{threshold},"")','money')
+        m.put(MARKET,f'AH{market_row}',f'=IF({active_year},{cut},"")','money')
+        m.put(MARKET,f'AE{market_row}',f'=IF({active_year},IF($H$3,AH{market_row},0),"")','money')
         # Additional medical reserves are deliberately outside HSA eligibility.
         m.put(healthcare,f'AG{row}',m.cells[healthcare][f'P{row}'],'money')
         reserve=(f'IF(AND(OR({CONTROL}=2206,{CONTROL}=2207),{projection}!E{row}<>"Working"),'
@@ -310,9 +318,9 @@ def configure(m, baseline):
     _bind_annual(m)
     native_random.configure(m.put)
     m.put(TRIAL,'A1','Market trial results','detail_title')
-    m.put(TRIAL,'A2','Select a trial number to inspect its cash flow and account balances. Use 0 for the main plan.','report_caption')
+    m.put(TRIAL,'A2','Enter a trial number in B3. Row 7 shows its results. Saved trials start in row 8. Enter 0 to return to the main plan.','report_caption')
     m.put(TRIAL,'A3','Trial to inspect','label');m.put(TRIAL,'B3',0,'input')
-    m.put(TRIAL,'A4','Row 7 shows the selected trial. Completed runs start at row 8: fixed spending, flexible spending, then stress tests.','report_caption')
+    m.put(TRIAL,'A4','Each pair has two saved rows. Random path 1 pairs with 1001 (add 1,000). Early-loss tests 2001–2013 pair with 2101–2113 (add 100). Tests 2201–2207 use fixed spending.','report_caption')
     native_capture.configure(m,baseline)
     native_funding_paths.configure(m)
     native_results.configure(m)

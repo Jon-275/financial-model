@@ -50,7 +50,9 @@ Public Sub RunMarketRisk()
     Dim batch As Variant, ids As Variant, paths As Variant, chosenIDs As Variant
     Dim oldBatch As Variant, oldIDs As Variant, oldPaths As Variant
     Dim oldPathIDs As Variant, oldMetadata As Variant, metadata As Variant
-    Dim captured As Variant, order() As Long, pairedRow As Long
+    Dim captured As Variant, order() As Long, pairedRow As Long, lastCalculatedRow As Long
+    Dim fixedUnchanged() As Boolean, reused As Boolean, reusedCount As Long
+    Dim cutProof As Range, proofFormulas As Variant, canCheckCuts As Boolean
     Dim count As Long, total As Long, width As Long, pathWidth As Long
     Dim seed As Double, context As String, code As Long, index As Long
     Dim rank As Long, caseIndex As Long, column As Long, started As Double
@@ -114,6 +116,10 @@ Public Sub RunMarketRisk()
     ReDim paths(1 To 3, 1 To pathWidth)
     ReDim chosenIDs(1 To 3, 1 To 1)
     ReDim order(1 To count)
+    ReDim fixedUnchanged(1 To total)
+    Set cutProof = book.Worksheets("Market_Paths").Range("AH7:AI131")
+    proofFormulas = cutProof.HasFormula
+    If VarType(proofFormulas) = vbBoolean Then canCheckCuts = proofFormulas
     started = Timer
 
     For index = 1 To total
@@ -121,10 +127,28 @@ Public Sub RunMarketRisk()
         pairedRow = 0
         If code >= 1001 And code <= 2000 Then pairedRow = index - count
         If code >= 2101 And code <= 2113 Then pairedRow = index - 13
-        captured = CaptureTrial(book, selector, trialCurrent, code, context, batch, pairedRow, index - 1)
-        For column = 1 To width
-            batch(index, column) = captured(1, column)
-        Next column
+        CheckCancelled
+        reused = False
+        If pairedRow > 0 Then
+            If fixedUnchanged(pairedRow) Then
+                reused = CanReuseFixedTrial(book, batch, ids, pairedRow, code, context, width)
+            End If
+        End If
+        If reused Then
+            For column = 1 To width
+                batch(index, column) = batch(pairedRow, column)
+            Next column
+            reusedCount = reusedCount + 1
+        Else
+            captured = CaptureTrial(book, selector, trialCurrent, code, context, batch, pairedRow, lastCalculatedRow)
+            lastCalculatedRow = index
+            For column = 1 To width
+                batch(index, column) = captured(1, column)
+            Next column
+            If canCheckCuts And (index <= count Or (code >= 2001 And code <= 2013)) Then
+                fixedUnchanged(index) = FixedPathAllowsReuse(cutProof, captured, book)
+            End If
+        End If
         ids(index, 1) = code
         If index <= count Then order(index) = index
         ShowProgress index, total + 3, started
@@ -164,6 +188,7 @@ Public Sub RunMarketRisk()
     If book.Date1904 Then metadata(2, 1) = metadata(2, 1) - 1462
     metadata(3, 1) = context
     metadata(4, 1) = "Updated " & Format$(count, "#,##0") & " paired paths and 33 stress cases."
+    metadata(4, 1) = metadata(4, 1) & " " & Format$(reusedCount, "#,##0") & " flexible paths used their verified fixed results."
     metadata(5, 1) = count
     metadata(6, 1) = seed
 
@@ -256,6 +281,50 @@ CleanExit:
         MsgBox failureText, vbExclamation, "Market risk"
     End If
 End Sub
+
+Private Function FixedPathAllowsReuse(ByVal cutProof As Range, ByRef captured As Variant, ByVal book As Workbook) As Boolean
+    ' Each fixed closing balance is already reconciled to the annual ledger.
+    ' Its opening balance for the following year must meet the visible threshold.
+    ' Also require a complete, numeric zero cut for every year. Any uncertainty
+    ' leaves the paired flexible policy on its regular worksheet calculation.
+    Dim years As Variant, proof As Variant, period As Long, opening As Variant
+    years = book.Worksheets("Trial_Inputs").Range("B70").Value2
+    If VarType(years) <> vbDouble Then Exit Function
+    If years < 2 Or years > ANNUAL_CAPACITY Or years <> Fix(years) Then Exit Function
+    With cutProof.Resize(CLng(years) - 1, 2)
+        .Calculate
+        proof = .Value2
+    End With
+    For period = 1 To CLng(years) - 1
+        opening = captured(1, FIRST_YEAR_FIELD + ANNUAL_CAPACITY + period - 1)
+        If VarType(opening) <> vbDouble Then Exit Function
+        If VarType(proof(period, 1)) <> vbDouble Or VarType(proof(period, 2)) <> vbDouble Then Exit Function
+        If proof(period, 1) <> 0# Or proof(period, 2) < 0# Or opening < proof(period, 2) Then Exit Function
+    Next period
+    FixedPathAllowsReuse = True
+End Function
+
+Private Function CanReuseFixedTrial(ByVal book As Workbook, ByRef batch As Variant, ByRef ids As Variant, _
+                                   ByVal pairedRow As Long, ByVal code As Long, ByVal context As String, ByVal width As Long) As Boolean
+    Dim expected As Long, currentDay As Double
+    If code >= 1001 And code <= 2000 Then
+        expected = code - 1000
+    ElseIf code >= 2101 And code <= 2113 Then
+        expected = code - 100
+    Else
+        Exit Function
+    End If
+    If Not SameCaptureValue(ids(pairedRow, 1), expected) Then Exit Function
+    If Not SameCaptureValue(batch(pairedRow, VALID_FIELD), 1#) Then Exit Function
+    If Not SameCaptureValue(batch(pairedRow, CUT_YEARS_FIELD), 0#) Then Exit Function
+    If Not SameCaptureValue(batch(pairedRow, 1), context) Then Exit Function
+    If Not SameCaptureValue(batch(pairedRow, width), context) Then Exit Function
+    currentDay = CDbl(Date)
+    If book.Date1904 Then currentDay = currentDay - 1462#
+    If Not SameCaptureValue(batch(pairedRow, REFRESH_DATE_FIELD), currentDay) Then Exit Function
+    RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
+    CanReuseFixedTrial = True
+End Function
 
 Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
     Dim values As Variant, column As Long, attempt As Long, primary As Boolean
@@ -383,7 +452,7 @@ Private Sub ShowProgress(ByVal index As Long, ByVal total As Long, ByVal started
     elapsed = Timer - started
     If elapsed < 0 Then elapsed = elapsed + 86400
     Application.StatusBar = "Market risk: " & Format$(index, "#,##0") & " of " & Format$(total, "#,##0") & _
-                            " calculations, " & Format$(elapsed, "0") & " sec. Use Cancel or press Esc to stop."
+                            " results checked, " & Format$(elapsed, "0") & " sec. Use Cancel or press Esc to stop."
     DoEvents
     CheckCancelled
 End Sub

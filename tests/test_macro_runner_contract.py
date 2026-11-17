@@ -159,6 +159,27 @@ class MacroRunnerContractTests(unittest.TestCase):
                        'paths.Value2 = oldPaths', 'pathIDs.Value2 = oldPathIDs'):
             self.assertIn(target, restore)
 
+    def test_reuse_requires_a_verified_current_fixed_partner(self):
+        run = procedure('RunMarketRisk')
+        proof = procedure('FixedPathAllowsReuse')
+        partner = procedure('CanReuseFixedTrial')
+        self.assertIn('cutProof.HasFormula', run)
+        self.assertIn('lastCalculatedRow = index', run)
+        self.assertIn('context, batch, pairedRow, lastCalculatedRow)', run)
+        self.assertLess(run.index('captured = CaptureTrial('), run.index('fixedUnchanged(index) ='))
+        self.assertIn('For period = 1 To CLng(years) - 1', proof)
+        self.assertIn('FIRST_YEAR_FIELD + ANNUAL_CAPACITY + period - 1', proof)
+        self.assertIn('proof(period, 1) <> 0#', proof)
+        self.assertIn('opening < proof(period, 2)', proof)
+        self.assertIn('expected = code - 1000', partner)
+        self.assertIn('expected = code - 100', partner)
+        for field in ('ids(pairedRow, 1), expected', 'batch(pairedRow, VALID_FIELD), 1#',
+                      'batch(pairedRow, CUT_YEARS_FIELD), 0#', 'batch(pairedRow, 1), context',
+                      'batch(pairedRow, width), context', 'batch(pairedRow, REFRESH_DATE_FIELD), currentDay'):
+            self.assertIn('SameCaptureValue(' + field + ')', partner)
+        self.assertIn('If book.Date1904 Then', partner)
+        self.assertIn('RequireText AssumptionRecord(book), context', partner)
+
     def test_cancellation_cleanup_and_early_failure_keep_explicit_guards(self):
         run = procedure('RunMarketRisk')
         self.assertIn('If mRunning Then', run)

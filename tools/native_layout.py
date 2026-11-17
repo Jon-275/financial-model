@@ -95,10 +95,10 @@ def apply(name, root, styles, numbers, active_fill):
         _collapse_empty_return_rows(root)
         _stripe(root,'A4:B133','$A4',active_fill+2)
     elif name==MARKET:
-        _columns(root,[13,11,11,15,*([16]*28),*([4]*8),*([19]*11)])
+        _columns(root,[13,11,11,15,*([16]*29),22,22,*([4]*5),*([19]*11)])
         _merges(root,['A1:J1','A2:J2','AO6:AS6','AO15:AS15'])
         _rows(root,131,20,{1:32,2:30,3:25,5:44,17:38})
-        _stripe(root,'A6:AG131','$A6',active_fill+2)
+        _stripe(root,'A6:AI131','$A6',active_fill+2)
         context_end=max(int(row.get('r')) for row in root.find(X+'sheetData'))
         _rows(root,context_end,20,{1:32,2:30,3:25,4:44,5:44,17:38})
         columns=root.find(X+'cols')
