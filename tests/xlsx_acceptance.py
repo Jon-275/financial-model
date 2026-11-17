@@ -11,15 +11,21 @@ import re
 import shutil
 import subprocess
 import tempfile
-from xml.etree import ElementTree as ET
 import zipfile
 
-from xlsx_read import Workbook, address_parts, parse_preserving_namespaces, q, sheet_parts
+from lxml import etree as E
 
-ERRS = frozenset({"#REF!", "#DIV/0!", "#VALUE!", "#NAME?", "#N/A", "#NUM!", "#NULL!", "#SPILL!", "#CALC!"})
+from xlsx_read import Workbook, address_parts, q, scan_errors, sheet_parts
+
+
+def _xml_root(payload):
+    # Excel compatibility attributes can name prefixes without using them in
+    # element names. Preserve those namespace bindings through fixture edits.
+    return E.fromstring(payload, E.XMLParser(resolve_entities=False, no_network=True, huge_tree=True))
+
 
 def patch_xml(sheet_xml: bytes, overrides: dict, last_row: int | None = None) -> bytes:
-    root = parse_preserving_namespaces(sheet_xml)
+    root = _xml_root(sheet_xml)
     data = root.find(q("sheetData"))
     if last_row is not None:
         # Solver source banks share rows with trials but remain dependencies
@@ -40,7 +46,7 @@ def patch_xml(sheet_xml: bytes, overrides: dict, last_row: int | None = None) ->
         cell = cells.get(address)
         if cell is None:
             if row_number not in rows:
-                row = ET.Element(q("row"), r=str(row_number))
+                row = E.Element(q("row"), r=str(row_number))
                 nxt = next((old for old in data if int(old.get("r")) > row_number), None)
                 if nxt is None:
                     data.append(row)
@@ -48,7 +54,7 @@ def patch_xml(sheet_xml: bytes, overrides: dict, last_row: int | None = None) ->
                     data.insert(list(data).index(nxt), row)
                 rows[row_number] = row
             row = rows[row_number]
-            cell = ET.Element(q("c"), r=address)
+            cell = E.Element(q("c"), r=address)
             nxt = next((old for old in row if address_parts(old.get("r"))[1] > col_number), None)
             if nxt is None:
                 row.append(cell)
@@ -61,12 +67,12 @@ def patch_xml(sheet_xml: bytes, overrides: dict, last_row: int | None = None) ->
         cell.attrib.pop("t", None)
         if isinstance(value, bool):
             cell.set("t", "b")
-            ET.SubElement(cell, q("v")).text = "1" if value else "0"
+            E.SubElement(cell, q("v")).text = "1" if value else "0"
         elif isinstance(value, (int, float)) and math.isfinite(value):
-            ET.SubElement(cell, q("v")).text = str(value)
+            E.SubElement(cell, q("v")).text = str(value)
         elif isinstance(value, str):
             cell.set("t", "inlineStr")
-            ET.SubElement(ET.SubElement(cell, q("is")), q("t")).text = value
+            E.SubElement(E.SubElement(cell, q("is")), q("t")).text = value
         elif value is not None:
             raise ValueError(f"Unsupported value at {address}: {value!r}")
     # LibreOffice may otherwise reuse the original XLSX formula cache on import,
@@ -77,10 +83,12 @@ def patch_xml(sheet_xml: bytes, overrides: dict, last_row: int | None = None) ->
             if cache is not None:
                 cell.remove(cache)
             cell.attrib.pop("t", None)
-    return ET.tostring(root, encoding="UTF-8", xml_declaration=True)
+    return E.tostring(root, encoding="UTF-8", xml_declaration=True, standalone=True)
 
 
 def prepare_xlsx(source: Path, destination: Path, overrides: dict, compact=False) -> None:
+    if destination.exists() and source.samefile(destination):
+        raise ValueError('Use a separate destination for the fixture copy.')
     with zipfile.ZipFile(source) as original, zipfile.ZipFile(destination, "w", zipfile.ZIP_DEFLATED) as copy:
         parts = sheet_parts(original)
         if missing := overrides.keys() - parts.keys():
@@ -112,13 +120,13 @@ def prepare_xlsx(source: Path, destination: Path, overrides: dict, compact=False
             if item.filename in worksheet_parts:
                 payload = patch_xml(payload, sheet_overrides.get(item.filename, {}),keep_rows.get(item.filename))
             elif item.filename == "xl/workbook.xml":
-                root = parse_preserving_namespaces(payload)
+                root = _xml_root(payload)
                 calc = root.find(q("calcPr"))
                 if calc is not None:
                     calc.set("calcMode", "auto")
                     calc.set("fullCalcOnLoad", "1")
                     calc.set("forceFullCalc", "1")
-                    payload = ET.tostring(root, encoding="UTF-8", xml_declaration=True)
+                    payload = E.tostring(root, encoding="UTF-8", xml_declaration=True, standalone=True)
             copy.writestr(item, payload)
 
 
@@ -200,20 +208,6 @@ def check_rows(wb, rules: dict, tolerance: float) -> None:
                 value += coefficient * item
             if abs(value - rule.get("target", 0)) > rule.get("tolerance", tolerance):
                 raise AssertionError(f"{sheet.title} row {row}, age {age}: {rule['name']} has residual {value:.6f}")
-
-
-def scan_errors(wb) -> None:
-    failures = []
-    count = 0
-    for sheet in wb:
-        for row in sheet.iter_rows():
-            for cell in row:
-                if cell.data_type == "e" or (isinstance(cell.value, str) and cell.value in ERRS):
-                    count += 1
-                    if len(failures) < 12:
-                        failures.append(f"{sheet.title}!{cell.coordinate}={cell.value}")
-    if failures:
-        raise AssertionError(f"Found {count} spreadsheet error cells: {', '.join(failures)}")
 
 
 def run_case(args, case: dict, shared: dict, row_rules: dict) -> str:

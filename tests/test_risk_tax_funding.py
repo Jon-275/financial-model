@@ -3,7 +3,7 @@
 from dataclasses import replace
 import unittest
 
-from risk_engine.funding import FundingInputs, solve_funding
+from risk_engine.funding import FundingInputs, _FundingSearch, solve_funding
 from risk_engine.tax import TaxInputs, TaxTables
 
 
@@ -98,6 +98,45 @@ class FundingSearchTests(unittest.TestCase):
         self.assertEqual(result.requested_draw, 0)
         self.assertEqual(result.traditional_draw, 10)
         self.assertEqual(result.margin, 5)
+
+    def test_unfunded_year_liquidates_each_available_account_exactly(self):
+        # These amounts leave a positive residual when summed capacities are
+        # subtracted in the opposite order. A fully sold account must close.
+        for order in (1, 2):
+            for mandatory in (0, 1234.56789):
+                for roth in (0, 1999.17):
+                    with self.subTest(order=order, mandatory=mandatory, roth=roth):
+                        cash = replace(
+                            self.cash, required_spending=1000000,
+                            taxable_available=4246.77694910289, traditional_available=50000.123,
+                            roth_available=roth, mandatory=mandatory, headroom=1000000,
+                            opening_traditional=50000.123, basis_ratio=2, order=order,
+                        )
+                        result = solve_funding(self.year, TaxInputs(0), cash)
+                        self.assertEqual(result.status, 'Unfunded')
+                        self.assertEqual(result.taxable_draw, cash.taxable_available)
+                        self.assertEqual(result.traditional_draw, cash.traditional_available)
+                        self.assertEqual(result.roth_draw, cash.roth_available)
+
+    def test_preferred_boundary_uses_the_exact_available_balance(self):
+        # Adding these separately rounded portions yields one ULP more than the
+        # available traditional balance, enough to leave brokerage cost basis.
+        cash = replace(
+            self.cash, traditional_available=45195.9618, mandatory=9657.0105,
+            taxable_available=41752.7438, roth_available=3125.71,
+            headroom=50000, order=2,
+        )
+        search = _FundingSearch(self.year, TaxInputs(0), cash)
+        traditional = cash.traditional_available
+        brokerage = cash.taxable_available
+        for draw, expected in (
+            (0, (0, cash.mandatory, 0)),
+            (traditional, (0, traditional, 0)),
+            (traditional+brokerage, (brokerage, traditional, 0)),
+            (search.capacity, (brokerage, traditional, cash.roth_available)),
+        ):
+            with self.subTest(draw=draw):
+                self.assertEqual(search._draws(draw, False)[:3], expected)
 
     def test_preferred_draw_pays_its_own_tax(self):
         result = solve_funding(self.year, TaxInputs(33200), replace(

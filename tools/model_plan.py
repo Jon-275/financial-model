@@ -340,7 +340,7 @@ def reporting():
         'A19':'Available bridge assets at retirement','B19':f'=IF({eligible},{target},"")',
         'C19':'Opening brokerage balance plus Roth funds available in the first bridge year. See Roth_Access.',
         'B25':'=IF(Inputs!$B$70=0,IF(Inputs!$B$71<>"OK",Inputs!$B$71,IF(Inputs!$B$84<>"OK",Inputs!$B$84,IF(Inputs!$B$99<>"OK",Inputs!$B$99,IF(Inputs!$B$125<>"OK","Check healthcare inputs",IF(Inputs!$B$129<>"OK",Inputs!$B$129,Inputs!$B$133))))),IF(COUNTIF(Healthcare!$T$6:$T$130,"Missing*")+COUNTIF(Healthcare!$T$6:$T$130,"Confirm*")>0,"Check healthcare inputs",IF(COUNTIF(Cash_Flow!$AM$5:$AM$130,"OK")<>Inputs!$B$70,"Check funding calculation",IF(MAX(Projection!$BR$5:$BR$130)<0.01,"YES","NO - cash shortfall"))))',
-        'B26':'=IF(B25="YES","None",IF(B25="NO - cash shortfall",INDEX(Projection!$B$5:$B$130,MATCH(TRUE(),INDEX(IF(ISNUMBER(Projection!$BR$5:$BR$130),Projection!$BR$5:$BR$130>=0.01,FALSE()),0),0)),""))',
+        'B26':'=IF(B25="YES","None",IF(B25="NO - cash shortfall",_xlfn.MINIFS(Projection!$B$5:$B$130,Projection!$BR$5:$BR$130,">="&0.01),""))',
         'C25':'Checks required spending and tax in each working and retirement year.',
         'A33':'Opening Roth account type','B33':'=IF(Inputs!$B$70=0,"",IF(Inputs!$B$28=2,"Workplace Roth","Roth IRA"))',
         'C33':'New Roth IRA savings and conversions are tracked separately by owner.',

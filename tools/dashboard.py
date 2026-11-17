@@ -71,7 +71,7 @@ def configure(put):
         'Q3': '=MAX(2,Q5-2)',
         'Q4': '=IF(OR(Q2<2,Q5>Q2),0,MIN(Q2,Q5+10)-Q3+1)',
         'Q5': '=IF(Q2=0,2,MAX(2,Inputs!$B$10-Inputs!$B$8+1))',
-        'Q6': f'=IF(ISNUMBER({METRICS_REF}B26),MATCH({METRICS_REF}B26,Projection!$B$5:$B$130,0),0)',
+        'Q6': f'=IF({METRICS_REF}B25="NO - cash shortfall",MATCH({METRICS_REF}B26,Projection!$B$5:$B$130,0),0)',
     }.items():
         put(SHEET, cell, formula, 'whole')
 

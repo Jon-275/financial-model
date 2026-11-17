@@ -49,23 +49,28 @@ class _FundingSearch:
         self.income = income
         self.cash = cash
         self.capacity = cash.taxable_available + cash.traditional_available + cash.roth_available
-        self.room = max(0.0, cash.traditional_available - cash.mandatory)
-        self.preferred = min(self.room, cash.headroom) if cash.order == 2 else 0.0
-        self.broker_low = cash.mandatory + self.preferred
+        room = max(0.0, cash.traditional_available - cash.mandatory)
+        preferred = min(room, cash.headroom) if cash.order == 2 else 0.0
+        self.broker_low = (cash.traditional_available if preferred >= room
+                           else cash.mandatory + preferred)
         self.broker_high = self.broker_low + cash.taxable_available
+        self.traditional_high = cash.traditional_available + cash.taxable_available
         self.gain_share = 1.0 - cash.basis_ratio
         self.aca = cash.aca_actual > 0 and cash.aca_benchmark > 0 and cash.aca_fpl > 0
         self.conversion = cash.conversion_allowed and cash.requested_conversion > 0 and cash.opening_traditional > 0
 
     def _draws(self, draw: float, convert: bool) -> tuple[float, float, float, float]:
         cash = self.cash
-        discretionary = max(0.0, draw - cash.mandatory)
-        preferred = min(self.preferred, discretionary)
-        taxable = min(cash.taxable_available, max(0.0, discretionary - preferred))
-        traditional = cash.mandatory + preferred + min(
-            max(0.0, self.room - preferred), max(0.0, discretionary - preferred - taxable)
-        )
-        roth = min(cash.roth_available, max(0.0, draw - taxable - traditional))
+        taxable = (cash.taxable_available if draw >= self.broker_high
+                   else min(cash.taxable_available, max(0.0, draw - self.broker_low)))
+        if draw >= self.traditional_high:
+            traditional = cash.traditional_available
+        elif draw <= self.broker_high:
+            traditional = min(max(draw, cash.mandatory), self.broker_low)
+        else:
+            traditional = min(cash.traditional_available, max(self.broker_low, draw - cash.taxable_available))
+        roth = (cash.roth_available if draw >= self.capacity
+                else min(cash.roth_available, max(0.0, draw - self.traditional_high)))
         conversion = 0.0
         if convert:
             conversion = min(max(0.0, cash.opening_traditional - traditional), cash.requested_conversion)
@@ -103,7 +108,7 @@ class _FundingSearch:
                 cash.taxable_available, (self.income.opening_federal_loss - self.tax.loss_limit) / self.gain_share
             ))
         return sorted({
-            0.0, self.broker_low, self.broker_high, cash.traditional_available + cash.taxable_available,
+            0.0, self.broker_low, self.broker_high, self.traditional_high,
             self.capacity, draw_at_traditional(cash.opening_traditional - cash.requested_conversion),
             draw_at_traditional(cash.mandatory + cash.headroom - cash.requested_conversion),
             draw_at_traditional(cash.mandatory + cash.headroom), loss_boundary,

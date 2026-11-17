@@ -199,7 +199,10 @@ def _healthcare_rows(m):
                            f'MATCH({legacy_magi},Tax_Tables!$B$89:$B$94,1))')
             med_index = f'(1+IF(ISNUMBER(Inputs!$B$132),Inputs!$B$132,Inputs!$B$14))^{p("A")}'
             legacy_count = f'--({age}>=65)+--AND(NOT({single}),{spouse}>=65)'
-            legacy_irmaa = f'IF({phase}="Working",0,INDEX(Tax_Tables!$E$89:$E$94,{legacy_tier})*{p("H")}*({legacy_count}))'
+            # Income below zero cannot enter an income-related surcharge tier.
+            # Keep the actual MAGI for tax calculations; do not approximate-match
+            # it against a bracket table whose first floor is zero.
+            legacy_irmaa = f'IF(OR({phase}="Working",({legacy_magi})<0),0,INDEX(Tax_Tables!$E$89:$E$94,{legacy_tier})*{p("H")}*({legacy_count}))'
             primary_cost = f'IF({age}<65,Inputs!$B$42,Inputs!$B$43)'
             spouse_cost = f'IF({spouse}<65,Inputs!$B$42,Inputs!$B$43)'
             budget = f'IF({single},{primary_cost}*Inputs!$B$57,({primary_cost}+{spouse_cost})/2)'

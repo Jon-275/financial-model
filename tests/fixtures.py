@@ -26,8 +26,9 @@ COMMON = {
 }
 
 
-def by_age(age, **expected):
-    return [{"age": age, "column": column, "equals": amount} for column, amount in expected.items()]
+def by_age(age, *, tolerance=None, **expected):
+    options = {} if tolerance is None else {"tolerance": tolerance}
+    return [{"age": age, "column": column, "equals": amount, **options} for column, amount in expected.items()]
 
 
 def out(cell, value):
