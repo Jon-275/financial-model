@@ -36,6 +36,7 @@ async function run({
   threadError = false,
   reviewError = false,
   reply,
+  beforeResponse,
 } = {}) {
   const pr = {
     number: 17,
@@ -89,6 +90,7 @@ async function run({
   const fetchApi = async (_url, options) => {
     assert.equal(options.headers['x-goog-api-key'], apiKey);
     results.sent.push(JSON.parse(options.body));
+    await beforeResponse?.(options.signal, results.sent.length);
     const next = reply?.(results.sent.at(-1), results.sent.length) ?? {};
     return {
       ok: (next.status ?? httpStatus) === 200,
@@ -422,4 +424,40 @@ test('cross-file notes are reduced in bounded passes without dropping findings o
   assert.equal(result.reviews[0].comments.length, 1);
   assert.equal(result.statuses[1].state, 'success');
   assert.match(result.reviews[0].body, /3 cross-file/);
+});
+
+test('an aborted fetch after a successful batch fails the check and never posts a partial review', async t => {
+  let controller;
+  t.mock.method(AbortSignal, 'timeout', ms => {
+    assert.ok(ms > 0 && ms <= 120_000);
+    controller = new AbortController();
+    return controller.signal;
+  });
+  const result = await run({
+    files: largeFiles, reply: cleanBatchReply,
+    beforeResponse: (signal, i) => {
+      if (i === 1) return;
+      return new Promise((_resolve, reject) => {
+        signal.addEventListener('abort', () => reject(signal.reason), { once: true });
+        controller.abort(new DOMException('The review request timed out.', 'TimeoutError'));
+      });
+    },
+  });
+  assert.equal(result.sent.length, 2);
+  assert.equal(result.statuses[1].state, 'failure');
+  assert.match(result.errors[0], /request timed out/);
+  assert.equal(result.reviews.length, 0);
+});
+
+test('expiration of the shared deadline between batches fails before another request is sent', async t => {
+  let time = 1_000;
+  t.mock.method(Date, 'now', () => time);
+  const result = await run({
+    files: largeFiles, reply: cleanBatchReply,
+    beforeResponse: () => { time += 25 * 60_000; },
+  });
+  assert.equal(result.sent.length, 1);
+  assert.equal(result.statuses[1].state, 'failure');
+  assert.match(result.errors[0], /before the deadline/);
+  assert.equal(result.reviews.length, 0);
 });
