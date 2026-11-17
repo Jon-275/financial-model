@@ -2,7 +2,7 @@
 
 November 17, 2026
 
-Status — implementation in progress. Phase 1 is underway. Later phases remain open.
+Status — implementation in progress. Retained history and known local checkouts have been cleaned. GitHub cached references and the colleague's clone remain open. Funding corrections and the compact solver have passed financial testing; their release review is in progress. Excel-only risk is being prototyped. Design, licensing and cross-platform release checks remain open.
 
 ## Purpose and release standard
 
@@ -20,7 +20,7 @@ Retain the existing GitHub repository. Address its sensitive template and histor
 
 The source review is *Retirement Model v2: Review*, dated November 17, 2026, pages 1–8. Its findings N1–N12 are tracked below. Its recommendations are proposals evaluated against the model and the user's requirements.
 
-The review assessed commit `af5986e`. The current local and remote main matched that commit during this investigation. The workbook checksum also matched the reviewed file. Only the PDF was supplied. Its listed scripts and stress-test workbooks remain to be reconstructed or obtained.
+The local and remote main matched the reviewed baseline during the initial investigation. The workbook checksum also matched the reviewed file. Only the PDF was supplied. Its listed scripts and stress-test workbooks remain to be reconstructed or obtained. The table below records the starting findings; implementation evidence follows at the end of this plan.
 
 | Area inspected | Finding |
 | --- | --- |
@@ -342,12 +342,23 @@ Use Workbook checks, Greptile Review and Gemini Review on each relevant PR. Reso
 
 - [x] Delete the 12 confirmed completed remote branches and record the result.
 - [x] Enable automatic branch deletion after merges and verify the setting.
-- [ ] Replace affected local clones, prune stale branch references and verify automatic deletion with the next merged PR.
+- [x] Verify automatic branch deletion with the publication cleanup PR.
+- [x] Rewrite retained history, restore required branch rules and verify a fresh clone with only the two approved workbook blobs.
+- [x] Replace the owner's checkout and disable normal pushes from 12 earlier task clones. Preserve the owner's earlier files and planning edits in restricted recovery storage.
+- [ ] Obtain GitHub Support's disposition of cached PR references and confirmation that the colleague replaced the review clone.
 - [ ] Phase 1 complete with privacy and history evidence.
 - [ ] Phase 2 complete with financial and access evidence.
 - [ ] Phase 3 complete with equivalent results and performance measurements.
 - [ ] Phase 4 complete with Excel-only risk refresh and integrated report.
 - [ ] Phase 5 complete with example, design and first-use evidence.
 - [ ] Phase 6 complete with public build, documentation and platform evidence.
+
+### Implementation evidence
+
+The publication cleanup passed nine privacy tests, all three required PR checks, 81 original financial scenarios and 35 risk tests before merging. Retained branch history was then rewritten in the existing repository. The current source tree was identical before and after the rewrite. A new clone passed the content audit. [Cleanup record](history-cleanup.md)
+
+The funding update adds working-year access to eligible Roth funds, carried spending obligations and visible repayment detail. It labels the spending benchmark before income and explains benefit timing on Summary. All 85 financial scenarios passed on the compact engine, including five new funding cases. The SEPP case was updated to carry bills and test repayment after age 60. Representative scenarios were also recalculated without trimming the calculation sheets. [Funding and solver evidence](release-notes/funding-and-solver.md)
+
+Local source links reduce the candidate from approximately 24 MB to 6.1 MB and expanded contents from 380 MB to 75 MB. Excel for Mac recalculated the full model and extended the example to age 125. Windows performance and print verification remain open. A native one-input table also captured ten complete model results and text context inside Excel. This establishes the trial mechanism; the integrated risk engine, full-scale performance tests and stresses remain unfinished.
 
 The next implementation task is the synthetic template and content-based privacy audit in Phase 1. The next design task is a wireframe of Summary page 3 that fits inflation, longevity and funding insights into the report sequence.

@@ -21,7 +21,7 @@ from risk_engine.scenario import (
 )
 
 SHEET = DATA_SHEET
-SCHEMA = 'retirement-risk-workbook-v3'
+SCHEMA = 'retirement-risk-workbook-v4'
 STATUS = 'Z1'
 SCHEMA_CELL = 'Z2'
 SNAPSHOT_CELL = 'Z3'

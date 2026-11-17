@@ -1243,17 +1243,25 @@
         {
           "age": 55,
           "column": "Y",
-          "equals": 6000
+          "equals": 10000
         },
         {
           "age": 55,
           "column": "Z",
-          "equals": 0
+          "equals": 2000
         },
         {
           "age": 55,
           "column": "BF",
-          "equals": 4000
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!AR11",
+          "equals": 6000
+        },
+        {
+          "cell": "Cash_Flow!Q11",
+          "equals": 2000
         },
         {
           "cell": "Planning Metrics!B25",
@@ -1571,7 +1579,12 @@
         {
           "age": 95,
           "column": "Z",
-          "equals": 1000
+          "equals": 6000
+        },
+        {
+          "age": 95,
+          "column": "BJ",
+          "equals": -6000
         },
         {
           "cell": "Planning Metrics!B26",
@@ -1579,7 +1592,7 @@
         },
         {
           "cell": "Planning Metrics!B27",
-          "equals": 1000
+          "equals": 6000
         },
         {
           "cell": "Planning Metrics!B25",
@@ -3899,6 +3912,231 @@
           "age": 57,
           "column": "AU",
           "equals": 0
+        }
+      ]
+    },
+    {
+      "name": "working_year_cost_uses_roth_ira_basis",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 10000,
+          "D36": 9000,
+          "D27": 2000,
+          "D30": 1500
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "Y",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Roth_Access!AC6",
+          "equals": 500
+        },
+        {
+          "cell": "Cash_Flow!Q6",
+          "equals": 0
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "partial_roth_basis_leaves_visible_spending_obligation",
+      "overrides": {
+        "Inputs": {
+          "D10": 56,
+          "D12": 10000,
+          "D36": 9000,
+          "D27": 2000,
+          "D30": 500
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "Y",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "BF",
+          "equals": 1500
+        },
+        {
+          "age": 55,
+          "column": "BJ",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "Z",
+          "equals": 500
+        },
+        {
+          "cell": "Cash_Flow!Q6",
+          "equals": 500
+        },
+        {
+          "cell": "Cash_Flow!AU6",
+          "equals": 500
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "unpaid_spending_rolls_forward_without_double_counting",
+      "overrides": {
+        "Inputs": {
+          "D37": 100,
+          "D53": 57
+        }
+      },
+      "expects": [
+        {
+          "cell": "Cash_Flow!Q6",
+          "equals": 100
+        },
+        {
+          "cell": "Cash_Flow!Q7",
+          "equals": 200
+        },
+        {
+          "cell": "Cash_Flow!Q8",
+          "equals": 300
+        },
+        {
+          "cell": "Cash_Flow!AR8",
+          "equals": 200
+        },
+        {
+          "cell": "Cash_Flow!AU8",
+          "equals": 100
+        },
+        {
+          "cell": "Cash_Flow!AV8",
+          "equals": 300
+        },
+        {
+          "age": 57,
+          "column": "BJ",
+          "equals": -300
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "later_cash_repays_prior_spending_before_deposits",
+      "overrides": {
+        "Inputs": {
+          "D37": 100,
+          "D53": 57,
+          "D52": 2000,
+          "D87": 56,
+          "D88": 56
+        }
+      },
+      "expects": [
+        {
+          "cell": "Cash_Flow!Q6",
+          "equals": 100
+        },
+        {
+          "cell": "Cash_Flow!AR7",
+          "equals": 100
+        },
+        {
+          "cell": "Cash_Flow!AS7",
+          "equals": 100
+        },
+        {
+          "cell": "Cash_Flow!AT7",
+          "equals": 100
+        },
+        {
+          "cell": "Cash_Flow!Q7",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!AU7",
+          "equals": 0
+        },
+        {
+          "cell": "Cash_Flow!AV8",
+          "equals": 100
+        },
+        {
+          "age": 56,
+          "column": "BB",
+          "equals": 1400
+        },
+        {
+          "age": 57,
+          "column": "BC",
+          "equals": 1300
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "NO"
+        }
+      ]
+    },
+    {
+      "name": "confirmed_qualified_workplace_roth_available_while_working",
+      "overrides": {
+        "Inputs": {
+          "D8": 60,
+          "D9": 58,
+          "D10": 62,
+          "D53": 61,
+          "D12": 2000,
+          "D36": 3000,
+          "D27": 2000,
+          "D28": 2,
+          "D93": 2020,
+          "D95": 60
+        }
+      },
+      "expects": [
+        {
+          "age": 61,
+          "column": "Y",
+          "equals": 1400
+        },
+        {
+          "age": 61,
+          "column": "BF",
+          "equals": 600
+        },
+        {
+          "age": 61,
+          "column": "Z",
+          "equals": 0
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "YES"
         }
       ]
     },

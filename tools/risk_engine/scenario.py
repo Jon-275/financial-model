@@ -36,9 +36,9 @@ TAX_TABLE_LAST_ROW = 265
 RISK_CONTROL_ROWS = range(5, 9)
 RISK_RETURN_BASIS_ROW = 9
 RISK_STRESS_ROWS = range(14, 27)
-_MODEL_RANGES = {'Projection': 84, 'Cash_Flow': 29, 'Healthcare': 32,
+_MODEL_RANGES = {'Projection': 84, 'Cash_Flow': 49, 'Healthcare': 32,
                  'Roth_Access': 42, 'Checks': 13}
-_MODEL_TEXT = {'Projection': frozenset(('E', 'F')), 'Cash_Flow': frozenset(('L',)),
+_MODEL_TEXT = {'Projection': frozenset(('E', 'F')), 'Cash_Flow': frozenset(('L', 'AM')),
                'Healthcare': frozenset(('D', 'E', 'T', 'Z')), 'Roth_Access': frozenset()}
 
 
@@ -523,6 +523,7 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     for sheet, cell, expected in (
         ('Projection', 'CF4', 'Taxable basis added'), ('Roth_Access', 'AP4', 'Roth net transfer'),
         ('Healthcare', 'AF4', 'Healthcare paid from cash'), ('Cash_Flow', 'AC4', 'ACA premium credit'),
+        ('Cash_Flow', 'AR4', 'Opening unpaid spending'),
         ('Checks', 'M4', 'Taxable basis reconciliation'), ('Inputs', 'A129', 'Tax inputs'),
         ('Tax_Tables', 'A230', 'PUBLISHED TAX-YEAR AMOUNTS'),
     ):

@@ -119,7 +119,11 @@ CASES = [
         "A76": "Spending at maturation", "B76": 2032, "C76": 6000,
     }, checks=(
         *by_age(50, V=2000, AA=10000, AV=2000, Z=0, BE=20000, BF=10000, BO=-2000),
-        *by_age(54, X=0, Y=0, Z=6000, BF=10000), *by_age(55, X=10000, Y=6000, Z=0, BF=4000), survives("NO"),
+        # At 55, the $6,000 prior bill and $6,000 current bill require $12,000.
+        # Only the matured $10,000 conversion is accessible; $2,000 remains due.
+        *by_age(54, X=0, Y=0, Z=6000, BF=10000),
+        *by_age(55, X=10000, Y=10000, Z=2000, BF=0),
+        out('Cash_Flow!AR11', 6000), out('Cash_Flow!Q11', 2000), survives("NO"),
     )),
     case("optional_conversion_does_not_create_unpayable_tax", {"D26": 30000, "D47": 10000}, checks=(
         # No brokerage, income, or unlocked distributions can pay the tax; skip the optional conversion.
@@ -149,8 +153,9 @@ CASES = [
         "D8": 22, "D9": 20, "D25": 100000, "D51": 100000, "D37": 1000, "D53": 95,
         "A75": "Late required outflow", "B75": 2094, "C75": 65000,
     }, checks=(
-        *by_age(89, BH=65000, Z=0), *by_age(90, BH=0, Z=1000), *by_age(95, BH=0, Z=1000),
-        out("Summary!B26", 2094), out("Summary!B27", 1000), out("Monte_Carlo!B15", "Base plan unfunded"),
+        # With no assets left, six annual $1,000 bills remain unpaid by age 95.
+        *by_age(89, BH=65000, Z=0), *by_age(90, BH=0, Z=1000), *by_age(95, BH=0, Z=6000, BJ=-6000),
+        out("Summary!B26", 2094), out("Summary!B27", 6000), out("Monte_Carlo!B15", "Base plan unfunded"),
         out("Sequence_Risk!B148", "Base plan unfunded"), survives("NO"),
     )),
     case("invalid_age126", {"D53": 126}, checks=(out("Inputs!B70", 0), {"cell": "Projection!C5", "blank": True})),

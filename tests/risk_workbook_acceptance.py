@@ -79,7 +79,7 @@ def check_refresh(workbook, office, timeout):
                 formula.text for part in after.namelist() if re.fullmatch(r'xl/charts/chart\d+\.xml', part)
                 for formula in E.fromstring(after.read(part)).iter(CHART + 'f') if '!RMChart' in (formula.text or '')
             ]
-            assert named_series and all(name.startswith("'Family''s plan.xlsx'!") for name in named_series)
+            assert named_series and all(name.startswith("'Report_Data'!") for name in named_series)
 
         published = refreshed.read_bytes()
         collision = subprocess.run(command, capture_output=True, timeout=15, check=False)

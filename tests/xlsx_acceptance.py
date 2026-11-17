@@ -22,9 +22,17 @@ def patch_xml(sheet_xml: bytes, overrides: dict, last_row: int | None = None) ->
     root = parse_preserving_namespaces(sheet_xml)
     data = root.find(q("sheetData"))
     if last_row is not None:
+        # Solver source banks share rows with trials but remain dependencies
+        # even when a temporary test removes inactive annual trial groups.
+        local_sources = root.find(f".//{q('c')}[@r='BE2']/{q('f')}") is not None
         for element in list(data):
             if int(element.get('r')) > last_row:
-                data.remove(element)
+                if local_sources:
+                    for cell in list(element):
+                        if address_parts(cell.get('r'))[1] < 56:
+                            element.remove(cell)
+                if not len(element):
+                    data.remove(element)
     rows = {int(r.get("r")): r for r in data.findall(q("row"))}
     cells = {c.get("r"): c for c in data.iter(q("c"))}
     for address, value in overrides.items():
@@ -261,10 +269,10 @@ def main() -> int:
             try:
                 future.result()
             except Exception as error:
-                print(f"FAIL {name}: {error}")
+                print(f"FAIL {name}: {error}", flush=True)
                 failures += 1
             else:
-                print(f"PASS {name}")
+                print(f"PASS {name}", flush=True)
     print(f"{len(cases) - failures}/{len(cases)} scenarios passed")
     return int(bool(failures))
 

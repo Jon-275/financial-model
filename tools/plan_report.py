@@ -7,7 +7,7 @@ SUMMARY = 'Summary'
 METRICS = 'Planning Metrics'
 METRICS_REF = f"'{METRICS}'!"
 METRIC_SECTIONS = {
-    7: 'Savings target',
+    7: 'Spending benchmark before income',
     14: 'At retirement',
     22: 'Funding and balances',
     37: 'Taxes and conversions',
@@ -91,7 +91,7 @@ def move_metrics(template, updates, styles, put):
         16: 'Portfolio at retirement (today’s dollars)',
         19: 'Savings available at retirement (future dollars)',
         25: 'Funding calculation status',
-        27: 'Largest annual shortfall (future dollars)',
+        27: 'Largest outstanding cost balance (future dollars)',
         28: 'Portfolio at age 65 (today’s dollars)',
         34: 'First-year Roth savings below target (future dollars)',
         38: 'Total tax, final working year (future dollars)',
@@ -193,13 +193,15 @@ def configure(put):
                 amount = display_dollars(amount, price_index_at(position))
             summary(f'{column}{row}', f'=IF({offset}<Report_Data!$Q$4,{amount},"")', style)
     summary('B55', 'Income used can include pay after pre-tax savings, Social Security, other cash income and Marketplace credits.', 'report_caption')
-    summary('B56', 'Savings used includes withdrawals and HSA payments. Tax due includes any carryover.', 'report_caption')
+    summary('B56', 'Savings used includes HSA payments. Spending and tax due include prior unpaid bills.', 'report_caption')
     bridge = f'AND({ok},ISNUMBER({METRICS_REF}$B$19))'
     summary('B57', f'=IF({bridge},"Early retirement access","")', 'report_section')
     bridge_cpi = price_index_at(retirement)
     bridge_amount = display_dollars(f'{METRICS_REF}$B$19/{bridge_cpi}', bridge_cpi)
     summary('B58', f'=IF({bridge},"Available in the first retirement year: "&TEXT({bridge_amount},{dollars})&" in brokerage and Roth funds this plan can draw on.","")')
     summary('B59', f'=IF({bridge},"Use Roth Access to check when additional funds become available.","")', 'report_caption')
+    summary('B60', f'=IF({ok},"Income timing","")', 'report_section')
+    summary('B61', f'=IF({ok},IF(Inputs!$B$44=0,"Enter your expected Social Security benefit and start age on Inputs, or keep zero to test the plan without it.",IF(Inputs!$B$45<=MAX(Inputs!$B$10,Inputs!$B$8+1),"Social Security is included from the first projected retirement year.",IF(Inputs!$B$45>Inputs!$B$53,"Social Security starts after the selected end age. Review the horizon and benefit start age.","Cash and accessible savings must cover the years before Social Security starts at age "&Inputs!$B$45&". The funding calculation follows that timing."))),"")', 'report_caption')
 
     summary('B65', '="3 / Risk and decisions   •   "&Inputs!$B$7', 'report_kicker')
     summary('B66', 'What could change the outcome', 'report_title')
@@ -272,11 +274,10 @@ def configure(put):
         '"No early retirement stock losses were tested for this scenario.")',
         f'IF({ok},"Risk Results shows how the plan handles stock losses early in retirement.","")',
     ))
-    target = f'AND(ISNUMBER({METRICS_REF}$B$16),ISNUMBER({METRICS_REF}$B$8))'
+    target = f'ISNUMBER({METRICS_REF}$B$16)'
     benchmark_cpi = price_index_at('MAX(1,Inputs!$B$10-Inputs!$B$8)')
     projected = display_dollars(f'{METRICS_REF}$B$16', benchmark_cpi)
-    benchmark = display_dollars(f'{METRICS_REF}$B$8', benchmark_cpi)
-    summary('B84', f'=IF(AND({ok},{target}),"Savings at retirement ("&IF({FUTURE_VIEW},"future","today’s")&" dollars): "&TEXT({projected},{dollars})&" projected and "&TEXT({benchmark},{dollars})&" targeted.","")', 'report_caption')
+    summary('B84', f'=IF(AND({ok},{target}),"Savings at retirement ("&IF({FUTURE_VIEW},"future","today’s")&" dollars): "&TEXT({projected},{dollars})&". The funding result includes income timing and tax.","")', 'report_caption')
     summary('B86', 'Next decision', 'report_section')
     summary('B87', f'=IF({ok},IF({gap}>0,"Try a later retirement age, lower spending or higher savings. Change one input and compare the first shortfall.",IF({risk.CURRENT},"Choose one change in spending, retirement age or savings. Refresh market risk and compare the funding results.",IF({opening_only},"Extend the plan on Inputs before testing market risk.","Run market risk, then test a change in spending, retirement age or savings."))),"Resolve the item on page 1 before comparing scenarios.")')
     summary('B90', 'Change to test', 'report_caption')

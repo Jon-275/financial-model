@@ -20,6 +20,7 @@ import published_tax
 import tax_policy
 import targeting
 from example_inputs import example_asset_cells
+from formula_sources import LocalSources
 
 END = 130
 FUNDING_ROWS = STEPS = funding_search.ROWS
@@ -31,6 +32,9 @@ shared = defaultdict(dict)
 def put(sheet, address, value, style=None):
     cells[sheet][address] = value
     if style: styles[sheet][address] = style
+
+
+source_cache = LocalSources(put)
 
 def row(sheet, r, values, style=None):
     for i,value in enumerate(values,1):
@@ -62,8 +66,8 @@ def inputs(wb):
         ('Spouse first Roth IRA tax year',0,'0 means unknown. Confirm before relying on access to earnings.'),
         ('Primary workplace Roth first tax year',0,'0 excludes this balance from withdrawals until the plan is confirmed.'),
         ('Spouse workplace Roth first tax year',0,'0 excludes this balance from withdrawals until the plan is confirmed.'),
-        ('Primary first workplace distribution age',126,'126 disables withdrawals. Enter the age the plan allows distributions.'),
-        ('Spouse first workplace distribution age',126,'126 disables withdrawals. Enter the age the plan allows distributions.'),
+        ('Primary first workplace distribution age',126,'Access unconfirmed excludes withdrawals. Enter the distribution age confirmed by the plan.'),
+        ('Spouse first workplace distribution age',126,'Access unconfirmed excludes withdrawals. Enter the distribution age confirmed by the plan.'),
         ('Traditional account owner',1,'1 = primary, 2 = spouse. One owner for withdrawals, conversions and RMDs.'),
         ('Include eligible Roth IRA savings?',1,'1 applies the direct Roth IRA limit. 0 leaves new Roth IRA savings out.'),
     ]
@@ -74,6 +78,9 @@ def inputs(wb):
         for col in 'DEF': put('Inputs',f'{col}{r}',value,'percent_input' if r in (86,89,90,91) else 'input')
         put('Inputs',f'G{r}',note,'note')
         put('Inputs',f'H{r}',f'=IF(AND(D{r}=E{r},E{r}=F{r}),"","VARIES")','note')
+    for r in (95, 96):
+        styles['Inputs'][f'B{r}'] = 'access_active'
+        styles['Inputs'].update({f'{column}{r}': 'access_input' for column in 'DEF'})
     put('Inputs','A99','Cash and account input check','label')
     numeric='COUNT(INDEX(D86:F98,0,B4))=13'
     ages=','.join(f'B{r}=INT(B{r}),B{r}>=0,B{r}<={limit}' for r,limit in ((29,"B130"),(87,125),(88,125),(92,"B130"),(93,"B130"),(94,"B130"),(95,126),(96,126)))
@@ -165,7 +172,7 @@ FUND_HEADERS = ['Requested draw','Lower draw','Upper draw','Allow conversion','T
 def cash_ledger():
     s='Cash_Flow'
     put(s,'A1','Annual cash flow','title')
-    put(s,'A2','Future dollars. Spendable income and withdrawals pay taxes first, then bills. See columns AN–AQ for income sources.','report_caption')
+    put(s,'A2','Future dollars. Income and draws pay taxes, prior unpaid bills and current costs in that order. Income sources start in AN; unpaid bills start in AR.','report_caption')
     put(s,'A3','Open income sources','report_link')
     put(s,'AN1','Cash income sources','detail_title')
     put(s,'AN2','These amounts total cash income before any Marketplace credit.','report_caption')
@@ -174,8 +181,25 @@ def cash_ledger():
     for col, label in zip(('AN','AO','AP','AQ'), ('Pay after pre-tax savings','Social Security',
                                                 'Other spendable income','Outside cash interest')):
         put(s,f'{col}4',label,'report_table_head')
+    put(s, 'AR1', 'Unpaid required spending', 'detail_title')
+    put(s, 'AR2', 'Prior unpaid bills are paid before current spending. Financing interest is zero.', 'report_caption')
+    for column, label in zip(('AR', 'AS', 'AT', 'AU', 'AV', 'AW'), (
+        'Opening unpaid spending', 'Prior spending repaid', 'Current spending paid',
+        'Newly unpaid spending', 'Cumulative newly unpaid spending', 'Spending obligation reconciliation',
+    )):
+        put(s, f'{column}4', label, 'header')
     for r in range(5,END+1):
         prev=r-1; f=group(r)+STEPS-1; p=lambda c:pj(c,r); b=lambda c:pj(c,prev)
+        obligations = {
+            'AR': '0' if r == 5 else f'Q{prev}',
+            'AS': '0' if r == 5 else f'MIN(AR{r},P{r})',
+            'AT': '0' if r == 5 else f'P{r}-AS{r}',
+            'AU': '0' if r == 5 else f'MAX(0,D{r}-AR{r}-E{r}-AT{r})',
+            'AV': '0' if r == 5 else f'AV{prev}+AU{r}',
+            'AW': '0' if r == 5 else f'AR{r}+AU{r}-AS{r}-Q{r}',
+        }
+        for column, expression in obligations.items():
+            put(s, f'{column}{r}', active(r, expression), 'cents')
         income_sources = (f'{p("I")}-{p("J")}-{p("K")}', p('N'),
                           f'{p("O")}*Inputs!$B$86', f'{p("AG")}*Inputs!$B$89')
         for col, amount in zip(('AN','AO','AP','AQ'), income_sources if r != 5 else ('0',) * 4):
@@ -190,9 +214,9 @@ def cash_ledger():
             savings_cap=f'MIN(MAX(0,{p("I")}-{p("J")}-{p("K")}),IF({share}=0,G{r},{rt("AN",r)}/{share}),IF({share}=1,G{r},{rt("AO",r)}/(1-{share})))'
             base_cash=f'AN{r}+AO{r}+AP{r}+AQ{r}'
             values=[p('B'),p('C'),f'AB{r}+AC{r}',
-                    f'SUM({p("AW")},{p("AX")},{p("BA")})',p('P'),f'O{prev}',
+                    f'SUM({p("AW")},{p("AX")},{p("BA")},AR{r})',p('P'),f'O{prev}',
                     f'IF({p("E")}="Working",Inputs!$B$35*{p("G")},0)',b('BC'),capacity,
-                    f'IF({p("E")}="Working",0,{rt("T",r)})',f'SUM(H{r}:J{r})',
+                    rt("T",r),f'SUM(H{r}:J{r})',
                     fd('Z',f),
                     p('AV'),f'MIN(F{r}+M{r},Y{r})',f'MAX(0,F{r}+M{r}-N{r})',
                     f'MIN(D{r}-E{r},MAX(0,Y{r}-N{r}))',f'MAX(0,D{r}-E{r}-P{r})',
@@ -295,7 +319,7 @@ def projection(wb):
             'Q':f'MAX(0,{cf("W",r)})','X':rt('T',r),'Z':cf('V',r),'BB':cf('T',r),'BF':rt('AM',r),
             'BG':f'MAX(0,BG{p}+K{r}-P{r})*(1+IF(E{r}="Working",{work_hsa},{retired_hsa}))',
             'U':f'MAX(0,Inputs!$B$49*G{r}+AL{r}-(T{r}+O{r}+AC{r}+0.85*N{r}))',
-            'BJ':f'BH{r}-BI{r}-{cf("O",r)}',
+            'BJ':f'BH{r}-BI{r}-{cf("O",r)}-{cf("Q",r)}',
             'BO':f'SUM(J{r}:M{r})+BB{r}-SUM(V{r}:W{r})-Y{r}-P{r}',
             'BR':f'Z{r}',
         }
@@ -363,7 +387,7 @@ def reconciliation():
             put('Cash_Flow', f'{ledger_col}{r}', active(r, formula), 'cents')
             put(sheet, f'{col}{r}', active(r, cash(ledger_col)), 'cents')
         error_range = f'AD{r}:AL{r}'
-        status = f'IF(OR(MAX({error_range})>0.01,MIN({error_range})<-0.01,L{r}="Check funding convergence"),"Review","OK")'
+        status = f'IF(OR(MAX({error_range})>0.01,MIN({error_range})<-0.01,ABS(AW{r})>0.01,L{r}="Check funding convergence"),"Review","OK")'
         put('Cash_Flow', f'AM{r}', active(r, status))
         for col, formula in {'A': p('B'), 'B': p('C'), 'I': cash('L'), 'J': cash('AM')}.items():
             put(sheet, f'{col}{r}', active(r, formula), 'money')

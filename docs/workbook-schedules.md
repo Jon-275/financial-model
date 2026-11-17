@@ -1,5 +1,7 @@
 # Workbook calculations and decision tools
 
+The withdrawal and conversion calculation sheets link their source values in columns BD onward. These visible links let the trial rows reuse formulas and reduce file size. Clear the calculation table's filter to inspect all source rows. The annual model retains capacity through age 125.
+
 Use **Summary** to read and print the plan. Use **Annual Detail** for the full timeline in the same dollar view. The decision tools and **Tax_Tables** are before **Appendix**. Use the appendix links to open the annual schedules, conversion detail, withdrawal trials, and saved risk data.
 
 ## Planning Metrics
@@ -13,7 +15,9 @@ Open **Planning Metrics** next to **Summary** for the savings target, balances, 
 1. The HSA pays eligible healthcare costs up to the available HSA balance.
 2. Cash income and available withdrawals pay current taxes and any tax carried in from the prior year. The remaining cash pays the year’s bills.
 3. Any cash left can fund eligible Roth IRA savings during working years. Remaining cash goes to the taxable account. Required retirement distributions can also leave cash to reinvest.
-4. The model records unpaid bills and carries unpaid tax into the next year. **Projection** applies investment returns to the balances after those transactions.
+4. The model carries unpaid tax and required spending into the next year. Cash pays tax, prior unpaid spending and current required costs in that order. **Projection** applies investment returns to the balances after those transactions.
+
+Columns AR–AW on **Cash_Flow** show the spending obligation roll-forward. Required spending includes the opening unpaid bills. The cumulative figure counts current bills left unpaid in their due year. It stays recorded after repayment. For example, $500 unpaid in year one and $1,000 of new bills unpaid in year two produce $1,500 of missed payments, even if the first $500 was repaid. The ending obligation shows what is still owed. The model applies zero financing interest and deducts outstanding spending and tax from after-tax net resources.
 
 ## Roth_Access
 
