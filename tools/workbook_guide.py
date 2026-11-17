@@ -14,11 +14,13 @@ TABLE_GUIDES = {
         'A trial includes the tax and Marketplace credit it would produce.',
         'Skipped means the model did not need that trial. See Selected draw for the result.',
         'Cash_Flow shows the chosen result for each year.',
+        'Linked sources begin in BD. Clear the trial filter to inspect every source row.',
     ), 'Cash_Flow!A1'),
     'Targeting_Calc': ('AR', 'Conversion calculation', (
         'These are the withdrawal and tax trials for one retirement year.',
         'Each run uses the same starting balances and tests a different conversion.',
         'Skipped means the model did not need that trial. The last column identifies the conversion request.',
+        'Linked sources begin in BD. Clear the trial filter to inspect every source row.',
     ), 'Income_Targeting!A1'),
 }
 

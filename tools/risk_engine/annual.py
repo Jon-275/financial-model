@@ -29,6 +29,8 @@ class State:
     ca_loss: float
     irmaa_magi: tuple
     payable: float = 0
+    spending_payable: float = 0
+    cumulative_unpaid_spending: float = 0
     sepp_balance: float = 0
     conversion_history: list = field(default_factory=list)
 
@@ -267,7 +269,9 @@ class AnnualModel:
         healthcare = p.medical + (surcharge if self.detailed_health or not p.working else 0)
         qualified = min(healthcare, p.qualified_medical + (surcharge if p.surcharge_qualifies else 0))
         hsa_paid = min(state.hsa, qualified)
-        required = p.core_spending - cut + p.one_off + healthcare
+        current_required = p.core_spending - cut + p.one_off + healthcare
+        opening_spending = state.spending_payable
+        required = current_required + opening_spending
 
         offset = 0 if p.working else 1
         interest, dividends = state.taxable * i[65 + offset], state.taxable * i[63 + offset]
@@ -279,7 +283,7 @@ class AnnualModel:
                        - (mandatory + p.other_income + interest + 0.85 * p.social_security))
         traditional_limit = mandatory if p.working or p.owner_age < 60 or sepp > 0 else state.traditional
         seasoned, access = self._roth_access(state, p, year)
-        roth_limit = 0 if p.working else sum(access)
+        roth_limit = sum(access)
         net_wages = p.wages - p.deferral - p.hsa_contribution
         taxes = TaxInputs(
             ordinary_income=net_wages + p.other_income, qualified_dividends=dividends,
@@ -310,6 +314,11 @@ class AnnualModel:
         due_spending = required - hsa_paid
         paid_spending = min(due_spending, max(0, cash_available - paid_tax))
         unpaid_spending = max(0, due_spending - paid_spending)
+        prior_spending_repaid = min(opening_spending, paid_spending)
+        current_spending_paid = paid_spending - prior_spending_repaid
+        newly_unpaid_spending = max(0, current_required - hsa_paid - current_spending_paid)
+        state.spending_payable = unpaid_spending
+        state.cumulative_unpaid_spending += newly_unpaid_spending
         shortfall = state.payable + unpaid_spending
         residual = max(0, cash_available - paid_tax - paid_spending)
         roth_magi = tax.agi - funding.conversion
@@ -365,7 +374,7 @@ class AnnualModel:
                     'AR': p.payroll, 'AU': p.sdi, 'AV': tax.total_tax, 'AZ': surcharge, 'BA': healthcare,
                     'BB': deposit, 'BC': state.taxable, 'BD': state.basis, 'BE': state.traditional,
                     'BF': sum(state.roth), 'BG': state.hsa, 'BH': balance,
-                    'BJ': balance - state.traditional * i[61] - state.payable,
+                    'BJ': balance - state.traditional * i[61] - state.payable - state.spending_payable,
                     'BL': tax.aca_magi, 'BN': balance / p.cpi, 'BW': state.federal_loss,
                     'BY': state.ca_loss, 'CE': removal, 'CF': basis_addition,
                 },
@@ -377,6 +386,10 @@ class AnnualModel:
                     'R': roth_savings, 'S': p.roth_target - roth_savings, 'T': deposit,
                     'V': shortfall, 'X': savings_limit, 'Y': cash_available, 'AB': p.cash_income,
                     'AC': funding.premium_credit,
+                    'AR': opening_spending, 'AS': prior_spending_repaid,
+                    'AT': current_spending_paid, 'AU': newly_unpaid_spending,
+                    'AV': state.cumulative_unpaid_spending,
+                    'AW': opening_spending + newly_unpaid_spending - prior_spending_repaid - unpaid_spending,
                 },
                 'Healthcare': {
                     'L': surcharge, 'P': healthcare, 'Q': qualified, 'R': funding.premium_credit,

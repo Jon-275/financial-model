@@ -67,7 +67,7 @@ def emit(m,sheet,first,c,request,tax,health):
     best=L(28+len(tax.EXTRA_HEADERS))
     scratch_cell=lambda t:f'${scratch}${t}'
     def put(addr,value):
-        m.put(sheet, detail_address(addr), _detail_formula(value))
+        m.put(sheet, detail_address(addr), m.source_cache.localize(sheet, _detail_formula(value)))
     def on(guard,formula): return f'IF({guard},{formula},"")'
     def at(letter,t): return f'${letter}${t}'
     def shared(letter,lo,hi,formula):

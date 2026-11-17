@@ -12,7 +12,7 @@ R = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}"
 C = "{http://schemas.openxmlformats.org/drawingml/2006/chart}"
 D = "{http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing}"
 
-_CHART_PREFIX = "'retirement-model.xlsx'!"
+_CHART_PREFIX = "'Report_Data'!"
 # Chart authoring uses fixed placeholders, which become dynamic names here.
 _SERIES = {
     "RMChartPortfolioAge": ("A", "Q2", 127),
@@ -64,6 +64,8 @@ def _chart_anchors(drawing):
 
 def _add_names(workbook):
     names = workbook.find(X + "definedNames")
+    report_id = next(str(index) for index, sheet in enumerate(workbook.find(X + 'sheets'))
+                     if sheet.get('name') == 'Report_Data')
     for item in list(names):
         name = item.get("name", "")
         if name.startswith(("RMPlan", "RMChart")):
@@ -73,7 +75,7 @@ def _add_names(workbook):
         first = f"{sheet}${column}$2"
         source = f"{first}:${column}${last}"
         c = f"{sheet}${count[0]}${count[1:]}"
-        E.SubElement(names, X + "definedName", name=name).text = (
+        E.SubElement(names, X + "definedName", name=name, localSheetId=report_id).text = (
             f"{first}:INDEX({source},MAX(1,{c}))"
         )
     for name, column in _RISK_SERIES.items():
@@ -82,7 +84,7 @@ def _add_names(workbook):
         # The second half is physically empty. It keeps risks off the chart
         # while preserving the length of the common category axis.
         source = f"{sheet}${column}$2:${column}$253"
-        E.SubElement(names, X + "definedName", name=name).text = (
+        E.SubElement(names, X + "definedName", name=name, localSheetId=report_id).text = (
             f"INDEX({source},{start}):INDEX({source},{start}+{length}-1)"
         )
 
@@ -103,15 +105,16 @@ def _bind_chart(root, expected):
 
 
 def rebind_dashboard_workbook(root, filename):
-    """Point recognized workbook-local dashboard names to the published filename."""
-    prefix = "'" + filename.replace("'", "''") + "'!"
+    """Keep chart names on their worksheet when a user renames the file."""
+    del filename  # Retained for callers that also name the exported workbook.
     names = _SERIES.keys() | _RISK_SERIES.keys()
     updated = False
     for formula in root.iter(C + "f"):
         qualifier, separator, name = (formula.text or "").rpartition("!")
         local = separator and qualifier.strip("'").lower().endswith(".xlsx")
-        if local and not any(character in qualifier for character in "/\\") and name in names:
-            reference = prefix + name
+        if (local or qualifier.strip("'") == 'Report_Data') and not any(
+                character in qualifier for character in "/\\") and name in names:
+            reference = _CHART_PREFIX + name
             if formula.text != reference:
                 formula.text = reference
                 updated = True

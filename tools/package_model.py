@@ -58,8 +58,12 @@ def main():
         numfmts=style_root.find(x('numFmts'))
         cent_fmt=max([163]+[int(item.get('numFmtId')) for item in numfmts])+1
         E.SubElement(numfmts,x('numFmt'),numFmtId=str(cent_fmt),formatCode='#,##0.00;(#,##0.00);0.00')
+        access_fmt = cent_fmt + 1
+        E.SubElement(numfmts, x('numFmt'), numFmtId=str(access_fmt),
+                     formatCode='[=126]"Access unconfirmed";0')
         numfmts.set('count',str(len(numfmts)))
-        for name,source,fmt in [('input','input',1),('input_active','input_active',1),('whole','whole',1),('cents','money',cent_fmt),('published_percent','percent_active',10)]:
+        for name,source,fmt in [('input','input',1),('input_active','input_active',1),('whole','whole',1),('cents','money',cent_fmt),('published_percent','percent_active',10),
+                                ('access_input','input',access_fmt),('access_active','input_active',access_fmt)]:
             xf=deepcopy(xfs[int(style_ids[source] or 0)]); xf.set('numFmtId',str(fmt)); xf.set('applyNumberFormat','1')
             style_ids[name]=str(len(xfs)); xfs.append(xf)
         active_fill, number_formats = report_layout.install_styles(style_root, style_ids)

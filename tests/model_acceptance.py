@@ -170,6 +170,9 @@ def check_schedule_layout(archive, parts):
         'Funding_Calc': ('A2:AO15376', '$A2', 'D15376'),
         'Targeting_Calc': ('A2:AP6397', '$A2', 'D6397'),
     }
+    cash = ET.fromstring(archive.read(parts['Cash_Flow']))
+    if cash.find(f".//{q('c')}[@r='AR4']") is not None:
+        sheets['Cash_Flow'] = ('A5:AW130', '$A5', 'C130')
     styles = ET.fromstring(archive.read('xl/styles.xml')).find(q('cellXfs'))
     for sheet, (area, key, address) in sheets.items():
         raw = ET.fromstring(archive.read(parts[sheet]))
@@ -268,6 +271,9 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
         require_blank(sheet, (f"C{row}" for row in range(start + years, start + 126)))
 
     previous_tax_payable = 0.0
+    previous_spending_payable = 0.0
+    cumulative_unpaid_spending = 0.0
+    carries_spending = cash['AR4'].value == 'Opening unpaid spending'
     max_shortfall = 0.0
     first_shortfall = None
     first_retirement_row = None
@@ -295,7 +301,8 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
             if p(column) < -tolerance:
                 raise AssertionError(f"{label} negative Projection!{column}{row}: {p(column):.6f}")
 
-        spending = p("AW") + p("AX") + p("BA")
+        current_spending = p("AW") + p("AX") + p("BA")
+        spending = current_spending + (previous_spending_payable if carries_spending else 0)
         income = p("I") + p("N") + p("O") * cash_share + p("AG") * exempt_cash_share - p("J") - p("K")
         if health is not None:
             h = lambda c: expect_number(health, f'{c}{row}')
@@ -320,6 +327,20 @@ def validate_model(wb: Workbook, tolerance: float = 0.01) -> dict:
         tax_due = previous_tax_payable + p("AV")
         equal(f"{label} ending tax payable", cf("ending tax payable"), tax_due - cf("tax paid"), tolerance)
         equal(f"{label} unpaid spending", cf("unpaid spending"), spending - cf("spending paid") - p("P"), tolerance)
+        if carries_spending:
+            opening = expect_number(cash, f'AR{row}')
+            repaid = expect_number(cash, f'AS{row}')
+            current_paid = cf("spending paid") - repaid
+            newly_unpaid = max(0, current_spending - p("P") - current_paid)
+            cumulative_unpaid_spending += newly_unpaid
+            equal(f'{label} opening spending obligations', opening, previous_spending_payable, tolerance)
+            equal(f'{label} prior spending repaid first', repaid, min(opening, cf("spending paid")), tolerance)
+            equal(f'{label} current spending paid', expect_number(cash, f'AT{row}'), current_paid, tolerance)
+            equal(f'{label} newly unpaid spending', expect_number(cash, f'AU{row}'), newly_unpaid, tolerance)
+            equal(f'{label} cumulative new obligations', expect_number(cash, f'AV{row}'), cumulative_unpaid_spending, tolerance)
+            equal(f'{label} obligation roll-forward', opening + newly_unpaid - repaid, cf("unpaid spending"), tolerance)
+            equal(f'{label} net resources after obligations', p('BJ'), p('BH')-p('BI')-cf("ending tax payable")-cf("unpaid spending"), tolerance)
+            previous_spending_payable = cf("unpaid spending")
         equal(f"{label} Roth contribution", cf("roth contribution"), p("M"), tolerance)
         equal(f"{label} taxable deposit", cf("taxable deposit"), p("BB"), tolerance)
 

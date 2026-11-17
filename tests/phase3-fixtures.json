@@ -165,7 +165,7 @@
         {
           "age": 56,
           "column": "Z",
-          "equals": 500
+          "equals": 1000
         },
         {
           "age": 56,
@@ -190,7 +190,7 @@
         {
           "age": 57,
           "column": "Z",
-          "equals": 500
+          "equals": 1500
         },
         {
           "age": 57,
@@ -215,7 +215,7 @@
         {
           "age": 58,
           "column": "Z",
-          "equals": 500
+          "equals": 2000
         },
         {
           "age": 58,
@@ -240,7 +240,7 @@
         {
           "age": 59,
           "column": "Z",
-          "equals": 500
+          "equals": 2500
         },
         {
           "age": 59,
@@ -255,12 +255,12 @@
         {
           "age": 60,
           "column": "W",
-          "equals": 5625
+          "equals": 8750
         },
         {
           "age": 60,
           "column": "AV",
-          "equals": 1125
+          "equals": 1750
         },
         {
           "age": 60,
@@ -270,7 +270,7 @@
         {
           "age": 60,
           "column": "BE",
-          "equals": 69375
+          "equals": 66250
         },
         {
           "cell": "Cash_Flow!N6",
@@ -291,6 +291,34 @@
         {
           "cell": "Planning Metrics!B25",
           "prefix": "NO"
+        },
+        {
+          "cell": "Cash_Flow!AR11",
+          "equals": 2500
+        },
+        {
+          "cell": "Cash_Flow!AS11",
+          "equals": 2500
+        },
+        {
+          "cell": "Cash_Flow!AT11",
+          "equals": 4500
+        },
+        {
+          "cell": "Cash_Flow!AV11",
+          "equals": 7500
+        },
+        {
+          "cell": "Cash_Flow!AS7",
+          "equals": 500
+        },
+        {
+          "cell": "Cash_Flow!AT7",
+          "equals": 3500
+        },
+        {
+          "cell": "Cash_Flow!AU7",
+          "equals": 1000
         }
       ]
     }

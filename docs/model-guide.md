@@ -25,7 +25,7 @@ Set the year your starting ages and balances apply to in **Inputs B130**. The fi
 | --- | --- |
 | Rows 27–30, 90 and 92 | Choose Roth IRA or workplace Roth for the opening balance. Enter your share in row 90. For a Roth IRA, enter the contributions and conversions already available to withdraw and each owner’s first Roth IRA tax year. |
 | Rows 35, 91 and 98 | Enter the combined annual Roth IRA savings goal and your share. The rest goes to your spouse. Choose 1 to include eligible savings or 0 to leave them out. |
-| Rows 93–96 | Enter each owner’s first workplace Roth tax year and the age their plan allows withdrawals. Use 0 for an unknown tax year or 126 as the withdrawal age to exclude that balance from withdrawals. |
+| Rows 93–96 | Enter each owner’s first workplace Roth tax year and the age their plan allows withdrawals. Use 0 for an unknown tax year. The age displays **Access unconfirmed** until you enter the confirmed plan age. Enter 126 to restore that setting. |
 | Rows 26 and 97 | Enter one owner’s pre-tax traditional IRA and 401(k) balance. Select that owner for withdrawal rules, required distributions and the last conversion age. Conversions go into the owner’s Roth IRA. |
 
 The opening Roth fields support one account type and apply the same owner split to the balance and the amount available today. Use a separate estimate for opening savings that mix Roth IRA and workplace Roth balances. The workbook uses one traditional balance. Separately inherited accounts need their own estimate.
@@ -43,7 +43,7 @@ The Roth IRA savings goal rises with inflation. Funding uses cash left after tax
 - **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
 - **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Conversion Detail** shows the results for each conversion amount. **Targeting_Calc** and **Funding_Calc** show the steps behind the results. **Report_Data** holds the annual values used in Summary.
 
-The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. The savings target uses annual spending after the mortgage ends, healthcare, and the withdrawal rate in row 41. Use the funding result to answer whether the scenario pays its modeled bills.
+The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. **Spending benchmark before income** on Planning Metrics divides the living and healthcare budget by the withdrawal rate in row 41. The annual funding result follows benefit timing, taxes and accessible accounts to determine whether the plan pays its bills.
 
 The example starts Social Security at age 67. Its annual benefit is $40,000 at opening-year prices. **Cash_Flow** shows the sources separately. [How cash pays the bills](workbook-schedules.md#cash_flow-and-projection)
 
@@ -89,7 +89,11 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 
 ### Withdrawals and taxes
 
-Cash pays current and unpaid prior-year taxes first, then required spending. Roth IRA savings use the cash left over. Unpaid tax carries forward and reduces after-tax net worth. Unpaid spending is reported in the year it occurs. The model tests withdrawal amounts against available balances and skips a planned conversion when eligible savings cannot cover its costs.
+Cash pays current and unpaid prior-year taxes first, then prior unpaid spending, then current required costs. Roth IRA savings use the cash left over. Unpaid tax and spending carry forward and reduce after-tax net resources. The model assumes zero financing interest on unpaid spending.
+
+On **Cash_Flow**, columns AR–AW separate the opening unpaid bills, repayments, current payments and newly unpaid costs. **Cumulative newly unpaid spending** counts each new bill once. The funding result records the first shortfall even if later income repays it.
+
+Eligible Roth funds can cover a cash need during working years. The model applies each owner's account-access rules and updates the remaining contribution and conversion basis. It tests withdrawals against the available balance and skips a planned conversion when eligible savings cannot cover its costs.
 
 Withdrawal order 1 uses taxable investments first. Order 2 uses traditional savings up to the ordinary taxable income limit in row 49, then taxable investments. With order 2, Roth conversions use any room left under that limit. The limit is entered after the standard deduction and rises with inflation. The model counts 85% of Social Security for this withdrawal limit and calculates actual tax from the benefit tax formula.
 

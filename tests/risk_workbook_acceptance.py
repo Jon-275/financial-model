@@ -1,6 +1,7 @@
 """Exercise the workbook risk refresh and live assumptions in LibreOffice."""
 
 import argparse
+import json
 from hashlib import sha256
 import os
 from pathlib import Path
@@ -79,7 +80,7 @@ def check_refresh(workbook, office, timeout):
                 formula.text for part in after.namelist() if re.fullmatch(r'xl/charts/chart\d+\.xml', part)
                 for formula in E.fromstring(after.read(part)).iter(CHART + 'f') if '!RMChart' in (formula.text or '')
             ]
-            assert named_series and all(name.startswith("'Family''s plan.xlsx'!") for name in named_series)
+            assert named_series and all(name.startswith("'Report_Data'!") for name in named_series)
 
         published = refreshed.read_bytes()
         collision = subprocess.run(command, capture_output=True, timeout=15, check=False)
@@ -108,6 +109,32 @@ def check_refresh(workbook, office, timeout):
     print('PASS workbook risk refresh, stale results, scenario switches, and source preservation')
 
 
+def check_unfunded_refresh(workbook, office, timeout):
+    """An unpaid bill must reconcile and still produce a failed risk result."""
+    fixtures = json.loads((ROOT / 'tests/phase2-fixtures.json').read_text())
+    case = next(case for case in fixtures['cases']
+                if case['name'] == 'unpaid_spending_rolls_forward_without_double_counting')
+    common, changes = fixtures['common_overrides'], case['overrides']
+    overrides = {sheet: {**common.get(sheet, {}), **changes.get(sheet, {})}
+                 for sheet in common.keys() | changes.keys()}
+    with TemporaryDirectory(prefix='retirement-unfunded-refresh-') as folder:
+        root = Path(folder)
+        source, refreshed = root / 'source.xlsx', root / 'unfunded.xlsx'
+        prepare_xlsx(workbook, source, overrides)
+        subprocess.run([sys.executable, str(ROOT / 'tools/run_risk.py'), str(source),
+                        '--output', str(refreshed), '--trials', '3', '--volatility', '0',
+                        '--soffice', office, '--timeout', str(timeout)],
+                       check=True, timeout=3 * timeout)
+        check_state(refreshed, 'current')
+        with Workbook(refreshed) as book:
+            assert book['Planning Metrics']['B25'].value == 'NO - cash shortfall'
+            assert book['Summary']['B8'].value.startswith('First shortfall at age 55')
+            assert book[RISK]['BB8'].value == book[RISK]['BB9'].value == 0
+            assert book['Projection']['BJ8'].value == -300
+            assert book['Cash_Flow']['Q8'].value == 300
+    print('PASS unfunded risk refresh and carried spending in net resources')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('workbook', type=Path)
@@ -115,6 +142,7 @@ def main():
     parser.add_argument('--timeout', type=int, default=240, help='Seconds allowed for each recalculation')
     args = parser.parse_args()
     check_refresh(args.workbook.resolve(), args.soffice, args.timeout)
+    check_unfunded_refresh(args.workbook.resolve(), args.soffice, args.timeout)
 
 
 if __name__ == '__main__':

@@ -27,6 +27,8 @@ git config --local core.hooksPath .githooks
 
 Keep personal workbooks and reports in the ignored `private/` folder or outside the checkout. The template and published workbook use synthetic inputs and investment profiles. The commit check inspects their content, unused text and metadata before comparing approved checksums. [Review a rebuilt workbook before publishing](tests/README.md#microsoft-excel-release-check)
 
+Use your GitHub private email address for commits. If you have a clone from before the November 17, 2026 history cleanup, replace it before contributing. [History cleanup and clone replacement](docs/history-cleanup.md)
+
 ## Rebuild the workbook
 
 The build starts from the audited synthetic `workbook/build-template.xlsx` and writes a new workbook. Run the commands from the repository root with Python 3.11 or later and LibreOffice Calc.

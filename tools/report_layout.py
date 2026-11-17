@@ -24,7 +24,7 @@ TAB_COLORS = {
 }
 DETAIL_SHEETS = {*DECISION_TABS, *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules)}
 SOLVERS = {'Funding_Calc', 'Targeting_Calc'}
-ANNUAL_TABLES = {'Cash_Flow': 'AQ', 'Projection': 'CF', 'Roth_Access': 'AP',
+ANNUAL_TABLES = {'Cash_Flow': 'AW', 'Projection': 'CF', 'Roth_Access': 'AP',
                  'Healthcare': 'AF', 'Checks': 'M'}
 FORMATS = {
     'detail_title': (17, INK, True, None, None),
@@ -411,14 +411,14 @@ def apply(name, root, style_ids, numbers, active_fill):
                             **{100: 24, 132: 24, 98: 37, 130: 37},
                             **dict.fromkeys((*range(105, 117), *range(137, 149)), 23)})
         single = (2, 3, 5, 6, 8, 9, 29, 30, 31, 33, 34, 36, 38, 39, 55, 56, 57, 58, 59,
-                  65, 66, 68, 69, 74, 75, 76, 77, 78, 79, 81, 82, 84, 86, 87)
+                  60, 65, 66, 68, 69, 74, 75, 76, 77, 78, 79, 81, 82, 84, 86, 87)
         paired = (11, 12, 13)
         funding_rows = range(70, 74)
         _merges(root, [f'B{row}:I{row}' for row in single]
                 + [f'{left}{row}:{right}{row}' for row in paired for left, right in (('B', 'E'), ('F', 'I'))]
                 + [f'{left}{row}:{right}{row}' for row in funding_rows
                    for left, right in (('B', 'D'), ('E', 'F'), ('H', 'I'))]
-                + ['B90:C90', 'D90:I90', *input_record.merges()])
+                + ['B61:I62', 'B90:C90', 'D90:I90', *input_record.merges()])
         for row in range(71, 74):
             suffix = '_alt' if row % 2 else ''
             for column, style in (('G', 'report_case_age'), ('H', 'report_money')):
@@ -452,7 +452,8 @@ def apply(name, root, style_ids, numbers, active_fill):
         _print(root, (32, 64, *input_record.PAGE_BREAKS))
     elif name == METRICS:
         _columns(root, (49, 23, 75, 4, 24))
-        _rows(root, 50, 25, {1: 36, 2: 23, 3: 34, 6: 32, 20: 32, 25: 34, 34: 30,
+        _rows(root, 50, 25, {1: 36, 2: 23, 3: 34, 6: 32, 8: 32, 17: 32, 18: 32,
+                             20: 32, 25: 34, 27: 32, 34: 30,
                              **dict.fromkeys((13, 21, 36, 43, 48), 8)})
         _merges(root, [f'A{row}:C{row}' for row in (1, 2, *METRIC_SECTIONS)])
         for first, last in ((4, 6), (8, 12), (15, 20), (23, 35), (38, 42), (45, 47), (50, 50)):
@@ -569,6 +570,15 @@ def apply(name, root, style_ids, numbers, active_fill):
             cols = root.find(X + 'cols')
             for index, width in ((0, 11), (1, 9), (2, 24), (28, 28)):
                 cols[index].set('width', str(width))
+            # Local source values keep the large trial blocks shareable in Excel.
+            # They remain visible beside the calculation guide.
+            for index, width in ((56, 45), (57, 18)):
+                E.SubElement(cols, X + 'col', min=str(index), max=str(index),
+                             width=str(width), customWidth='1')
+            last_column = max(column_index_from_string(coordinate_from_string(cell.get('r'))[0])
+                              for cell in data.iter(X + 'c'))
+            root.find(X + 'dimension').set('ref',
+                f'A1:{get_column_letter(last_column)}{int(data[-1].get("r"))}')
             last = int(data[-1].get('r'))
             end_column = 'AP' if name == 'Targeting_Calc' else 'AO'
             _style_table(root, 2, end_column, style_ids, numbers, cents=style_ids['schedule', numbers[int(style_ids['cents'])]])
@@ -586,7 +596,7 @@ def apply(name, root, style_ids, numbers, active_fill):
         if name == 'Income_Targeting':
             _link(root, {'A41': "'Conversion Detail'!A1"})
         if name == 'Cash_Flow':
-            _merges(root, ['A2:I2', 'AN1:AQ1', 'AN2:AQ2'])
+            _merges(root, ['A2:I2', 'AN1:AQ1', 'AN2:AQ2', 'AR1:AW1', 'AR2:AW2'])
             _link(root, {'A3': 'Cash_Flow!AN1', 'AN3': 'Cash_Flow!A1'})
         if name == 'Risk_Settings':
             _merges(root, ['A2:C2', 'A3:C3'])
