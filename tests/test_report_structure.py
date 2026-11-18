@@ -1,5 +1,6 @@
 """Protect report sequencing and prevent content from being merged away."""
 from collections import defaultdict
+from types import SimpleNamespace
 import unittest
 
 from lxml import etree
@@ -8,6 +9,7 @@ from openpyxl.utils.cell import get_column_letter, range_boundaries
 
 import input_record
 import native_package
+import native_results
 import plan_report
 import report_layout
 import risk_presentation
@@ -71,6 +73,46 @@ class ReportStructureTests(unittest.TestCase):
                 if isinstance(value,str) and value.startswith('='):
                     self.assertLessEqual(len(value),8192,(sheet,address))
                     Tokenizer(value)
+
+    def test_annual_percentiles_follow_the_same_age_in_both_dollar_views(self):
+        report = self.cells['Risk Results']
+        for data_row, row in enumerate(range(58, 184), 5):
+            for column, real, nominal in (('F','D','BI'), ('H','E','BJ'), ('J','F','BK')):
+                formula = report[f'{column}{row}']
+                for reference in (f'Risk_Data!B{data_row}', f'Risk_Data!{real}{data_row}',
+                                  f'Risk_Data!{nominal}{data_row}', f'INDEX(Projection!$G$5:$G$130,{data_row-4})'):
+                    self.assertIn(reference, formula)
+
+    def test_risk_source_fields_show_their_units(self):
+        styles = defaultdict(dict)
+        def put(sheet, address, value, style):
+            styles[sheet][address] = style
+        native_results.configure(SimpleNamespace(cells=defaultdict(dict), styles=styles, put=put))
+        table = styles['Risk_Data']
+        groups = {
+            'report_percent': ('BB8','BB9','BB12','BB13','BB14','BB21','BB22','BB23','BB24','K5','K17'),
+            'report_row': ('BB4','BB5','BB6','BB10','BB15','BB17','L5','N17','AH7','AX5','L23','M29','N29'),
+            'report_decimal': ('BB11','BB16','BB18','P5','Q17','AY5','AZ7','P23','R29'),
+            'report_money': ('M5','O17','AG7','AW5','O23','Q29'),
+        }
+        for style, addresses in groups.items():
+            for address in addresses:
+                self.assertEqual(table[address], style, address)
+
+    def test_new_named_ranges_precede_later_workbook_elements(self):
+        x = native_package.X
+        for trailing in ((), ('calcPr',), ('pivotCaches','extLst')):
+            book = etree.Element(x+'workbook')
+            sheets = etree.SubElement(book, x+'sheets')
+            etree.SubElement(sheets, x+'sheet', name='Risk_Trials')
+            etree.SubElement(book, x+'externalReferences')
+            for tag in trailing:
+                etree.SubElement(book, x+tag)
+            for _ in range(2):
+                native_package.install_names(book, {'Risk_Trials': {'Current':'$B$7'}})
+            self.assertEqual([etree.QName(node).localname for node in book],
+                             ['sheets','externalReferences','definedNames',*trailing])
+            self.assertEqual([el.text for el in book.find(x+'definedNames')], ["'Risk_Trials'!$B$7"])
 
     def test_run_and_cancel_remain_distinct_accessible_nonprinting_controls(self):
         d = native_package.D

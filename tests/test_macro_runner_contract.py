@@ -181,6 +181,11 @@ class MacroRunnerContractTests(unittest.TestCase):
 
     def test_capture_waits_for_dependencies_and_reconciles_before_storage(self):
         capture = procedure('CaptureTrial')
+        run = procedure('RunMarketRisk')
+        self.assertIn('trialCurrent, code, context, True, batch', run)
+        self.assertIn('pathCurrent, code, context, False, batch', run)
+        self.assertIn('ByVal primary As Boolean', capture)
+        self.assertNotIn('source.Parent Is selector.Parent', capture)
         order = ('selector.Value2 = code', 'FinishTrialCalculation (attempt = 2)', 'source.Calculate',
                  'values = source.Value2', 'CaptureBalancesAgree(', 'If attempt > 2 Then RaiseRunError',
                  'CaptureTrial = values')

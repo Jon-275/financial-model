@@ -12,6 +12,7 @@ from lxml import etree as E
 
 from xlsx_acceptance import patch_xml, prepare_xlsx
 from xlsx_read import q, sheet_parts
+from xlsx_values import write_values
 
 
 MC = '{http://schemas.openxmlformats.org/markup-compatibility/2006}'
@@ -25,6 +26,30 @@ SHEET = b'''<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/20
 
 
 class FixturePackageTests(unittest.TestCase):
+    def test_shared_string_count_follows_replacements_without_new_shared_text(self):
+        with TemporaryDirectory() as directory:
+            source, output = (Path(directory) / name for name in ('source.xlsx','output.xlsx'))
+            ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+            r = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+            with ZipFile(source,'w') as z:
+                z.writestr('xl/workbook.xml', f'<workbook xmlns="{ns}" xmlns:r="{r}"><sheets>'
+                            '<sheet name="Example" r:id="r1"/></sheets></workbook>')
+                z.writestr('xl/_rels/workbook.xml.rels','<Relationships><Relationship Id="r1" '
+                            'Target="worksheets/sheet1.xml"/></Relationships>')
+                cells = ''.join(f'<c r="{col}1" t="s"><v>0</v></c>' for col in 'ABCD')
+                z.writestr('xl/worksheets/sheet1.xml',f'<worksheet xmlns="{ns}"><dimension ref="A1:D1"/>'
+                            f'<sheetData><row r="1">{cells}</row></sheetData></worksheet>')
+                z.writestr('xl/sharedStrings.xml',f'<sst xmlns="{ns}" count="4" uniqueCount="1">'
+                            '<si><t>Example</t></si></sst>')
+            write_values(source,output,{'Example':{'A1':None,'B1':42,'C1':'Inline'}})
+            with ZipFile(output) as z:
+                strings = E.fromstring(z.read('xl/sharedStrings.xml'))
+                sheet = E.fromstring(z.read('xl/worksheets/sheet1.xml'))
+                shared = [c for c in sheet.iter(q('c')) if c.get('t') == 's']
+                self.assertEqual([c.get('r') for c in shared], ['D1'])
+                self.assertEqual(strings.get('count'), str(len(shared)))
+                self.assertEqual(strings.get('uniqueCount'), '1')
+
     def test_ignored_namespace_and_formula_survive_literal_edit(self):
         original = E.fromstring(SHEET)
         changed = E.fromstring(patch_xml(SHEET, {'A1': 7}))

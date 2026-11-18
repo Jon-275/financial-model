@@ -121,7 +121,7 @@ Public Sub RunMarketRisk()
         pairedRow = 0
         If code >= 1001 And code <= 2000 Then pairedRow = index - count
         If code >= 2101 And code <= 2113 Then pairedRow = index - 13
-        captured = CaptureTrial(book, selector, trialCurrent, code, context, batch, pairedRow, index - 1)
+        captured = CaptureTrial(book, selector, trialCurrent, code, context, True, batch, pairedRow, index - 1)
         For column = 1 To width
             batch(index, column) = captured(1, column)
         Next column
@@ -139,7 +139,7 @@ Public Sub RunMarketRisk()
             Case 3: rank = 1 + Int(0.9 * (count - 1) + 0.5)
         End Select
         code = CLng(ids(order(rank), 1))
-        captured = CaptureTrial(book, selector, pathCurrent, code, context, batch, order(rank), 0)
+        captured = CaptureTrial(book, selector, pathCurrent, code, context, False, batch, order(rank), 0)
         For column = 1 To pathWidth
             paths(caseIndex, column) = captured(1, column)
         Next column
@@ -257,11 +257,10 @@ CleanExit:
     End If
 End Sub
 
-Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
-    Dim values As Variant, column As Long, attempt As Long, primary As Boolean
+Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
+    Dim values As Variant, column As Long, attempt As Long
     CheckCancelled
     selector.Value2 = code
-    primary = (source.Parent Is selector.Parent)
     For attempt = 1 To 2
         ' Complete the workbook dependency chain before refreshing its terminal output row.
         FinishTrialCalculation (attempt = 2)

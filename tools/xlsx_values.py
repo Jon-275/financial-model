@@ -88,9 +88,12 @@ def write_values(source,destination,values,*,shared_strings=()):
             root=E.fromstring(original.read(parts[sheet]),E.XMLParser(resolve_entities=False,no_network=True,huge_tree=True))
             delta+=update_sheet(root,items,shared_text=indexes)
             updates[parts[sheet]]=E.tostring(root,encoding='UTF-8',xml_declaration=True,standalone=True)
+        if shared is None and delta and shared_part in original.namelist():
+            shared = E.fromstring(original.read(shared_part))
         if shared is not None:
             if shared.get('count') is not None:
                 shared.set('count',str(int(shared.get('count'))+delta))
+            if shared.get('uniqueCount') is not None:
                 shared.set('uniqueCount',str(len(shared.findall(X+'si'))))
             updates[shared_part]=E.tostring(shared,encoding='UTF-8',xml_declaration=True,standalone=True)
         destination.parent.mkdir(parents=True,exist_ok=True)

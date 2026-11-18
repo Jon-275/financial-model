@@ -232,13 +232,13 @@ def configure(put, display_dollars, price_index_at, future_view):
     cell('B55', 'The low and high values mark the middle 80% of simulated balances at each age.', 'report_caption')
     for col, label in zip(('B', 'D', 'F', 'H', 'J'), ('Age', 'Base plan', 'Low', 'Median', 'High')):
         cell(f'{col}57', label, 'report_table_head')
-    for row, source_row in enumerate(range(46, 172), 58):
-        age = result(f'AG{source_row}')
-        for col, source in zip(('B', 'D', 'F', 'H', 'J'), ('AG', 'AH', 'AI', 'AJ', 'AK')):
+    for row, data_row in enumerate(range(5, 131), 58):
+        age = f'{DATA_SHEET}!B{data_row}'
+        for col, source in zip(('B', 'D', 'F', 'H', 'J'), ('B', 'C', 'D', 'E', 'F')):
             style = 'report_row' if col == 'B' else 'report_money'
-            value = result(f'{source}{source_row}')
+            value = f'{DATA_SHEET}!{source}{data_row}'
             if col in ('F','H','J'):
-                value=annual_dollars({'F':'D','H':'E','J':'F'}[col],{'F':'BI','H':'BJ','J':'BK'}[col],source_row-41)
+                value=annual_dollars(source,{'F':'BI','H':'BJ','J':'BK'}[col],data_row)
             elif col != 'B':
                 value = dollars_at(value, age)
             cell(f'{col}{row}', display(f'IF(ISNUMBER({age}),{value},"")'), style)

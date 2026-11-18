@@ -55,6 +55,7 @@ FORMATS = {
     'report_section_gutter': (13, INK, True, None, None),
     'report_write_in': (11, BLUE, False, None, None),
     'report_active': (11, INK, True, PALE, 1),
+    'report_decimal': (11, INK, False, None, 2),
 }
 
 
