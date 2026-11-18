@@ -63,6 +63,8 @@ jobs:
           python tests/phase_readiness_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Verify Marketplace credits under variable inflation
         run: python tests/aca_inflation_acceptance.py "$RISK_TEST_WORKBOOK"
+      - name: Verify survivor income and medical costs
+        run: python tests/survivor_floor_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Recalculate representative scenarios
         run: |
           python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase2-fixtures.json --compact --ledger \

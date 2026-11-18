@@ -12,7 +12,7 @@ from lxml import etree as E
 
 from xlsx_acceptance import patch_xml, prepare_xlsx
 from xlsx_read import q, sheet_parts
-from xlsx_values import write_values
+from xlsx_values import update_sheet, write_values
 
 
 MC = '{http://schemas.openxmlformats.org/markup-compatibility/2006}'
@@ -26,6 +26,22 @@ SHEET = b'''<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/20
 
 
 class FixturePackageTests(unittest.TestCase):
+    def test_writing_an_empty_sheet_with_and_without_dimensions(self):
+        for has_dimension in (False, True):
+            with self.subTest(has_dimension=has_dimension):
+                root = E.Element(q('worksheet'))
+                if has_dimension:
+                    E.SubElement(root, q('dimension'), ref='A1')
+                E.SubElement(root, q('sheetData'))
+                self.assertEqual(update_sheet(root, {'C7': None}), 0)
+                self.assertEqual(list(root.iter(q('row'))), [])
+                dim = root.find(q('dimension'))
+                self.assertEqual(dim.get('ref') if dim is not None else None, 'A1:A1' if has_dimension else None)
+                update_sheet(root, {'C7': 42})
+                self.assertEqual(root.find(f".//{q('c')}[@r='C7']").findtext(q('v')), '42')
+                dim = root.find(q('dimension'))
+                self.assertEqual(dim.get('ref') if dim is not None else None, 'A1:C7' if has_dimension else None)
+
     def test_shared_string_count_follows_replacements_without_new_shared_text(self):
         with TemporaryDirectory() as directory:
             source, output = (Path(directory) / name for name in ('source.xlsx','output.xlsx'))

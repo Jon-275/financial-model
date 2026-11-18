@@ -17,6 +17,20 @@ def addresses(ref):
 
 
 class ProtectionTests(unittest.TestCase):
+    def test_optional_named_styles_do_not_affect_cell_protection(self):
+        styles = ET.fromstring(f'<styleSheet xmlns="{X[1:-1]}"><cellXfs count="1">'
+                               '<xf><protection locked="0" hidden="1"/></xf></cellXfs></styleSheet>')
+        guard = WorksheetProtection(styles)
+        options = guard.xfs[0].find(X + 'protection')
+        self.assertEqual((options.get('locked'), options.get('hidden')), ('1', '0'))
+        sheet = ET.fromstring(f'<worksheet xmlns="{X[1:-1]}"><sheetData><row r="3">'
+                              '<c r="B3"/></row></sheetData></worksheet>')
+        guard.apply('Risk_Trials', sheet)
+        index = int(sheet.find(f".//{X}c[@r='B3']").get('s'))
+        self.assertEqual(guard.xfs[index].find(X + 'protection').get('locked'), '0')
+        with self.assertRaisesRegex(ValueError, 'needs a cell format'):
+            WorksheetProtection(ET.Element(X + 'styleSheet'))
+
     def test_only_selected_literals_are_unlocked_and_formulas_remain_visible(self):
         styles = ET.fromstring(f'<styleSheet xmlns="{X[1:-1]}"><cellStyleXfs><xf/></cellStyleXfs>'
                                '<cellXfs count="1"><xf><protection hidden="1" locked="0"/>'

@@ -46,10 +46,14 @@ def _entry_cells(name, root):
 class WorksheetProtection:
     def __init__(self, styles):
         self.xfs = styles.find(X + 'cellXfs')
+        if self.xfs is None or not len(self.xfs):
+            raise ValueError('The workbook needs a cell format before its input cells can be unlocked.')
         self.variants = {}
         # Defaults are locked and visible. Enforce that contract if the template's styles change.
-        for collection in ('cellStyleXfs', 'cellXfs'):
-            for style in styles.find(X + collection):
+        for collection in (styles.find(X + 'cellStyleXfs'), self.xfs):
+            if collection is None:
+                continue
+            for style in collection.findall(X + 'xf'):
                 protection = style.find(X + 'protection')
                 if protection is not None:
                     protection.set('locked', '1')

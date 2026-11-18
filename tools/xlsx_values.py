@@ -4,7 +4,7 @@ from pathlib import Path
 from zipfile import ZipFile,ZIP_DEFLATED
 
 from lxml import etree as E
-from openpyxl.utils.cell import coordinate_from_string,column_index_from_string
+from openpyxl.utils.cell import coordinate_from_string,column_index_from_string,get_column_letter
 
 X='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 R='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
@@ -53,9 +53,9 @@ def update_sheet(root,values,*,shared_text=None):
         row.attrib.pop('spans',None)
     data[:]=[rows[number] for number in sorted(rows)]
     dimension=root.find(X+'dimension')
-    last_col=max(column_index_from_string(coordinate_from_string(a)[0]) for a in cells)
-    from openpyxl.utils.cell import get_column_letter
-    dimension.set('ref',f'A1:{get_column_letter(last_col)}{max(rows)}')
+    if dimension is not None:
+        last_col=max((column_index_from_string(coordinate_from_string(a)[0]) for a in cells), default=1)
+        dimension.set('ref',f'A1:{get_column_letter(last_col)}{max(rows,default=1)}')
     return reference_delta
 
 
