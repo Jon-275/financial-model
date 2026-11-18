@@ -117,7 +117,10 @@ class Workbook:
         return self._sheets[name]
 
     def _read_sheet(self, name: str) -> Sheet:
-        sheet = Sheet(name)
+        return Sheet(name, dict(self.iter_sheet_rows(name)))
+
+    def iter_sheet_rows(self, name: str) -> Iterator[tuple[int, dict[int, Cell]]]:
+        """Read saved rows in order without retaining the entire worksheet."""
         with self._archive.open(self.parts[name]) as stream:
             for _, element in ET.iterparse(stream, events=("end",)):
                 if element.tag != q("row"):
@@ -143,9 +146,8 @@ class Workbook:
                     if value is not None or formula is not None:
                         row[address_parts(address)[1]] = Cell(address, value, kind, (formula.text or "") if formula is not None else None)
                 if row:
-                    sheet.rows[int(element.get("r"))] = row
+                    yield int(element.get("r")), row
                 element.clear()
-        return sheet
 
 
 def scan_errors(wb) -> None:

@@ -119,6 +119,14 @@ python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-m
 
 For this fictional example and seed 2026, compare a fresh desktop run with the saved example using `--expect-reused 46` for 100 pairs or `--expect-reused 515` for 1,000 pairs. This also catches a change that preserves the financial results but quietly recalculates every flexible path. Use fresh, separate copies when timing two versions. Record the path count, Excel version, elapsed run time and the completion message on Risk_Settings.
 
+To test cancellation, select a trial on **Risk_Trials** in a fictional workbook with a completed run. Save a baseline copy, run market risk on a second copy, cancel it, then save that copy. The check verifies the original selection, active financial figures, saved run date and all stored results. It also checks that withdrawal-search formulas remain in place and that rows beyond the selected trial’s last year display no values. The same command checks a recovery exercise that restores the original completed run.
+
+```sh
+python3 tests/native_excel_acceptance.py scratch/before-recovery.xlsm scratch/after-recovery.xlsm --check-restoration
+```
+
+If an Excel test procedure writes its verdict to a worksheet, add `--expect-pass 'Recovery!A2'` with that sheet and cell. This verifies the desktop test ran successfully as well as checking the final saved state.
+
 ### Reproduce the age-125 comparison
 
 Use the fictional example, seed 2026 and 1,000 paired paths. In the Excel test copy, set both starting ages to 0 and the end age to 125. Set the four Roth opening years listed below to 2026. This fills all 126 annual positions, including the opening year. Run market risk and save the Excel copy.
