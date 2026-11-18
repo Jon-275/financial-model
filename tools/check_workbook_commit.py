@@ -3,7 +3,8 @@
 import argparse
 from hashlib import sha256
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from posixpath import normpath
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
@@ -23,7 +24,7 @@ SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
 from model_acceptance import check_release_package
-from xlsx_read import Workbook
+from xlsx_read import REL, Workbook, q, sheet_parts
 
 
 def git(*args):
@@ -56,10 +57,31 @@ def check_native_package(path):
         projects = [item for item in rels if item.get('Type') == 'http://schemas.microsoft.com/office/2006/relationships/vbaProject']
         if len(projects) != 1 or projects[0].get('Target') != 'vbaProject.bin' or 'xl/vbaProject.bin' not in archive.namelist():
             raise ValueError('The workbook is missing its embedded VBA project.')
-        drawing = ElementTree.fromstring(archive.read('xl/drawings/drawing1.xml'))
-        actions = sorted(shape.get('macro') for shape in drawing.findall('.//{*}sp') if shape.get('macro'))
-        if actions != ['[0]!CancelMarketRisk', '[0]!RunMarketRisk']:
-            raise ValueError('Expected one Run market risk button and one Cancel button on Summary.')
+        summary = PurePosixPath(sheet_parts(archive)['Summary'])
+        sheet = ElementTree.fromstring(archive.read(str(summary)))
+        drawing_ref = sheet.find(q('drawing'))
+        if drawing_ref is None:
+            raise ValueError('Summary is missing its button drawing.')
+        identifier = drawing_ref.get(f'{{{REL}}}id')
+        rel_part = summary.parent / '_rels' / (summary.name + '.rels')
+        sheet_rels = ElementTree.fromstring(archive.read(str(rel_part)))
+        targets = [rel.get('Target') for rel in sheet_rels if rel.get('Id') == identifier
+                   and rel.get('Type') == REL + '/drawing' and rel.get('TargetMode', 'Internal') == 'Internal']
+        if len(targets) != 1 or not targets[0]:
+            raise ValueError('Summary must link to one local button drawing.')
+        drawing_part = normpath(str(summary.parent / targets[0])).lstrip('/')
+        drawing = ElementTree.fromstring(archive.read(drawing_part))
+        actions = []
+        for shape in drawing.findall('.//{*}sp'):
+            if shape.get('macro'):
+                label = ''.join(node.text or '' for node in shape.findall('{*}txBody//{*}t'))
+                properties = shape.find('{*}nvSpPr/{*}cNvPr')
+                if properties is None or properties.get('hidden') in ('1', 'true'):
+                    raise ValueError('Summary must show both market risk buttons.')
+                actions.append((label, shape.get('macro')))
+        expected = [('Cancel', '[0]!CancelMarketRisk'), ('Run market risk', '[0]!RunMarketRisk')]
+        if sorted(actions) != expected:
+            raise ValueError('Each market risk button on Summary must call the macro named by its label.')
 
 
 def audit_sample_workbook(path):

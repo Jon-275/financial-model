@@ -10,7 +10,7 @@ from xml.etree import ElementTree as E
 from zipfile import ZipFile
 
 from workbook_privacy import audit_fixture, audit_package, audit_start_here
-from check_workbook_commit import check_sample_workbook, main as check_index
+from check_workbook_commit import check_native_package, check_sample_workbook, main as check_index
 from start_here import CONTENT
 from xlsx_read import Cell, Sheet, Workbook, address_parts, sheet_parts
 
@@ -40,6 +40,35 @@ class WorkbookPrivacyTests(unittest.TestCase):
             for part, payload in changes.items():
                 output.writestr(part, payload)
         return destination
+
+    def test_saved_summary_buttons_call_the_macro_on_their_label(self):
+        release = ROOT / 'workbook/retirement-model.xlsm'
+        check_native_package(release)
+        with ZipFile(release) as archive:
+            summary = sheet_parts(archive)['Summary']
+            sheet = E.fromstring(archive.read(summary))
+            drawing_part, = [part for part in archive.namelist()
+                             if part.startswith('xl/drawings/') and part.endswith('.xml')
+                             and b'[0]!RunMarketRisk' in archive.read(part)]
+            drawing = E.fromstring(archive.read(drawing_part))
+        sheet.remove(sheet.find(X + 'drawing'))
+        controls = [shape for shape in drawing.findall('.//{*}sp') if shape.get('macro')]
+        self.assertEqual(len(controls), 2)
+        run, cancel = controls
+        run_action, cancel_action = run.get('macro'), cancel.get('macro')
+        run.set('macro', cancel_action)
+        cancel.set('macro', run_action)
+        cases = [('detached', {summary: E.tostring(sheet)}, 'button drawing'),
+                 ('swapped', {drawing_part: E.tostring(drawing)}, 'macro named by its label')]
+        run.set('macro', run_action)
+        cancel.set('macro', cancel_action)
+        cancel.find('{*}nvSpPr/{*}cNvPr').set('hidden', '1')
+        cases.append(('hidden', {drawing_part: E.tostring(drawing)}, 'show both'))
+        for name, changes, diagnostic in cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                changed = self.copy_with(directory, changes, release)
+                with self.assertRaisesRegex(ValueError, diagnostic):
+                    check_native_package(changed)
 
     def change_cell(self, sheet, address, value, source_path=TEMPLATE):
         with ZipFile(source_path) as source:

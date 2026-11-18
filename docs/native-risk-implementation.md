@@ -128,7 +128,7 @@ An edit to the active wage assumption took 0.74 seconds in the example and 1.69 
 
 In a disposable copy, Excel for Mac cancelled a run at the first reusable pair, detected a changed seed, rejected an invalid trial and recovered from an error after three result ranges had been written. Each test preserved the previous outcomes, funding examples, completion date, inspection selector and protection settings. A comparison after saving and reopening matched all 595,814 stored trial and funding cells to the original example.
 
-When a required comparison formula was removed, Excel evaluated all 14 flexible trials directly. After the formula was restored, it reused all 14 and produced the same results. The harness called the public cancellation procedure. In a separate test, neither Esc nor Command–Period sent through desktop automation interrupted a live 45-second checkpoint. The previous financial results and Excel settings were preserved. The visible Cancel button still needs a verified click during a run.
+When a required comparison formula was removed, Excel evaluated all 14 flexible trials directly. After the formula was restored, it reused all 14 and produced the same results. The harness called the public cancellation procedure. The build also follows Summary’s saved drawing link and verifies that its visible Run market risk and Cancel buttons call their respective macros. Tests reject a detached drawing, swapped actions and a hidden control. In a separate test, neither Esc nor Command–Period sent through desktop automation interrupted a live 45-second checkpoint. The previous financial results and Excel settings were preserved. The visible Cancel button still needs a verified click during a run.
 
 ## Release checks
 
