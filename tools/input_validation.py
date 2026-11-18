@@ -29,6 +29,9 @@ def _rows(*rows):
     return ' '.join(f'D{row}:F{row}' for row in rows)
 
 
+_PHASE_ROWS = (12, 36, 37)
+
+
 _INPUT_RULES = (
     _between('B4', 1, 3, 'Choose scenario 1, 2 or 3.', whole=True),
     _ages('D8:F10 ' + _rows(45, 50, 53, 67, 87, 88)),
@@ -56,8 +59,25 @@ _INPUT_RULES = (
     _minimum('B132', -1, 'Enter inflation above −100%, or leave this blank.', strict=True, optional=True),
 )
 
+def _input_entry_rules():
+    # A single plan-status check covers all amounts. Excel needs separate
+    # rules for the fields a user can leave empty when a phase is unused.
+    phase_ranges = set(_rows(*_PHASE_ROWS).split())
+    for rule in _INPUT_RULES:
+        areas = rule[0].split()
+        clearable = [area for area in areas if area in phase_ranges]
+        if not clearable:
+            yield rule
+            continue
+        required = [area for area in areas if area not in phase_ranges]
+        if required:
+            yield (' '.join(required), *rule[1:])
+        yield (' '.join(clearable), *rule[1:5],
+               'Enter zero or a positive amount. Leave blank if the plan does not use it.', True)
+
+
 RULES = {
-    'Inputs': _INPUT_RULES,
+    'Inputs': tuple(_input_entry_rules()),
     'Asset_Allocation': (
         _minimum('B6:B10', -1, 'Enter an expected return above −100%.', strict=True),
         _minimum('C6:E10', 0, 'Enter zero or a positive percentage.'),
@@ -132,7 +152,7 @@ def core_input_checks():
                 if last is not None:
                     conditions.append(f'{ref}<={last}')
                 expression = 'AND(' + ','.join(conditions) + ')'
-            if row in (12, 36, 37):
+            if row in _PHASE_ROWS:
                 # The selected phase requires pay and spending only in years that use them.
                 # Check the input itself: a reference to an empty scenario cell may display as zero.
                 expression = f'OR(ISBLANK(INDEX(D{row}:F{row},1,B4)),{expression})'
