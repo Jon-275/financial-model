@@ -46,6 +46,8 @@ Each case runs on a temporary copy in LibreOffice. For a completed native run, t
 
 Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
 
+Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` to check Marketplace coverage when inflation changes each year. It compares the workbook and the Python calculation with expected one- and two-person poverty guidelines and checks a case near the credit cutoff.
+
 Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
 
 ```sh

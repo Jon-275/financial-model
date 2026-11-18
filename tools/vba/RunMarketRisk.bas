@@ -347,7 +347,7 @@ Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, B
     Next column
     RequireText values(1, 1), context, "A trial's assumptions do not match this run."
     RequireText values(1, source.Columns.Count), context, "A trial's closing assumption record does not match this run."
-    If Not IsNumeric(values(1, VALID_FIELD)) Then RaiseRunError "Trial " & CStr(code) & " has no valid calculation status."
+    If Not IsNumericInput(values(1, VALID_FIELD)) Then RaiseRunError "Trial " & CStr(code) & " has no valid calculation status."
     If CDbl(values(1, VALID_FIELD)) <> 1 Then RaiseRunError "Trial " & CStr(code) & " did not pass its calculation checks. Inspect Trial_Checks and healthcare inputs."
     CaptureTrial = values
 End Function
@@ -409,7 +409,7 @@ Private Function RepeatsPriorEnding(ByRef values As Variant, ByRef batch As Vari
     ' Verify it once with a full calculation before publishing it.
     Dim field As Long
     If previousRow < 1 Then Exit Function
-    If Not IsNumeric(values(1, ENDING_REAL_FIELD)) Then Exit Function
+    If Not IsNumericInput(values(1, ENDING_REAL_FIELD)) Then RaiseRunError "A trial has no numeric ending balance."
     If values(1, ENDING_REAL_FIELD) <= 0 Then Exit Function
     If Not SameCaptureValue(values(1, ENDING_REAL_FIELD), batch(previousRow, ENDING_REAL_FIELD)) Then Exit Function
     If Not SameCaptureValue(values(1, ENDING_NOMINAL_FIELD), batch(previousRow, ENDING_NOMINAL_FIELD)) Then Exit Function
@@ -498,11 +498,11 @@ End Sub
 
 Private Function ComparePaths(ByVal a As Long, ByVal b As Long, ByRef data As Variant, ByRef ids As Variant) As Long
     Dim difference As Double
-    If Not IsNumeric(data(a, ENDING_REAL_FIELD)) Or Not IsNumeric(data(b, ENDING_REAL_FIELD)) Then RaiseRunError "A fixed path has no numeric ending balance."
+    If Not IsNumericInput(data(a, ENDING_REAL_FIELD)) Or Not IsNumericInput(data(b, ENDING_REAL_FIELD)) Then RaiseRunError "A fixed path has no numeric ending balance."
     difference = CDbl(data(a, ENDING_REAL_FIELD)) - CDbl(data(b, ENDING_REAL_FIELD))
     If difference = 0 Then difference = FailureAge(data(a, FAILURE_AGE_FIELD)) - FailureAge(data(b, FAILURE_AGE_FIELD))
     If difference = 0 Then
-        If Not IsNumeric(data(a, MAX_UNPAID_FIELD)) Or Not IsNumeric(data(b, MAX_UNPAID_FIELD)) Then RaiseRunError "A fixed path has no numeric unpaid-cost measure."
+        If Not IsNumericInput(data(a, MAX_UNPAID_FIELD)) Or Not IsNumericInput(data(b, MAX_UNPAID_FIELD)) Then RaiseRunError "A fixed path has no numeric unpaid-cost measure."
         difference = CDbl(data(b, MAX_UNPAID_FIELD)) - CDbl(data(a, MAX_UNPAID_FIELD))
     End If
     If difference = 0 Then difference = CLng(ids(a, 1)) - CLng(ids(b, 1))
@@ -516,7 +516,13 @@ Private Function ComparePaths(ByVal a As Long, ByVal b As Long, ByRef data As Va
 End Function
 
 Private Function FailureAge(ByVal value As Variant) As Double
-    If IsNumeric(value) And Len(CStr(value)) > 0 Then FailureAge = CDbl(value) Else FailureAge = 1000000000#
+    FailureAge = 1000000000#
+    If IsEmpty(value) Then Exit Function
+    If VarType(value) = vbString Then
+        If Len(value) = 0 Then Exit Function
+    End If
+    If Not IsNumericInput(value) Then RaiseRunError "A fixed path has an invalid shortfall age."
+    FailureAge = CDbl(value)
 End Function
 
 Private Function LocalRange(ByVal sheet As Worksheet, ByVal name As String) As Range
@@ -538,10 +544,10 @@ End Function
 Private Sub ValidateRanges(ByVal current As Range, ByVal results As Range, ByVal ids As Range, ByVal pathCurrent As Range, ByVal paths As Range, ByVal pathIDs As Range)
     Dim areas(0 To 5) As Range, left As Long, right As Long
     Dim leftSheet As Worksheet, rightSheet As Worksheet
-    If current.Rows.Count <> 1 Or current.Columns.Count < 32 Then RaiseRunError "The trial output vector has an unsupported layout."
+    If current.Rows.Count <> 1 Or current.Columns.Count <> FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY Then RaiseRunError "The trial output vector has an unsupported layout."
     If results.Columns.Count <> current.Columns.Count Or ids.Columns.Count <> 1 Or ids.Rows.Count <> results.Rows.Count Then RaiseRunError "Trial output and result areas have different dimensions."
     If results.Rows.Count <> 2 * MAX_PAIRED_PATHS + STRESS_CASES Then RaiseRunError "The trial result capacity does not match the runner."
-    If pathCurrent.Rows.Count <> 1 Or pathCurrent.Columns.Count < 3 Then RaiseRunError "The funding-path output vector has an unsupported layout."
+    If pathCurrent.Rows.Count <> 1 Or pathCurrent.Columns.Count <> 3 + ANNUAL_CAPACITY * FUNDING_YEAR_WIDTH Then RaiseRunError "The funding-path output vector has an unsupported layout."
     If paths.Rows.Count <> 3 Or paths.Columns.Count <> pathCurrent.Columns.Count Or pathIDs.Rows.Count <> 3 Or pathIDs.Columns.Count <> 1 Then RaiseRunError "The funding-path result areas have different dimensions."
     RequireNoFormulas results
     RequireNoFormulas ids

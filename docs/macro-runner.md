@@ -43,7 +43,7 @@ All six names are local to Risk_Trials. Their ranges belong to the same workbook
 | RiskPathResults | Three complete captured funding paths |
 | RiskPathTrials | Their fixed-path identifiers |
 
-Unused result rows are cleared by the replacement batch. Current and result ranges must have matching widths, and result areas cannot contain formulas or overlap one another. The schema and engine version must match the runner.
+The runner checks the full width of each range before it captures a trial. The primary row holds two sets of 126 annual balances. The funding row holds 38 fields for each of those 126 years. Result areas must match the corresponding row width and contain no formulas or overlapping ranges. The replacement batch clears unused result rows. The schema and engine version must match the runner.
 
 Risk_Data stores the run state in Z6, a numeric Excel timestamp in Z7, the completed assumption record in Z8, the latest message in Z9, path count in Z10 and seed in Z11. The timestamp handles both Excel date systems. Current report status also depends on the workbook's formula checks; setting a status value alone cannot validate a batch.
 

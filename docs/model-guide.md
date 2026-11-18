@@ -120,6 +120,8 @@ After the first death, the workbook uses single-filer rules from the following y
 
 The Marketplace estimate uses published 2026 and 2027 contribution percentages and keeps the 2027 percentages for later years. Income for the credit includes items such as traditional withdrawals, Roth conversions, investment gains and tax-exempt interest. A gain can raise that income even when its federal tax rate is zero.
 
+For each coverage year, the Marketplace uses the poverty guideline available when enrollment opens. The workbook uses the published guidelines for 2026 and 2027 coverage. It estimates later guidelines using inflation through the previous year. A price increase during the coverage year first affects the following year’s estimate. [IRS eligibility rules](https://www.irs.gov/affordable-care-act/individuals-and-families/eligibility-for-the-premium-tax-credit)
+
 The direct Roth IRA calculation uses published 2026 and 2027 amounts and estimates later amounts with inflation. [IRS 2026 retirement limits](https://www.irs.gov/pub/irs-drop/n-25-67.pdf) · [IRS 2027 retirement limits](https://www.irs.gov/pub/irs-drop/n-26-66.pdf)
 
 The model treats qualified dividends and capital gains as ordinary income for California tax. It excludes Social Security from California taxable income, adds back HSA contributions, and applies the California exemption credit to tax. It includes the additional state tax on taxable income over $1 million and lists published disability insurance rates on **Tax_Tables**.
