@@ -16,6 +16,7 @@ Private Const CUT_YEARS_FIELD As Long = 8
 Private Const REFRESH_DATE_FIELD As Long = 27
 Private Const FIRST_YEAR_FIELD As Long = 33
 Private Const ANNUAL_CAPACITY As Long = 126
+Private Const CLOSING_CHECKS As Long = 12
 Private Const FUNDING_YEAR_WIDTH As Long = 38
 Private Const FUNDING_BALANCE_FIELD As Long = 28
 Private Const RUN_ERROR As Long = vbObjectError + 5200
@@ -328,17 +329,25 @@ End Function
 Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
     Dim values As Variant, column As Long, attempt As Long
     CheckCancelled
-    selector.Value2 = code
     For attempt = 1 To 2
-        ' Incremental calculation can retain earlier trial years in the live ledger.
+        If attempt = 2 Then
+            ' Clear the prior path before retrying a suspect capture.
+            selector.Value2 = 0
+            FinishTrialCalculation
+            CheckCancelled
+        End If
+        selector.Value2 = code
         FinishTrialCalculation
         source.Calculate
         CheckCancelled
         RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
         values = source.Value2
         If CaptureBalancesAgree(book, values, primary, batch, pairedRow) Then
-            If attempt = 2 Or Not primary Then Exit For
+            If Not primary Then Exit For
             If Not RepeatsPriorEnding(values, batch, previousRow) Then Exit For
+            ' A genuine repeated ending is acceptable only after a fresh retry
+            ' has also reconciled every independently evaluated account closing.
+            If attempt = 2 Then Exit For
         End If
     Next attempt
     If attempt > 2 Then RaiseRunError "Trial " & CStr(code) & " did not reconcile after a full recalculation. No results were published."
@@ -371,6 +380,7 @@ End Sub
 Private Function CaptureBalancesAgree(ByVal book As Workbook, ByRef values As Variant, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long) As Boolean
     Dim ledger As Variant, years As Long, period As Long, field As Long
     years = WholeNumber(book.Worksheets("Trial_Inputs").Range("B70").Value2, 2, ANNUAL_CAPACITY, "The trial horizon is invalid.")
+    If Not AnnualClosingsAgree(book, years) Then Exit Function
     ledger = book.Worksheets("Trial_Projection").Range("BH5").Resize(years, 7).Value2
     If primary Then
         ' BH is the closing portfolio; BN is the same balance in opening-year dollars.
@@ -398,6 +408,24 @@ Private Function CaptureBalancesAgree(ByVal book As Workbook, ByRef values As Va
         Next period
     End If
     CaptureBalancesAgree = True
+End Function
+
+Private Function AnnualClosingsAgree(ByVal book As Workbook, ByVal years As Long) As Boolean
+    Dim checks As Range, formulas As Variant, differences As Variant, period As Long, field As Long
+    Set checks = book.Worksheets("Trial_Checks").Range("N5").Resize(years, CLOSING_CHECKS)
+    formulas = checks.HasFormula
+    If VarType(formulas) <> vbBoolean Then Exit Function
+    If Not formulas Then Exit Function
+    ' Re-evaluate the financial expressions directly against the live openings,
+    ' cash movements and returns. Read every difference in one block.
+    checks.Calculate
+    differences = checks.Value2
+    For period = 1 To years
+        For field = 1 To CLOSING_CHECKS
+            If Not SameCaptureValue(differences(period, field), 0#) Then Exit Function
+        Next field
+    Next period
+    AnnualClosingsAgree = True
 End Function
 
 Private Function RepeatsPriorEnding(ByRef values As Variant, ByRef batch As Variant, ByVal previousRow As Long) As Boolean

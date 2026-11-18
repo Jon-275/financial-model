@@ -135,5 +135,7 @@ def apply(name, root, styles, numbers, active_fill):
             for merged in ('A1:I1','A2:I2'):
                 if merged not in ranges:ranges.append(merged)
             _merges(root,ranges)
+        if name=='Trial_Checks':
+            _stripe(root,'N5:Y130','$B5',active_fill+2)
         if name=='Trial_Projection':
             _stripe(root,'A5:CJ130','$C5',active_fill+2)

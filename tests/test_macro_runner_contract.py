@@ -15,6 +15,7 @@ from zipfile import ZipFile
 from openpyxl.utils.cell import range_boundaries
 from pyopenvba.cfb import CFB
 from pyopenvba.vba import compress, decompress
+import native_balance_checks
 import native_capture
 import native_funding_paths
 import native_results
@@ -220,7 +221,7 @@ class MacroRunnerContractTests(unittest.TestCase):
 
     def test_every_trial_attempt_runs_a_full_calculation(self):
         capture = procedure('CaptureTrial')
-        self.assertRegex(capture, r'(?m)^    For attempt = 1 To 2\n        FinishTrialCalculation\n        source\.Calculate$')
+        self.assertRegex(capture, r'(?m)^        selector\.Value2 = code\n        FinishTrialCalculation\n        source\.Calculate$')
         finish = procedure('FinishTrialCalculation')
         self.assertRegex(finish, r'(?m)^    started = Timer\n    Application\.CalculateFull\n    Do While')
         self.assertNotRegex(finish, r'(?m)^\s*Application\.Calculate\s*$')
@@ -235,8 +236,10 @@ class MacroRunnerContractTests(unittest.TestCase):
         order = ('selector.Value2 = code', 'FinishTrialCalculation', 'source.Calculate',
                  'values = source.Value2', 'CaptureBalancesAgree(', 'If attempt > 2 Then RaiseRunError',
                  'CaptureTrial = values')
-        self.assertEqual(sorted(map(capture.index, order)), list(map(capture.index, order)))
-        self.assertIn('If attempt = 2 Or Not primary Then Exit For', capture)
+        active_trial = capture[capture.index('selector.Value2 = code'):]
+        self.assertEqual(sorted(map(active_trial.index, order)), list(map(active_trial.index, order)))
+        self.assertIn('selector.Value2 = 0\n            FinishTrialCalculation', capture)
+        self.assertLess(capture.index('CaptureBalancesAgree('), capture.index('If attempt = 2 Then Exit For'))
         self.assertIn('RepeatsPriorEnding(values, batch, previousRow)', capture)
         self.assertIn('2 * ANNUAL_CAPACITY - 1', procedure('RepeatsPriorEnding'))
         finish = procedure('FinishTrialCalculation')
@@ -247,6 +250,15 @@ class MacroRunnerContractTests(unittest.TestCase):
         compare = procedure('CaptureBalancesAgree')
         self.assertIn('For period = 1 To years', compare)
         self.assertIn('batch(pairedRow, field)', compare)
+        self.assertIn('If Not AnnualClosingsAgree(book, years) Then Exit Function', compare)
+        balances = procedure('AnnualClosingsAgree')
+        self.assertEqual(int(constant('CLOSING_CHECKS')), len(native_balance_checks.CLOSINGS))
+        first_check = native_balance_checks.FIRST_COLUMN
+        self.assertEqual(range_boundaries('N5:N5')[0], first_check)
+        self.assertIn('Range("N5").Resize(years, CLOSING_CHECKS)', balances)
+        self.assertIn('If Not formulas Then Exit Function', balances)
+        self.assertLess(balances.index('checks.Calculate'), balances.index('differences = checks.Value2'))
+        self.assertIn('SameCaptureValue(differences(period, field), 0#)', balances)
         for name, label in (('ENDING_NOMINAL_FIELD', 'Ending portfolio, future dollars'),
                             ('CUT_YEARS_FIELD', 'Years with spending cuts'),
                             ('REFRESH_DATE_FIELD', 'Refresh date')):

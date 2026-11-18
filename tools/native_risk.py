@@ -5,6 +5,7 @@ import re
 from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import get_column_letter as L
 
+import native_balance_checks
 import native_random
 import native_capture
 import native_results
@@ -316,6 +317,7 @@ def configure(m, baseline):
     _clone_annual(m,baseline)
     _calendar_and_returns(m)
     _bind_annual(m)
+    native_balance_checks.configure(m)
     native_random.configure(m.put)
     m.put(TRIAL,'A1','Market trial results','detail_title')
     m.put(TRIAL,'A2','Enter a trial number in B3. Row 7 shows its results. Saved trials start in row 8. Enter 0 to return to the main plan.','report_caption')
