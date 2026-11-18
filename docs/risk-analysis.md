@@ -34,6 +34,8 @@ The six-page **Summary** begins with the outlook and retirement cash flow, then 
 
 On **Risk_Settings**, enter the share of non-mortgage living costs you could reduce, the cut to that share, and the balance that would trigger it. The trigger compares each year’s opening portfolio with that year’s opening balance in the base plan.
 
+The longer-retirement tests keep spending fixed. In **Market_Paths**, the first extra year can still use the base plan’s final balance for comparison. In later years the comparison cells are blank, and the actual spending cut stays at zero.
+
 The example cuts 15% of a 30% flexible share, reducing non-mortgage living costs by 4.5% in a year when the rule applies. Mortgage payments, healthcare and one-time bills remain in required costs. Tax follows the revised withdrawals. The rule is tested each year, so cuts can recur. The reported median number of years with cuts includes every flexible-spending path, including paths with no cuts.
 
 Use a reduction you could sustain. Review the total budget effect before relying on the flexible-spending result.

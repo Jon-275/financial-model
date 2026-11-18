@@ -30,16 +30,33 @@ CASES = (
 )
 
 
+def expect(sheet, address, expected):
+    actual = sheet[address].value
+    if type(expected) in (int, float):
+        matches = type(actual) in (int, float) and isclose(actual, expected, abs_tol=1e-10)
+    elif expected == '':
+        matches = actual in ('', None)
+    else:
+        matches = actual == expected
+    if not matches:
+        raise AssertionError(f'{sheet.title}!{address}: expected {expected!r}, got {actual!r}')
+
+
 def check(path, office):
     model = NewWorkbook()
     model.remove(model.active)
-    for name in ('Trial_Inputs', 'Risk_Settings', 'Projection', 'Trial_Projection', 'Fixed', 'Flexible'):
+    for name in ('Trial_Inputs', 'Risk_Settings', 'Projection', 'Trial_Projection', 'Fixed', 'Flexible',
+                 'Inputs', 'Longevity'):
         model.create_sheet(name)
-    inputs, settings, base, trial, fixed, flexible = model.worksheets
+    inputs, settings, base, trial, fixed, flexible, plan, longevity = model.worksheets
     inputs['B38'], inputs['B39'], inputs['B40'], inputs['B56'] = 1200, 2030, 6, .5
     settings['B6'], settings['B7'], settings['B8'] = .75, .25, .40
+    base_positions = len(CASES) + 1  # Includes the opening balance.
+    plan['B70'] = base_positions
     for policy in (fixed, flexible):
-        policy['D3'], policy['H3'], policy['J3'] = len(CASES) + 1, policy is flexible, 'OK'
+        policy['D3'], policy['H3'], policy['J3'] = base_positions, policy is flexible, 'OK'
+    longevity['D3'], longevity['H3'], longevity['J3'] = base_positions + 3, False, 'OK'
+    first_extra = 6 + base_positions
     with Workbook(path) as release:
         source = release['Market_Paths']
         for index, values in enumerate(CASES, 7):
@@ -48,13 +65,18 @@ def check(path, office):
             trial[f'B{index-1}'], trial[f'F{index-1}'], trial[f'CH{index-1}'] = year, filing, living
             for policy in (fixed, flexible):
                 policy[f'D{index}'] = stage
-        for index in range(6, 8 + len(CASES)):
+        for index in range(first_extra, first_extra + 3):
+            longevity[f'D{index}'] = 'Retirement'
+            base[f'BH{index-2}'] = 100 if index == first_extra else '=""'
+            trial[f'BH{index-2}'] = 50
+            trial[f'B{index-1}'], trial[f'F{index-1}'], trial[f'CH{index-1}'] = 2031, 'MFJ', 2000
+        for index in range(6, first_extra + 4):
             for col in ('AE', 'AH', 'AI'):
                 address = f'{col}{index}'
                 formula = source[address].formula
                 if not formula:
                     raise AssertionError(f'Market_Paths!{address} has no formula.')
-                for policy in (fixed, flexible):
+                for policy in (fixed, flexible, longevity):
                     policy[address] = '=' + formula
     with TemporaryDirectory() as temp:
         root = Path(temp)
@@ -69,16 +91,15 @@ def check(path, office):
                 for index, case in enumerate(CASES, 7):
                     threshold, cut = case[-2:]
                     for col, expected in (('AI', threshold), ('AH', cut), ('AE', cut if name == 'Flexible' else 0)):
-                        actual = sheet[f'{col}{index}'].value
-                        if type(expected) in (float, int):
-                            ok = type(actual) in (int, float) and isclose(actual, expected, abs_tol=1e-10)
-                        else:
-                            ok = actual == expected
-                        if not ok:
-                            raise AssertionError(f'{name}!{col}{index}: expected {expected!r}; got {actual!r}')
+                        expect(sheet, f'{col}{index}', expected)
                 for col in ('AE', 'AH', 'AI'):
-                    if sheet[f'{col}6'].value != 0 or sheet[f'{col}{7 + len(CASES)}'].value not in ('', None):
-                        raise AssertionError(f'{name}!{col} must be zero in the opening year and blank after the end.')
+                    expect(sheet, f'{col}6', 0)
+                    expect(sheet, f'{col}{first_extra}', '')
+            stress = saved['Longevity']
+            for offset, expected in enumerate(((75, 200, 0), ('', '', 0), ('', '', 0), ('', '', ''))):
+                row = first_extra + offset
+                for col, want in zip(('AI', 'AH', 'AE'), expected, strict=True):
+                    expect(stress, f'{col}{row}', want)
 
 
 if __name__ == '__main__':
@@ -87,4 +108,4 @@ if __name__ == '__main__':
     parser.add_argument('--soffice', default='soffice')
     args = parser.parse_args()
     check(args.workbook, args.soffice)
-    print(f'PASS {len(CASES)} annual boundary cases for both fixed and flexible worksheet formulas.')
+    print(f'PASS {len(CASES)} fixed and flexible annual cases and the fixed longevity extension.')

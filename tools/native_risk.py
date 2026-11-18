@@ -293,12 +293,14 @@ def _bind_annual(m):
                f'IF(F{row}="Single",Trial_Inputs!$B$56,1)')
         # The applied cut and the fixed-path comparison share one policy formula.
         active_year=f'AND({market_row}-6<$D$3,$J$3="OK")'
+        # The first year past the base plan still has its final balance as an opening.
+        comparison_year=f'AND({active_year},{market_row}-6<=Inputs!$B$70)'
         threshold=f'IF(D{market_row}="Working",0,Risk_Settings!$B$6*Projection!BH{row-1})'
         cut=(f'IF(AND(D{market_row}<>"Working",{projection}!BH{row-1}<AI{market_row}),'
              f'MAX(0,{projection}!CH{row}-({fixed.replace("B"+str(row),projection+"!B"+str(row)).replace("F"+str(row),projection+"!F"+str(row))}))'
              f'*Risk_Settings!$B$7*Risk_Settings!$B$8,0)')
-        m.put(MARKET,f'AI{market_row}',f'=IF({active_year},{threshold},"")','money')
-        m.put(MARKET,f'AH{market_row}',f'=IF({active_year},{cut},"")','money')
+        m.put(MARKET,f'AI{market_row}',f'=IF({comparison_year},{threshold},"")','money')
+        m.put(MARKET,f'AH{market_row}',f'=IF({comparison_year},{cut},"")','money')
         m.put(MARKET,f'AE{market_row}',f'=IF({active_year},IF($H$3,AH{market_row},0),"")','money')
         # Additional medical reserves are deliberately outside HSA eligibility.
         m.put(healthcare,f'AG{row}',m.cells[healthcare][f'P{row}'],'money')

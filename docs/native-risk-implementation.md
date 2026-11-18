@@ -111,12 +111,14 @@ The six runs matched on the first attempt. In a separate recovery test, the firs
 
 ### Full calculation with a year-by-year retry
 
-On November 18, Excel for Mac completed both 1,000-pair runs using the exact release candidate. Each run produced 2,033 outcomes and three complete ranked funding histories. All 588,054 fields in each run matched the independent reference.
+On November 18, Excel for Mac completed both 1,000-pair runs before the longevity display correction described below. Each run produced 2,033 outcomes and three complete ranked funding histories. All 588,054 fields in each run matched the independent reference.
 
 | Plan | Elapsed time | Flexible paths that matched their fixed partners and reused the result | Target |
 | --- | ---: | ---: | ---: |
 | Example, ages 35–95 | 7 min 52 sec (472 sec) | 515 | 2 min |
 | Maximum, ages 0–125 | 33 min 10 sec (1,990 sec) | 501 | 5 min |
+
+A later correction affected two comparison columns on **Market_Paths**. For an example ending at age 95, age 96 still has a base-plan opening balance. From age 97 onward, the longer-retirement tests leave those comparisons blank and continue at fixed spending. The saved financial results and the VBA runner are identical in both files.
 
 An earlier build recorded each retry. It took 10 min 2 sec for the example and 27 min 30 sec through age 125. Eight example trials and 90 maximum-horizon trials failed an initial closing check. Excel recalculated each affected trial in year order, and all 588,054 fields in both runs matched the independent reference.
 
