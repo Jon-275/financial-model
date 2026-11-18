@@ -140,7 +140,7 @@ Public Sub RunMarketRisk()
             Next column
             reusedCount = reusedCount + 1
         Else
-            captured = CaptureTrial(book, selector, trialCurrent, code, context, batch, pairedRow, lastCalculatedRow)
+            captured = CaptureTrial(book, selector, trialCurrent, code, context, True, batch, pairedRow, lastCalculatedRow)
             lastCalculatedRow = index
             For column = 1 To width
                 batch(index, column) = captured(1, column)
@@ -163,7 +163,7 @@ Public Sub RunMarketRisk()
             Case 3: rank = 1 + Int(0.9 * (count - 1) + 0.5)
         End Select
         code = CLng(ids(order(rank), 1))
-        captured = CaptureTrial(book, selector, pathCurrent, code, context, batch, order(rank), 0)
+        captured = CaptureTrial(book, selector, pathCurrent, code, context, False, batch, order(rank), 0)
         For column = 1 To pathWidth
             paths(caseIndex, column) = captured(1, column)
         Next column
@@ -325,11 +325,10 @@ Private Function CanReuseFixedTrial(ByVal book As Workbook, ByRef batch As Varia
     CanReuseFixedTrial = True
 End Function
 
-Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
-    Dim values As Variant, column As Long, attempt As Long, primary As Boolean
+Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
+    Dim values As Variant, column As Long, attempt As Long
     CheckCancelled
     selector.Value2 = code
-    primary = (source.Parent Is selector.Parent)
     For attempt = 1 To 2
         ' Complete the workbook dependency chain before refreshing its terminal output row.
         FinishTrialCalculation (attempt = 2)

@@ -65,6 +65,8 @@ Read the success rate and number of paths with spending cuts together. The rule 
 
 **Risk_Data** derives report statistics from the captured trial results and compares the active assumptions with the completed run. A failed or incomplete run cannot supply a current report. The report’s real and nominal balance percentiles are calculated separately, so future-dollar bands remain correct when inflation varies across paths.
 
+Read a success rate as the percentage of paths that paid all required costs. Ages and trial numbers are whole numbers. A price index of 1.25 means that $100 at the start of the plan has the same buying power as $125 in that year.
+
 ## Tax_Tables
 
 Use the links on the sheet to find federal, California, payroll, Medicare and Marketplace amounts. The tables identify the years used by the model. The projection uses published amounts for their applicable years and estimates later values according to the documented rules. Federal and California income taxes use separate rates, deductions and loss balances. The model estimates U.S. federal and California taxes for the scenario. [Tax assumptions](model-guide.md#tax-rates-and-healthcare-credits) · [Annual tax data review](annual-tax-review.md)

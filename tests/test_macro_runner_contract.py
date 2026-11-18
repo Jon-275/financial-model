@@ -165,7 +165,7 @@ class MacroRunnerContractTests(unittest.TestCase):
         partner = procedure('CanReuseFixedTrial')
         self.assertIn('cutProof.HasFormula', run)
         self.assertIn('lastCalculatedRow = index', run)
-        self.assertIn('context, batch, pairedRow, lastCalculatedRow)', run)
+        self.assertIn('context, True, batch, pairedRow, lastCalculatedRow)', run)
         self.assertLess(run.index('captured = CaptureTrial('), run.index('fixedUnchanged(index) ='))
         self.assertIn('For period = 1 To CLng(years) - 1', proof)
         self.assertIn('FIRST_YEAR_FIELD + ANNUAL_CAPACITY + period - 1', proof)
@@ -202,6 +202,11 @@ class MacroRunnerContractTests(unittest.TestCase):
 
     def test_capture_waits_for_dependencies_and_reconciles_before_storage(self):
         capture = procedure('CaptureTrial')
+        run = procedure('RunMarketRisk')
+        self.assertIn('trialCurrent, code, context, True, batch', run)
+        self.assertIn('pathCurrent, code, context, False, batch', run)
+        self.assertIn('ByVal primary As Boolean', capture)
+        self.assertNotIn('source.Parent Is selector.Parent', capture)
         order = ('selector.Value2 = code', 'FinishTrialCalculation (attempt = 2)', 'source.Calculate',
                  'values = source.Value2', 'CaptureBalancesAgree(', 'If attempt > 2 Then RaiseRunError',
                  'CaptureTrial = values')

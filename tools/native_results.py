@@ -120,9 +120,14 @@ def configure(m):
           f'IF(COUNT({_trial_range("E")})>0,MEDIAN({_trial_range("E")}),"")',
           'IF(Risk_Settings!B32=1,"Variable annual inflation","Expected inflation")',
           CONTEXT,'Risk_Settings!B33','Risk_Settings!B34','Risk_Settings!B35','Risk_Settings!B36')
-    for row,(label,value) in enumerate(zip(labels,meta,strict=True),2):
+    text, whole, decimal = 'report_caption', 'report_row', 'report_decimal'
+    percent, money = 'report_percent', 'report_money'
+    meta_styles=(text,text,whole,whole,whole,text,percent,percent,whole,decimal,
+                 percent,percent,percent,whole,decimal,whole,decimal,text,text,
+                 percent,percent,percent,percent)
+    for row,(label,value,style) in enumerate(zip(labels,meta,meta_styles,strict=True),2):
         put(f'BA{row}',label,'report_caption')
-        put(f'BB{row}',f'=IF({current},{value},"")','report_caption' if row in (2,3,7,19,20) else 'report_money')
+        put(f'BB{row}',f'=IF({current},{value},"")',style)
     for col,label in zip('ABCDEFGHI',('Year','Age','Base balance, real','Fixed low, real','Fixed median, real',
                                       'Fixed high, real','Flexible low, real','Flexible median, real','Flexible high, real')):
         put(f'{col}4',label,'header')
@@ -150,7 +155,9 @@ def configure(m):
         for source,position in (('E',fixed),('M',fixed),('E',flex),('M',flex),('L',fixed),('L',flex)):
             value=_trial_at(source,position)
             values.append(f'IF({value}="","",{value})')
-        for col,value in zip('KLMNOPQ',values):put(f'{col}{row}',f'=IF({current},{value},"")')
+        styles=(percent,whole,money,whole,money,decimal,decimal)
+        for col,value,style in zip('KLMNOPQ',values,styles,strict=True):
+            put(f'{col}{row}',f'=IF({current},{value},"")',style)
     for col,label in zip(('AF','AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ'),
         ('Path','Ending balance, real','First shortfall age','Unpaid, real','Spending unpaid, real','Tax unpaid, real',
          'Spending due, real','Tax due, real','Income available, real','Income used, real','HSA used, real',
@@ -162,7 +169,8 @@ def configure(m):
         for col,source in zip(('AG','AH','AI','AJ','AK','AL','AM','AN','AO','AP','AQ','AR','AS','AT','AU','AV','AW','AX','AY','AZ'),
                               ('G','E','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','AA','A','L','AE')):
             value=f'INDEX({TRIAL}!${source}${FIRST}:${source}${FIRST+CAPACITY-1},{position})'
-            put(f'{col}{row}',f'=IF({current},IF({value}="","",{value}),"")')
+            style = {'AH':whole,'AX':whole,'AY':decimal,'AZ':decimal}.get(col,money)
+            put(f'{col}{row}',f'=IF({current},IF({value}="","",{value}),"")',style)
         put(f'AF{row}',f'=IF({current},"{label}","")','label')
     put('K20','Inflation, longevity and medical tests','detail_title')
     for col,label in zip('KLMNOPQR',('Test','Paid all costs','End age','First shortfall age','Unpaid, real',
@@ -170,6 +178,7 @@ def configure(m):
         put(f'{col}22',label,'header')
     for row,label in enumerate(STRESSES,23):
         put(f'K{row}',label,'label')
-        for col,source in zip('LMNOPQR',('D','AG','E','M','L','G','AE')):
+        for col,source,style in zip('LMNOPQR',('D','AG','E','M','L','G','AE'),
+                                    (whole,whole,whole,money,decimal,money,decimal),strict=True):
             value=_trial_at(source,f'2*Risk_Settings!B29+{row+4}')
-            put(f'{col}{row}',f'=IF({current},IF({value}="","",{value}),"")')
+            put(f'{col}{row}',f'=IF({current},IF({value}="","",{value}),"")',style)

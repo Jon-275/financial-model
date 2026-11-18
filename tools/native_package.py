@@ -8,7 +8,12 @@ A='{http://schemas.openxmlformats.org/drawingml/2006/main}'
 
 def install_names(workbook,ranges):
     names=workbook.find(X+'definedNames')
-    if names is None:names=E.SubElement(workbook,X+'definedNames')
+    if names is None:
+        names = E.Element(X+'definedNames')
+        preceding = {X+tag for tag in ('fileVersion', 'fileSharing', 'workbookPr', 'workbookProtection',
+                                       'bookViews', 'sheets', 'functionGroups', 'externalReferences')}
+        position = 1 + max((i for i, child in enumerate(workbook) if child.tag in preceding), default=-1)
+        workbook.insert(position, names)
     sheets={s.get('name'):str(i) for i,s in enumerate(workbook.find(X+'sheets'))}
     for sheet,items in ranges.items():
         scope=sheets[sheet]
