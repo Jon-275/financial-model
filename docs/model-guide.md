@@ -5,8 +5,8 @@
 1. **Save a private copy.** The saved scenarios use fictional figures. Select **Open Inputs** on **Start Here** to begin.
 2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
 3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Optional settings are visible below the main assumptions.
-4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
-5. **Run market risk.** Open your copy in desktop Excel with macros enabled. On **Risk_Settings**, choose 100 paths while editing and 1,000 for the final report. Select **Run market risk** on **Summary**. Print when the status says **Risk results are current**. [Risk instructions](risk-analysis.md#run-the-analysis)
+4. **Review Summary.** With Excel set to Automatic calculation, the base projection updates as you edit. Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
+5. **Run market risk when you’re ready.** You can make several edits before running the scenarios. On **Risk_Settings**, use 100 paired paths for a quick comparison or 1,000 for the final report. In desktop Excel with macros enabled, select **Run market risk** on **Summary** to start the full calculation. Print when the status says **Risk results are current**. [Risk instructions](risk-analysis.md#run-the-analysis)
 
 To compare plans, save Summary as a PDF before changing an assumption. Run market risk again and compare the two reports. Each completed run replaces the last one.
 

@@ -47,7 +47,7 @@ These tests used the same example inputs and retained the visible annual workshe
 | Evaluate a proposed withdrawal in memory using the worksheet formulas | A test generated a VBA evaluator from the 30 formulas used for one withdrawal. In Excel for Mac, 410 proposed withdrawals matched the live formulas exactly across 12,300 results, including the funding and health-credit decisions. The evaluator processed 2,050 withdrawals in 1.81 seconds. Five funding decisions differed from the archived LibreOffice values where a tiny negative amount had been saved as zero. This timing covers one proposed withdrawal. The annual search has its own test below. |
 | Generate direct VBA for a proposed withdrawal | Excel for Mac compared the generated arithmetic, the interpreter and the live worksheet. All 12,300 amounts and funding decisions matched exactly. In two runs of 2,050 withdrawals each, direct VBA took 0.062 seconds both times. The interpreter took 1.305 and 1.303 seconds. These timings cover the proposed withdrawal only. |
 | Run the complete annual withdrawal search in memory | In Excel for Mac, the VBA search read the starting assumptions, chose each withdrawal and returned the selected result. All 32,718 cells across seven fictional years matched the original worksheet, including the 231 proposed withdrawals and all funding decisions. Two timed blocks of 140 annual searches took 0.531 and 0.540 seconds in memory. The same worksheet searches took 2.633 and 2.650 seconds. These figures cover the withdrawal search. Separate portable comparisons against LibreOffice differed on five intermediate funding decisions near zero. |
-| Carry one market path across several years | A three-year test started from opening assumptions, crossed from work into retirement and included a scheduled bill. The independent in-memory calculation and Mac Excel agreed exactly on all 30,006 fields across the original and increased-bill cases. The larger bill changed the final year from funded to unfunded. This test used Python for the in-memory path and Excel for the worksheet comparison. A complete multi-year VBA market run still needs separate verification. |
+| Carry one market path across several years | A three-year test started from opening assumptions, crossed from work into retirement and included a scheduled bill. The independent in-memory calculation and Mac Excel agreed exactly on all 30,006 fields across the original and increased-bill cases. The larger bill changed the final year from funded to unfunded. This test used Python for the in-memory path and Excel for the worksheet comparison. |
 
 ### Complete paths calculated in memory
 
@@ -63,7 +63,20 @@ The prototype reads the assumptions once, calculates returns, taxes, healthcare,
 
 In a separate Mac test, both methods calculated and collected the same 283 figures for each of the same ten 125-year trials. VBA took 15.43 seconds. The worksheets took 18.52 seconds with a full dependency rebuild for each trial. All 2,830 values matched exactly. The in-memory calculation saved 3.09 seconds, or 16.7%, in this test.
 
-These timings exclude independent verification, saving and report preparation. The worksheet runner used for the full benchmarks can reuse verified fixed results for flexible partners and retry a trial if its balances fail a check. A full-size in-memory timing requires the same households, seed, stress cases and reporting steps. [Full-batch test plan](model-improvement-plan.md#workbook-ownership-and-refresh)
+The ten-trial timings exclude report preparation, saving and independent verification.
+
+### Full report comparison
+
+The shared workbook keeps the visible worksheet formulas. They produced the same reports as the in-memory prototype and finished sooner at both horizons. Each comparison used the same fictional household, random seed, 1,000 pairs and 33 stress cases as its saved Excel for Mac reference.
+
+| Plan | Worksheet refresh | In-memory refresh | Flexible paths reused by both |
+| --- | ---: | ---: | ---: |
+| Ages 35–95 | 7 min 52 sec | 33 min 52 sec | 515 |
+| Ages 0–125 | 33 min 10 sec | 60 min 12 sec | 501 |
+
+The clock ran from the start of the refresh through annual balance checks, selection of the three funding examples, the Summary update and restoration of Excel’s settings. Saving and independent verification took place afterwards. For each household, all 2,033 outcomes, the three ranked funding histories and the saved Summary chart values matched the worksheet reference exactly. A separate test interrupted publication after a write and confirmed that all 595,814 previously stored fields were restored.
+
+In a separate calculation-only test, the prototype calculated every fixed and flexible path directly. Calculating and collecting the results took 32 min 7 sec and 62 min 15 sec, respectively. Writing each complete batch to Excel took about 0.12 seconds. Both worksheet refreshes still exceed the two- and five-minute targets. [Implementation decision](model-improvement-plan.md#workbook-ownership-and-refresh)
 
 For a quick comparison, set **Paired market paths** on **Risk_Settings** to 100 and run the scenarios. Set it to 1,000 and run again for the final report. Both runs include the 33 stress cases. More paths reduce the sampling variation in the reported funding rate.
 
