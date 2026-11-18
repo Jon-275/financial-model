@@ -218,6 +218,13 @@ class MacroRunnerContractTests(unittest.TestCase):
             self.assertIn(f'Application.{prop} =', restored)
         self.assertIn('Application.EnableCancelKey = settings.CancelKey', cleanup)
 
+    def test_every_trial_attempt_runs_a_full_calculation(self):
+        capture = procedure('CaptureTrial')
+        self.assertRegex(capture, r'(?m)^    For attempt = 1 To 2\n        FinishTrialCalculation\n        source\.Calculate$')
+        finish = procedure('FinishTrialCalculation')
+        self.assertRegex(finish, r'(?m)^    started = Timer\n    Application\.CalculateFull\n    Do While')
+        self.assertNotRegex(finish, r'(?m)^\s*Application\.Calculate\s*$')
+
     def test_capture_waits_for_dependencies_and_reconciles_before_storage(self):
         capture = procedure('CaptureTrial')
         run = procedure('RunMarketRisk')
@@ -225,7 +232,7 @@ class MacroRunnerContractTests(unittest.TestCase):
         self.assertIn('pathCurrent, code, context, False, batch', run)
         self.assertIn('ByVal primary As Boolean', capture)
         self.assertNotIn('source.Parent Is selector.Parent', capture)
-        order = ('selector.Value2 = code', 'FinishTrialCalculation (attempt = 2)', 'source.Calculate',
+        order = ('selector.Value2 = code', 'FinishTrialCalculation', 'source.Calculate',
                  'values = source.Value2', 'CaptureBalancesAgree(', 'If attempt > 2 Then RaiseRunError',
                  'CaptureTrial = values')
         self.assertEqual(sorted(map(capture.index, order)), list(map(capture.index, order)))

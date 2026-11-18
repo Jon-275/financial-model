@@ -330,8 +330,8 @@ Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, B
     CheckCancelled
     selector.Value2 = code
     For attempt = 1 To 2
-        ' Complete the workbook dependency chain before refreshing its terminal output row.
-        FinishTrialCalculation (attempt = 2)
+        ' Incremental calculation can retain earlier trial years in the live ledger.
+        FinishTrialCalculation
         source.Calculate
         CheckCancelled
         RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
@@ -352,14 +352,10 @@ Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, B
     CaptureTrial = values
 End Function
 
-Private Sub FinishTrialCalculation(ByVal full As Boolean)
+Private Sub FinishTrialCalculation()
     Dim started As Double, elapsed As Double
     started = Timer
-    If full Then
-        Application.CalculateFull
-    Else
-        Application.Calculate
-    End If
+    Application.CalculateFull
     ' In manual mode xlPending can remain set for unrelated dirty cells.
     ' The synchronous calculation above has returned. Wait only while Excel is
     ' actively calculating, then verify our own ledger and terminal row.
