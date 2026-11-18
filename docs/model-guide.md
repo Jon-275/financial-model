@@ -6,7 +6,9 @@
 2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
 3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Optional settings are visible below the main assumptions.
 4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
-5. **Run market risk.** Review **Risk_Settings**, then choose **Run market risk** beside Summary’s navigation. Wait for current results before reading the market paths and stress tests. [Risk instructions](risk-analysis.md#run-the-analysis)
+5. **Run market risk.** Open your copy in desktop Excel with macros enabled. On **Risk_Settings**, choose 100 paths while editing and 1,000 for the final report. Select **Run market risk** on **Summary**. Print when the status says **Risk results are current**. [Risk instructions](risk-analysis.md#run-the-analysis)
+
+To compare plans, save Summary as a PDF before changing an assumption. Run market risk again and compare the two reports. Each completed run replaces the last one.
 
 Select any formula cell to read its calculation in the formula bar. You can edit scenario inputs, investment assumptions, the conversion comparison, risk settings and published tax values while the sheets are protected. To change a formula in your own copy, choose **Review → Unprotect Sheet**. No password is needed.
 

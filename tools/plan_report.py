@@ -309,7 +309,12 @@ def configure(put):
     projected = display_dollars(f'{METRICS_REF}$B$16', benchmark_cpi)
     summary('B84', f'=IF(AND({ok},{target}),"Savings at retirement ("&IF({FUTURE_VIEW},"future","today’s")&" dollars): "&TEXT({projected},{dollars})&". The funding result includes income timing and tax.","")', 'report_caption')
     summary('B86', 'Next decision', 'report_section')
-    summary('B87', f'=IF({ok},IF({gap}>0,"Try a later retirement age, lower spending or higher savings. Change one input and compare the first shortfall.",IF({risk.CURRENT},"Choose one change in spending, retirement age or savings. Refresh market risk and compare the funding results.",IF({opening_only},"Extend the plan on Inputs before testing market risk.","Run market risk, then test a change in spending, retirement age or savings."))),"Resolve the item on page 1 before comparing scenarios.")')
+    summary('B87', f'=IF({ok},IF({risk.CURRENT},IF({gap}>0,'
+            '"Save this Summary as a PDF. Try later retirement or lower spending. Rerun market risk and compare the first shortfall.",'
+            '"Save this Summary as a PDF. Change spending, retirement age or savings. Rerun market risk and compare the reports."),'
+            f'IF({opening_only},"Extend the plan on Inputs before testing market risk.",'
+            '"Run market risk and save this Summary as a PDF before changing another assumption.")),'
+            '"Resolve the item on page 1 before comparing scenarios.")')
     summary('B90', 'Change to test', 'report_caption')
     for column in 'DEFGHI':
         summary(f'{column}90', '', 'report_write_in')

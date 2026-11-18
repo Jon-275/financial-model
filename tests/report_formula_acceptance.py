@@ -83,6 +83,26 @@ def verify(executable):
                     [400*1.331,20*1.21,105,230,350,10*1.21,15*1.1025] if native else
                     [400*1.02**3,20*1.02**2,100*1.02**2,200*1.02**2,300*1.02**2,10*1.02**2,15*1.02**2])
         timing_cases = add_income_timing_cases(source)
+        next_steps = {}
+        def collect_next_step(sheet, address, value, style=None):
+            if sheet == 'Summary' and address == 'B87':
+                next_steps[address] = value
+        plan_report.configure(collect_next_step)
+        decisions = (
+            (61, 0, 'current', 'Save this Summary as a PDF.', 'compare the reports.'),
+            (61, 2, 'current', 'Save this Summary as a PDF.', 'compare the first shortfall.'),
+            (61, 0, 'stale', 'Run market risk', 'before changing another assumption.'),
+            (1, 0, 'incomplete', 'Extend the plan on Inputs', 'before testing market risk.'),
+            (0, 0, 'invalid', 'Resolve the item on page 1', 'before comparing scenarios.'),
+        )
+        for n, (rows, shortfall, status, first, last) in enumerate(decisions):
+            book = Workbook()
+            book.active.title = 'Summary'
+            book.active['B87'] = next_steps['B87']
+            data = book.create_sheet('Report_Data')
+            data['Q2'], data['Q6'] = rows, shortfall
+            book.create_sheet('Risk_Data')['Z1'] = status
+            book.save(source / f'decision-{n}.xlsx')
         result=subprocess.run([executable,f'-env:UserInstallation={(root/"profile").as_uri()}',
                                '--headless','--convert-to','xlsx','--outdir',str(output),
                                *(str(path) for path in source.glob('*.xlsx'))],capture_output=True,timeout=120)
@@ -98,7 +118,12 @@ def verify(executable):
             actual = tuple(book['Summary'][address].value or None for address in ('B58', 'B59'))
             book.close()
             assert actual == pair, (name, actual, pair)
-        print('PASS: 28 report amounts in both dollar views and eight income and survivor timing checks.')
+        for n, (_, _, _, first, last) in enumerate(decisions):
+            book = load_workbook(output / f'decision-{n}.xlsx', read_only=True, data_only=True)
+            message = book['Summary']['B87'].value
+            book.close()
+            assert message.startswith(first) and message.endswith(last), (n, message)
+        print('PASS: 28 report amounts, eight income and survivor timing checks, and five comparison prompts.')
 
 
 if __name__=='__main__':

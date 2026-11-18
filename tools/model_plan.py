@@ -456,7 +456,7 @@ def guidance(start_sheet):
             'G52': 'Enter annual taxable income apart from wages. See rows 86–88.',
             'G53': 'Enter the last age to show, up to 125.',
             'G54': 'Enter your age at first death. Use 999 for a two-person plan.',
-            'G55': 'Enter the share of both benefits the survivor receives.',
+            'G55': 'Enter a percentage of both benefits. Active value shows the annual survivor benefit.',
             'G56': 'Enter the share of the couple’s spending the survivor needs.',
             'G57': 'Enter the survivor’s share of the couple’s healthcare budget.',
             'G58': 'Enter the age care starts. Use 999 to leave it out.',
