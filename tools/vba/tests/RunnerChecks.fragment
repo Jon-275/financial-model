@@ -7,6 +7,9 @@ Public Sub VerifyMarketRiskRunner()
     Dim row As Long, ignored As Double, captured As Variant, previous As Variant
     On Error GoTo Failed
 
+    VerifyFlexibleReuseGuards
+    AssertRunner CompletedRunNote(1, 1) = "Updated 1 paired path and 33 stress cases. 1 flexible path used its verified fixed result.", "Singular run details are incorrect."
+    AssertRunner CompletedRunNote(2, 0) = "Updated 2 paired paths and 33 stress cases. 0 flexible paths used their verified fixed results.", "Plural run details are incorrect."
     counts = Array(1, 37, 1000)
     For Each item In counts
         count = CLng(item)
@@ -66,15 +69,22 @@ Public Sub VerifyMarketRiskRunner()
 
     AssertRunner SeedNumber(0) = 0, "Zero seed was not preserved."
     AssertRunner SeedNumber(4294967295#) = 4294967295#, "The largest seed was not preserved."
-    counts = Array(-1, 4294967296#, 1.5, True, Empty)
-    For Each item In counts
+    counts = Array(-1, 4294967296#, 1.5, True, Empty, "42", Null, CVErr(xlErrValue))
+    For index = LBound(counts) To UBound(counts)
+        item = counts(index)
         On Error Resume Next
         Err.Clear
         ignored = SeedNumber(item)
         errorNumber = Err.Number
         On Error GoTo Failed
-        AssertRunner errorNumber = RUN_ERROR, "An invalid seed was accepted."
-    Next item
+        AssertRunner errorNumber = RUN_ERROR, "Invalid seed case " & CStr(index + 1) & " (" & TypeName(item) & ") returned error " & CStr(errorNumber) & "."
+    Next index
+    On Error Resume Next
+    Err.Clear
+    ignored = WholeNumber("10", 1, 1000, "Expected numeric path count.")
+    errorNumber = Err.Number
+    On Error GoTo Failed
+    AssertRunner errorNumber = RUN_ERROR, "The controls accepted a path count stored as text."
     On Error Resume Next
     Err.Clear
     RequireText "Record", "record", "Expected case-sensitive mismatch."
@@ -90,11 +100,75 @@ Public Sub VerifyMarketRiskRunner()
     On Error GoTo Failed
     mCancelRequested = False
     AssertRunner errorNumber = 18, "Cancellation did not use the normal interruption handler."
-    MsgBox "Runner algorithm checks passed: trial IDs, paired coverage, stress coverage, path ranking, seed boundaries, exact records and cancellation.", vbInformation, "Runner verification"
+    MsgBox "Runner algorithm checks passed: trial IDs, paired coverage, stress coverage, path ranking, seed boundaries, exact records, flexible reuse and cancellation.", vbInformation, "Runner verification"
     Exit Sub
 Failed:
     mCancelRequested = False
     MsgBox "Runner check failed: " & Err.Description, vbExclamation, "Runner verification"
+End Sub
+
+Private Sub VerifyFlexibleReuseGuards()
+    Const CONTEXT As String = "synthetic-reuse-test"
+    Dim book As Workbook, market As Worksheet, inputs As Worksheet, proof As Range
+    Dim captured As Variant, ids As Variant, firstOpening As Long, width As Long
+    Dim todaySerial As Double, rejected As Boolean, failure As Long, description As String
+    On Error GoTo Failed
+    Set book = Application.Workbooks.Add(xlWBATWorksheet)
+    book.EnableAutoRecover = False
+    Set market = book.Worksheets(1)
+    market.Name = "Market_Paths"
+    Set inputs = book.Worksheets.Add(After:=market)
+    inputs.Name = "Trial_Inputs"
+    inputs.Range("B70").Value2 = 3
+    market.Range("BB3").Value2 = CONTEXT
+    Set proof = market.Range("AH7:AI131")
+    market.Range("AH7:AH8").Formula = "=0"
+    market.Range("AI7:AI8").Formula = "=100"
+    firstOpening = FIRST_YEAR_FIELD + ANNUAL_CAPACITY
+    width = FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY
+    ReDim captured(1 To 1, 1 To width)
+    ReDim ids(1 To 1, 1 To 1)
+    captured(1, firstOpening) = 100#: captured(1, firstOpening + 1) = 100#
+    AssertRunner FixedPathAllowsReuse(proof, captured, book), "Equality at the spending threshold should allow reuse."
+    market.Range("AH8").Formula = "=0.01"
+    AssertRunner Not FixedPathAllowsReuse(proof, captured, book), "A cut in the last year must prevent reuse."
+    market.Range("AH8").ClearContents
+    AssertRunner Not FixedPathAllowsReuse(proof, captured, book), "A missing final-year proof must prevent reuse."
+    market.Range("AH8").Formula = "=0"
+    captured(1, firstOpening + 1) = 99#
+    AssertRunner Not FixedPathAllowsReuse(proof, captured, book), "A below-threshold balance must prevent reuse even with a stale zero cut."
+
+    ids(1, 1) = 1&
+    captured(1, 1) = CONTEXT: captured(1, width) = CONTEXT
+    captured(1, VALID_FIELD) = 1#: captured(1, CUT_YEARS_FIELD) = 0#
+    todaySerial = CDbl(Date)
+    If book.Date1904 Then todaySerial = todaySerial - 1462#
+    captured(1, REFRESH_DATE_FIELD) = todaySerial
+    AssertRunner CanReuseFixedTrial(book, captured, ids, 1, 1001, CONTEXT, width), "A current matching random partner should be accepted."
+    AssertRunner Not CanReuseFixedTrial(book, captured, ids, 1, 1002, CONTEXT, width), "A different random partner must be rejected."
+    ids(1, 1) = 2001&
+    AssertRunner CanReuseFixedTrial(book, captured, ids, 1, 2101, CONTEXT, width), "An early-loss partner should be accepted."
+    AssertRunner Not CanReuseFixedTrial(book, captured, ids, 1, 2201, CONTEXT, width), "An unpaired stress must never reuse a result."
+    captured(1, width) = "prior-assumptions"
+    AssertRunner Not CanReuseFixedTrial(book, captured, ids, 1, 2101, CONTEXT, width), "A stale closing signature must be rejected."
+    captured(1, width) = CONTEXT: captured(1, REFRESH_DATE_FIELD) = todaySerial - 1#
+    AssertRunner Not CanReuseFixedTrial(book, captured, ids, 1, 2101, CONTEXT, width), "A prior-day fixed record must be rejected."
+    captured(1, REFRESH_DATE_FIELD) = todaySerial
+    market.Range("BB3").Value2 = "changed-during-run"
+    On Error Resume Next
+    Err.Clear
+    rejected = CanReuseFixedTrial(book, captured, ids, 1, 2101, CONTEXT, width)
+    failure = Err.Number
+    On Error GoTo Failed
+    AssertRunner failure = RUN_ERROR, "Changing live assumptions must stop publication."
+    book.Close SaveChanges:=False
+    Exit Sub
+Failed:
+    failure = Err.Number: description = Err.Description
+    On Error Resume Next
+    If Not book Is Nothing Then book.Close SaveChanges:=False
+    On Error GoTo 0
+    Err.Raise failure, "Flexible reuse verification", description
 End Sub
 
 Private Sub AssertRunner(ByVal condition As Boolean, ByVal message As String)

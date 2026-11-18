@@ -200,7 +200,7 @@ def build_captures(calendar, settings, end_age, context, timestamp, progress=pri
         _stored_row(secondary, funding_paths.FIRST_ROW + offset, _funding_row(code, annual, path, context))
     return {trial.SHEET: primary, funding_paths.DATA_SHEET: secondary, 'Risk_Data': {
         'Z6': 'complete', 'Z7': timestamp, 'Z8': context,
-        'Z9': f'Updated {n:,} paired paths and 33 stress cases.', 'Z10': n, 'Z11': settings.seed}}
+        'Z9': f'Updated {n:,} paired {"path" if n == 1 else "paths"} and 33 stress cases.', 'Z10': n, 'Z11': settings.seed}}
 
 
 def _calculate(source, work, name, executable, timeout):

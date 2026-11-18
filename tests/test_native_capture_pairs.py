@@ -81,6 +81,12 @@ class FlexibleDecisionTests(unittest.TestCase):
         for value, expected in (('0', 0), ('515', 515), ('1,013', 1013), ('1\u202f013', 1013)):
             text = prefix + value + ' flexible paths used their verified fixed results.'
             self.assertEqual(check_reuse_note(text, text, expected), expected)
+        for paired in ('1 paired path', '10 paired paths'):
+            singular = f'Updated {paired} and 33 stress cases. 1 flexible path used its verified fixed result.'
+            self.assertEqual(check_reuse_note(singular, singular, 1, expected=1), 1)
+        malformed = prefix + '1 flexible path used their verified fixed results.'
+        with self.assertRaises(AssertionError):
+            check_reuse_note(malformed, malformed, 1)
         text = prefix + '516 flexible paths used their verified fixed results.'
         for visible, ceiling in ((text, 515), ('stale message', 1013)):
             with self.assertRaises(AssertionError):

@@ -46,8 +46,10 @@ def positions(book):
 def check_reuse_note(message, visible_message, no_cut_pairs, expected=None):
     if not isinstance(message, str) or message != visible_message:
         raise AssertionError('The run details on Risk_Settings differ from the saved result.')
-    match = re.search(r' ([0-9]+(?:[, .\u00a0\u202f][0-9]{3})?) flexible paths used their verified fixed results\.$',
-                      message)
+    number = r'[0-9]+(?:[, .\u00a0\u202f][0-9]{3})?'
+    match = re.fullmatch(rf'Updated {number} paired paths? and 33 stress cases\. ({number}) '
+                         r'(?:flexible path used its verified fixed result|flexible paths used their verified fixed results)\.',
+                         message)
     if not match:
         raise AssertionError('The desktop run has no count of verified flexible paths.')
     reused = int(''.join(ch for ch in match[1] if ch.isdigit()))

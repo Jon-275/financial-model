@@ -187,8 +187,7 @@ Public Sub RunMarketRisk()
     metadata(2, 1) = CDbl(Now)
     If book.Date1904 Then metadata(2, 1) = metadata(2, 1) - 1462
     metadata(3, 1) = context
-    metadata(4, 1) = "Updated " & Format$(count, "#,##0") & " paired paths and 33 stress cases."
-    metadata(4, 1) = metadata(4, 1) & " " & Format$(reusedCount, "#,##0") & " flexible paths used their verified fixed results."
+    metadata(4, 1) = CompletedRunNote(count, reusedCount)
     metadata(5, 1) = count
     metadata(6, 1) = seed
 
@@ -447,6 +446,21 @@ Private Function TrialCode(ByVal index As Long, ByVal count As Long) As Long
     End If
 End Function
 
+Private Function CompletedRunNote(ByVal count As Long, ByVal reused As Long) As String
+    Dim pairs As String, matching As String
+    If count = 1 Then
+        pairs = "1 paired path"
+    Else
+        pairs = Format$(count, "#,##0") & " paired paths"
+    End If
+    If reused = 1 Then
+        matching = "1 flexible path used its verified fixed result."
+    Else
+        matching = Format$(reused, "#,##0") & " flexible paths used their verified fixed results."
+    End If
+    CompletedRunNote = "Updated " & pairs & " and 33 stress cases. " & matching
+End Function
+
 Private Sub ShowProgress(ByVal index As Long, ByVal total As Long, ByVal started As Double)
     Dim elapsed As Double
     elapsed = Timer - started
@@ -559,16 +573,22 @@ Private Sub RequireNoFormulas(ByVal area As Range)
     If CBool(hasFormula) Then RaiseRunError "A result area overlaps calculation formulas. Use the current workbook release."
 End Sub
 
+Private Function IsNumericInput(ByVal value As Variant) As Boolean
+    ' Match worksheet ISNUMBER. A blank or text cell must never become zero or a seed.
+    Select Case VarType(value)
+        Case vbByte, vbInteger, vbLong, vbSingle, vbDouble, vbCurrency, vbDecimal
+            IsNumericInput = True
+    End Select
+End Function
+
 Private Function WholeNumber(ByVal value As Variant, ByVal low As Long, ByVal high As Long, ByVal message As String) As Long
-    If IsError(value) Then RaiseRunError message
-    If Not IsNumeric(value) Or VarType(value) = vbBoolean Then RaiseRunError message
+    If Not IsNumericInput(value) Then RaiseRunError message
     If CDbl(value) <> Fix(CDbl(value)) Or CDbl(value) < low Or CDbl(value) > high Then RaiseRunError message
     WholeNumber = CLng(value)
 End Function
 
 Private Function SeedNumber(ByVal value As Variant) As Double
-    If IsError(value) Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
-    If Not IsNumeric(value) Or VarType(value) = vbBoolean Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
+    If Not IsNumericInput(value) Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
     If CDbl(value) <> Fix(CDbl(value)) Or CDbl(value) < 0 Or CDbl(value) > 4294967295# Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
     SeedNumber = CDbl(value)
 End Function
