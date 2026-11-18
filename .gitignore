@@ -4,7 +4,7 @@
 /scratch/
 /private/
 /workbook/*
-!/workbook/retirement-model.xlsx
+!/workbook/retirement-model.xlsm
 !/workbook/build-template.xlsx
 
 __pycache__/

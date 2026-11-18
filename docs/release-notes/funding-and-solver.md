@@ -28,6 +28,6 @@ Dashboard chart names now belong to Report_Data. They remain valid when a user r
 - The public build passed its release check and independent no-shock comparison across 60 years and 5,760 values. It refreshed the fictional example's 1,000 paired market paths.
 - Excel for Mac recalculated the compact engine and extended the example from end age 95 to 125 without rebuilding. The native saved copy passed the independent annual reconciliation for all 90 projected years.
 
-Mac UI observations were under one second for the full-calculation command and about 1.6 seconds for the end-age edit. These observations include UI automation overhead and are preliminary measurements. Windows performance and print verification remain required.
+Mac UI observations were under one second for the full-calculation command and about 1.6 seconds for the end-age edit. These observations include UI automation overhead and are preliminary measurements.
 
 The risk engine and saved-result schema advance to versions 1.4.0 and v4. Use the workbook and development risk runner from this release together. Excel-only risk refresh remains a separate open phase of the improvement plan. [Plan and remaining checks](../model-improvement-plan.md)

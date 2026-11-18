@@ -14,6 +14,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 from dashboard_package import rebind_dashboard_workbook
 from risk_presentation import DATA_SHEET, snapshot_address
 from risk_engine import __version__
+import investment_results
 from risk_engine.scenario import (
     ASSET_ROWS, CACHED_INPUT_ROWS, CORRELATION_HEADER_ROW, CORRELATION_ROWS, HSA_RETURN_ROWS,
     ONE_TIME_EXPENSE_ROWS, RISK_CONTROL_ROWS, RISK_RETURN_BASIS_ROW, RISK_STRESS_ROWS,
@@ -50,7 +51,10 @@ def _manifest():
         yield (f'Selected scenario, row {row}',
                f'INDEX(Inputs!$D{row}:$F{row},1,Inputs!$B$4)', False)
     for row in (*SCENARIO_INPUT_ROWS, *CACHED_INPUT_ROWS, 84, *range(130, 134), *HSA_RETURN_ROWS):
-        yield f'Effective input B{row}', f'Inputs!$B${row}', row <= 129 and row != 84
+        if row in investment_results.CELLS:
+            yield investment_results.LABELS[row], investment_results.reference(row), row <= 129
+        else:
+            yield f'Effective input B{row}', f'Inputs!$B${row}', row <= 129 and row != 84
     for row in (*ONE_TIME_EXPENSE_ROWS, ONE_TIME_EXPENSE_ROWS.stop):
         for col in 'BC':
             yield f'One-time expense {col}{row}', f'Inputs!${col}${row}', False
@@ -79,6 +83,7 @@ def _manifest():
 
 
 _MANIFEST = tuple(_manifest())
+_LEGACY_RATE_LABELS = {label: f'Effective input B{row}' for row, label in investment_results.LABELS.items()}
 _FIRST_CHECK_ROW = 2
 _LAST_CHECK_ROW = _FIRST_CHECK_ROW + len(_MANIFEST) - 1
 
@@ -186,7 +191,7 @@ def _assumption_values(calculated_source):
         cells = sheet.iter_rows(min_row=_FIRST_CHECK_ROW, max_row=_LAST_CHECK_ROW,
                                 min_col=27, max_col=28)
         for row, ((label, _, _), (name, value)) in enumerate(zip(_MANIFEST, cells, strict=True), _FIRST_CHECK_ROW):
-            if name.value != label or value.data_type == 'e':
+            if name.value not in (label, _LEGACY_RATE_LABELS.get(label, label)) or value.data_type == 'e':
                 raise ValueError('Risk assumptions could not be read from the calculated workbook.')
             values[f'AC{row}'] = value.value
         return values

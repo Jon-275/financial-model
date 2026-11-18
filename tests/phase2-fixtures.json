@@ -3388,6 +3388,78 @@
       ]
     },
     {
+      "name": "social_security_does_not_fall_after_claim_during_deflation",
+      "overrides": {
+        "Inputs": {
+          "D14": -0.05,
+          "D44": 1000,
+          "D45": 55,
+          "D53": 57
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "N",
+          "equals": 950
+        },
+        {
+          "age": 56,
+          "column": "N",
+          "equals": 950
+        },
+        {
+          "age": 57,
+          "column": "N",
+          "equals": 950
+        },
+        {
+          "cell": "Projection!CG8",
+          "equals": 0.95
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
+      "name": "existing_social_security_benefit_keeps_its_opening_level",
+      "overrides": {
+        "Inputs": {
+          "D14": -0.05,
+          "D44": 1000,
+          "D45": 54,
+          "D53": 57
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "N",
+          "equals": 1000
+        },
+        {
+          "age": 56,
+          "column": "N",
+          "equals": 1000
+        },
+        {
+          "age": 57,
+          "column": "N",
+          "equals": 1000
+        },
+        {
+          "cell": "Projection!CG8",
+          "equals": 1
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "prefix": "YES"
+        }
+      ]
+    },
+    {
       "name": "published_2027_federal_and_2026_california_floors",
       "overrides": {
         "Inputs": {
@@ -3601,7 +3673,7 @@
           "equals": 990
         },
         {
-          "cell": "Inputs!B18",
+          "cell": "Asset_Allocation!C99",
           "equals": -0.01
         }
       ]
@@ -3646,19 +3718,19 @@
       },
       "expects": [
         {
-          "cell": "Inputs!B23",
+          "cell": "Asset_Allocation!B103",
           "equals": 0.06425
         },
         {
-          "cell": "Inputs!B24",
+          "cell": "Asset_Allocation!C103",
           "equals": 0.0494
         },
         {
-          "cell": "Inputs!B134",
+          "cell": "Asset_Allocation!B102",
           "equals": 0.0395
         },
         {
-          "cell": "Inputs!B135",
+          "cell": "Asset_Allocation!C102",
           "equals": 0.0098
         },
         {
@@ -4221,6 +4293,198 @@
         {
           "cell": "Planning Metrics!B25",
           "equals": "NO - cash shortfall"
+        }
+      ]
+    },
+    {
+      "name": "partial_brokerage_sale_retains_only_its_share_of_investment_income",
+      "overrides": {
+        "Inputs": {
+          "D25": 10000,
+          "D51": 8000,
+          "D37": 2500
+        },
+        "Asset_Allocation": {
+          "D6": 0.01,
+          "D7": 0.01,
+          "D8": 0.01,
+          "D9": 0.01,
+          "D10": 0.01,
+          "E6": 0.02,
+          "E7": 0.02,
+          "E8": 0.02,
+          "E9": 0.02,
+          "E10": 0.02
+        },
+        "Tax_Tables": {
+          "B23": 10000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 2500
+        },
+        {
+          "age": 55,
+          "column": "CE",
+          "equals": 2000
+        },
+        {
+          "age": 55,
+          "column": "CF",
+          "equals": 225
+        },
+        {
+          "age": 55,
+          "column": "BD",
+          "equals": 6225
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "equals": "YES"
+        }
+      ]
+    },
+    {
+      "name": "liquidated_brokerage_reopens_with_only_the_new_deposit_basis",
+      "overrides": {
+        "Inputs": {
+          "D25": 1000,
+          "D51": 2000,
+          "D37": 500,
+          "D52": 87530,
+          "D86": 0,
+          "D101": 1,
+          "D102": 1,
+          "D106": 10000,
+          "D116": 1,
+          "D119": 20000
+        },
+        "Asset_Allocation": {
+          "D6": 0.01,
+          "D7": 0.01,
+          "D8": 0.01,
+          "D9": 0.01,
+          "D10": 0.01,
+          "E6": 0.02,
+          "E7": 0.02,
+          "E8": 0.02,
+          "E9": 0.02,
+          "E10": 0.02
+        },
+        "Tax_Tables": {
+          "B6": 0,
+          "B7": 0,
+          "B8": 0,
+          "B9": 0,
+          "B10": 0,
+          "B11": 0,
+          "B12": 0,
+          "B17": 0,
+          "B18": 0,
+          "B19": 0
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 1000
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "BC",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "BD",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "CE",
+          "equals": 2000
+        },
+        {
+          "age": 55,
+          "column": "CF",
+          "equals": 500
+        },
+        {
+          "cell": "Healthcare!AC6",
+          "equals": 86560
+        },
+        {
+          "cell": "Healthcare!R6",
+          "equals": 10000
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "equals": "YES"
+        }
+      ]
+    },
+    {
+      "name": "unsold_brokerage_retains_income_and_new_deposits",
+      "overrides": {
+        "Inputs": {
+          "D25": 10000,
+          "D51": 8000,
+          "D46": 500
+        },
+        "Asset_Allocation": {
+          "D6": 0.01,
+          "D7": 0.01,
+          "D8": 0.01,
+          "D9": 0.01,
+          "D10": 0.01,
+          "E6": 0.02,
+          "E7": 0.02,
+          "E8": 0.02,
+          "E9": 0.02,
+          "E10": 0.02
+        },
+        "Tax_Tables": {
+          "B23": 10000
+        }
+      },
+      "expects": [
+        {
+          "age": 55,
+          "column": "V",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "BB",
+          "equals": 500
+        },
+        {
+          "age": 55,
+          "column": "CE",
+          "equals": 0
+        },
+        {
+          "age": 55,
+          "column": "CF",
+          "equals": 800
+        },
+        {
+          "age": 55,
+          "column": "BD",
+          "equals": 8800
+        },
+        {
+          "cell": "Planning Metrics!B25",
+          "equals": "YES"
         }
       ]
     },

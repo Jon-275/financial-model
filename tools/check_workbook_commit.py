@@ -1,29 +1,30 @@
 """Check staged Excel workbooks before a repository commit."""
 
+import argparse
 from hashlib import sha256
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
+from posixpath import normpath
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
 from xml.etree import ElementTree
-from zipfile import BadZipFile
+from zipfile import BadZipFile, ZipFile
 
-from example_inputs import example_cells
 from workbook_privacy import audit_fixture, audit_package
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RELEASE = 'workbook/retirement-model.xlsx'
-RELEASE_SHA256 = 'fe692dbc84776c373b0513383b4dc4dfc8508130a6a483f80c17940c1fa6a9da'
+RELEASE = 'workbook/retirement-model.xlsm'
+RELEASE_SHA256 = '37e2c8d564b5512a1bad26e402c2cad18393fe3a439652ba1dd1c8bc79940ef3'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = 'fdf966bd8556733b946ce6c1ee36b812c8a1b1abe901c17fc94bb76b90e45221'
-EXAMPLE_RISK_SHA256 = '1a2295fa1b277e78f6cf97cb354cd977ae91962b87eff15a886d55c6953712a9'
+EXAMPLE_RISK_SHA256 = '01a4f878657073b8814a6a5ce2df6c66127f3bc7f0f83f46523f6c7a31579894'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 
 from model_acceptance import check_release_package
-from xlsx_read import Workbook, address_parts
+from xlsx_read import REL, Workbook, q, sheet_parts
 
 
 def git(*args):
@@ -31,42 +32,98 @@ def git(*args):
 
 
 def risk_snapshot_digest(workbook):
-    """Fingerprint every populated snapshot cell, including saved input values."""
-    entries = []
-    for cells in workbook['Risk_Data'].iter_rows():
-        for cell in cells:
-            row, column = address_parts(cell.coordinate)
-            if (cell.coordinate == 'Z3' or (row > 1 and column in (29, 54))
-                    or (row >= 5 and (1 <= column <= 9 or 11 <= column <= 15 or 32 <= column <= 50))):
-                if cell.formula is not None or cell.value not in (None, ''):
-                    entries.append((cell.coordinate, cell.formula, cell.value))
-    return sha256(json.dumps(sorted(entries), separators=(',', ':')).encode('utf-8')).hexdigest()
+    """Fingerprint the saved report, every trial and the three full funding paths."""
+    digest = sha256()
+    for name in ('Risk_Data', 'Risk_Trials', 'Funding_Path_Data'):
+        digest.update(name.encode('ascii') + b'\0')
+        for number, row in sorted(workbook[name].rows.items()):
+            for column, cell in sorted(row.items()):
+                if name != 'Risk_Data' and (number < 8 or cell.formula is not None):
+                    continue
+                record = [number, column, cell.data_type, cell.formula, cell.value]
+                digest.update(json.dumps(record, separators=(',', ':'), allow_nan=False).encode('utf-8'))
+                digest.update(b'\n')
+    return digest.hexdigest()
 
 
-def check_sample_workbook(path):
+def check_native_package(path):
+    """Verify the file type, VBA relationship and the two on-demand Summary actions."""
+    with ZipFile(path) as archive:
+        types = ElementTree.fromstring(archive.read('[Content_Types].xml'))
+        main = types.find("{*}Override[@PartName='/xl/workbook.xml']")
+        if main is None or main.get('ContentType') != 'application/vnd.ms-excel.sheet.macroEnabled.main+xml':
+            raise ValueError('The shared workbook must use the macro-enabled Excel file format.')
+        rels = ElementTree.fromstring(archive.read('xl/_rels/workbook.xml.rels'))
+        projects = [item for item in rels if item.get('Type') == 'http://schemas.microsoft.com/office/2006/relationships/vbaProject']
+        if len(projects) != 1 or projects[0].get('Target') != 'vbaProject.bin' or 'xl/vbaProject.bin' not in archive.namelist():
+            raise ValueError('The workbook is missing its embedded VBA project.')
+        summary = PurePosixPath(sheet_parts(archive)['Summary'])
+        sheet = ElementTree.fromstring(archive.read(str(summary)))
+        drawing_ref = sheet.find(q('drawing'))
+        if drawing_ref is None:
+            raise ValueError('Summary is missing its button drawing.')
+        identifier = drawing_ref.get(f'{{{REL}}}id')
+        rel_part = summary.parent / '_rels' / (summary.name + '.rels')
+        sheet_rels = ElementTree.fromstring(archive.read(str(rel_part)))
+        targets = [rel.get('Target') for rel in sheet_rels if rel.get('Id') == identifier
+                   and rel.get('Type') == REL + '/drawing' and rel.get('TargetMode', 'Internal') == 'Internal']
+        if len(targets) != 1 or not targets[0]:
+            raise ValueError('Summary must link to one local button drawing.')
+        drawing_part = normpath(str(summary.parent / targets[0])).lstrip('/')
+        drawing = ElementTree.fromstring(archive.read(drawing_part))
+        actions = []
+        for shape in drawing.findall('.//{*}sp'):
+            if shape.get('macro'):
+                label = ''.join(node.text or '' for node in shape.findall('{*}txBody//{*}t'))
+                properties = shape.find('{*}nvSpPr/{*}cNvPr')
+                if properties is None or properties.get('hidden') in ('1', 'true'):
+                    raise ValueError('Summary must show both market risk buttons.')
+                actions.append((label, shape.get('macro')))
+        expected = [('Cancel', '[0]!CancelMarketRisk'), ('Run market risk', '[0]!RunMarketRisk')]
+        if sorted(actions) != expected:
+            raise ValueError('Each market risk button on Summary must call the macro named by its label.')
+
+
+def audit_sample_workbook(path):
+    """Check package and example content independently of the approved checksums."""
     check_release_package(path)
+    check_native_package(path)
     audit_package(path)
     with Workbook(path) as workbook:
         audit_fixture(workbook)
-        inputs = workbook['Inputs']
-        for address, expected in example_cells().items():
-            cell = inputs[address]
-            actual = '' if cell.value is None else cell.value
-            if cell.formula is not None or type(actual) is bool or actual != expected:
-                raise ValueError(f'Inputs!{address} differs from the fictional scenario.')
         for address, expected in {'B5': 0, 'B21': 0, 'B36': 250000}.items():
             cell = workbook['Income_Targeting'][address]
             if cell.formula is not None or type(cell.value) is bool or cell.value != expected:
                 raise ValueError(f'Income_Targeting!{address} differs from the example settings.')
-        if workbook['Risk_Data']['Z1'].value != 'current' or risk_snapshot_digest(workbook) != EXAMPLE_RISK_SHA256:
-            raise ValueError('Risk_Data differs from the verified fictional example.')
+        settings = workbook['Risk_Settings']
+        for row, expected in enumerate((1000, 2026, 1, 0, .015, .5, -.02, .10), 29):
+            cell = settings[f'B{row}']
+            if cell.formula is not None or type(cell.value) not in (int, float) or cell.value != expected:
+                raise ValueError(f'Risk_Settings!B{row} differs from the fictional run.')
+        results = workbook['Risk_Data']
+        expected_run = {'Z1': 'current', 'Z2': 'retirement-risk-native-v1', 'Z4': 'Excel 1.0', 'Z5': 'current',
+                        'Z6': 'complete', 'Z10': 1000, 'Z11': 2026, 'AB3': 2033}
+        if any(results[address].value != value for address, value in expected_run.items()):
+            raise ValueError('The fictional example requires a current, complete 1,000-pair run.')
+        return risk_snapshot_digest(workbook)
+
+
+def check_sample_workbook(path):
+    if audit_sample_workbook(path) != EXAMPLE_RISK_SHA256:
+        raise ValueError('The saved trial and funding results differ from the verified fictional example.')
     if sha256(path.read_bytes()).hexdigest() != RELEASE_SHA256:
         raise ValueError('The release workbook differs from the approved synthetic artifact.')
 
 
-def main():
-    data = git('diff', '--cached', '--name-only', '--diff-filter=AMT', '--no-renames', '-z')
-    for raw_path in filter(None, data.split(b'\0')):
+def main(*, tracked=False):
+    data = (git('ls-files', '--cached', '-z') if tracked else
+            git('diff', '--cached', '--name-only', '--diff-filter=AMT', '--no-renames', '-z'))
+    names = set(filter(None, data.split(b'\0')))
+    if tracked and not {RELEASE.encode(), TEMPLATE.encode()} <= names:
+        print('The index must contain both the shared workbook and its build template.', file=sys.stderr)
+        return 1
+    checked = 0
+    for raw_path in sorted(names):
         name = raw_path.decode('utf-8', errors='surrogateescape')
         if Path(name).suffix.lower() not in SPREADSHEET_EXTENSIONS:
             continue
@@ -89,11 +146,17 @@ def main():
                         raise ValueError('The audited build template differs from its approved checksum.')
                 else:
                     check_sample_workbook(staged)
+            checked += 1
         except (AssertionError, BadZipFile, ElementTree.ParseError, KeyError, ValueError) as exc:
             print(f'{name}: {exc}', file=sys.stderr)
             return 1
+    if tracked:
+        print(f'Verified {checked} tracked workbook files.')
     return 0
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--tracked', action='store_true',
+                        help='Audit every workbook in the Git index, including unchanged files.')
+    raise SystemExit(main(tracked=parser.parse_args().tracked))

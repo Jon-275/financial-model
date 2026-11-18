@@ -2,7 +2,7 @@
 
 The withdrawal and conversion calculation sheets link their source values in columns BD onward. These visible links let the trial rows reuse formulas and reduce file size. Clear the calculation table's filter to inspect all source rows. The annual model retains capacity through age 125.
 
-Use **Summary** to read and print the plan. Use **Annual Detail** for the full timeline in the same dollar view. The decision tools and **Tax_Tables** are before **Appendix**. Use the appendix links to open the annual schedules, conversion detail, withdrawal trials, and saved risk data.
+Use **Inputs** for household decisions and **Summary** to read and print the plan. The tabs before **Appendix** cover the results, investment assumptions, Roth conversion choices, market settings and tax tables. **Annual Detail** and **Risk Results** follow the divider. They show the yearly cash flows and market paths behind the report, in the dollar view selected on Summary. The appendix index links to each supporting table.
 
 ## Planning Metrics
 
@@ -21,7 +21,9 @@ Columns AR–AW on **Cash_Flow** show the spending obligation roll-forward. Requ
 
 The first page of **Summary** shows the earliest year with at least one cent of unpaid spending or tax. Look up that year on **Cash_Flow** to see which bills were unpaid and what money was available.
 
-When a withdrawal reaches an account's available balance, the model withdraws that exact amount. A fully sold brokerage account closes with zero balance and zero cost basis. This avoids retaining cost basis because of a tiny arithmetic remainder.
+When a withdrawal reaches an account's available balance, the model withdraws that exact amount. A full brokerage sale removes the cost basis of the investments sold. If cash is deposited later that year, the new deposit starts its own cost basis.
+
+On **Projection**, column CE shows how much taxable cost basis a sale removes. Column CF adds new deposits and reinvested income on the share of the opening investments still held. The annual tax estimate uses opening balances to estimate interest and dividends. The model applies annual total returns after withdrawals and deposits.
 
 ## Roth_Access
 
@@ -37,9 +39,9 @@ Negative income can result from investment losses. It does not trigger a Medicar
 
 ## Asset_Allocation
 
-Start with the investments you expect to hold in taxable, pre-tax, Roth and HSA accounts. Compare the working and retirement profiles on **Inputs**, then inspect the stock, bond, cash and real-asset weights on **Asset_Allocation**. Edit the blue cells and make each account column total 100%. The selected profile checks flag a missing or invalid mix before the projection runs.
+Start with the investments you expect to hold in taxable, pre-tax, Roth and HSA accounts. Choose the working and retirement profiles on **Inputs**, then inspect the stock, bond, cash and real-asset weights on **Asset_Allocation**. Edit the blue cells and make each account column total 100%. The selected profile checks flag a missing or invalid mix before the projection runs.
 
-Expected returns are annual rates before adjusting for inflation. The workbook weights the rates for each account, including the HSA, and applies the fee on Inputs. Taxable account yields also determine interest and dividends used in the tax calculation. Volatility and how assets move together affect the market simulations. Use these assumptions to explore how a different mix changes the plan’s funding result and balance range.
+**Investment assumptions used by the plan** shows the annual return for each account after the investment fee, before inflation. The portfolio return weights these account returns by their opening balances. Interest and qualified dividends are part of the taxable account return. The workbook uses their yields to calculate tax. Volatility and how assets move together affect the market simulations. Use these assumptions to explore how a different mix changes the plan’s funding result and balance range.
 
 ## Income_Targeting
 
@@ -51,9 +53,23 @@ The comparison starts from the active scenario’s balances and rules for one ye
 
 ## Risk_Settings and Risk Results
 
-List the living costs you could reduce, then decide how much you would cut from those costs and when you would act. The trigger compares the opening balance in a simulated year with the balance for that year in the base plan. Multiply the flexible share by the cut to that share to see the reduction to the full living budget. Mortgage, healthcare, tax and one-time bills remain part of the funding calculation.
+List the living costs you could reduce, then decide how much you would cut from those costs and when you would act. The trigger compares the opening balance in a simulated year with the balance for that year in the base plan. Multiply the flexible share by the cut to that share to see the reduction to non-mortgage living costs. Mortgage, healthcare and one-time bills remain in required costs. Tax follows the revised withdrawals.
 
-Read the success rate and number of runs with spending cuts together. The rule tests the balance each year, so a cut can recur for several years. Check the early stock tests for the age of the first unpaid costs and whether the cut changes it. Excel opens with the fictional example’s results on **Summary**. Run the simulator locally after editing the plan. It returns a refreshed copy of the same workbook with the updated figures on **Summary**. [Market risk guide](risk-analysis.md)
+Read the success rate and number of paths with spending cuts together. The rule tests the balance each year, so a cut can recur for several years. The median years with cuts includes paths with no cuts. Check the early stock tests for the age of the first unpaid costs and whether the cut changes it. Choose **Run market risk** on Summary after editing the plan. The macro runs the visible worksheet engine and refreshes the report after a complete batch. It does not start when you open, save or print. [Market risk guide](risk-analysis.md)
+
+## Funding_Paths and the trial schedules
+
+**Funding_Paths** shows the annual cash flow for the low, median and high fixed-spending paths from Summary. Follow one path from income and bills through withdrawals, closing balances and unpaid costs. Amounts follow the dollar view on Summary and use that path’s price index. To trace a figure to the saved run, open **Funding_Path_Data** and match the trial number and year. The source values use each year’s prices.
+
+**Risk_Trials** records the requested market paths and stress cases. Choose a trial number there to inspect its returns and prices on **Market_Paths** and its annual calculations on the **Trial_** schedules. These schedules are another instance of the base annual compiler. They apply the same tax, healthcare, account-access and obligation rules. Their raw calculations use the selected path’s future dollars. **Random_Numbers** shows the seed and integer random-number calculation.
+
+On **Trial_Checks**, columns N–Y compare each year’s recorded closing balances with amounts calculated again from the opening balances, contributions, withdrawals, conversions and market returns. Each difference should be zero. The checks cover brokerage, traditional, HSA and Roth accounts, taxable cost basis and the whole portfolio in both dollar views.
+
+If column J shows **Review**, look across N–Y for a difference or a formula error. If all twelve balances agree, check the cash-flow status in column AM of **Trial_Cash_Flow** for the same year.
+
+**Risk_Data** derives report statistics from the captured trial results and compares the active assumptions with the completed run. A failed or incomplete run cannot supply a current report. The report’s real and nominal balance percentiles are calculated separately, so future-dollar bands remain correct when inflation varies across paths.
+
+Read a success rate as the percentage of paths that paid all required costs. Ages and trial numbers are whole numbers. A price index of 1.25 means that $100 at the start of the plan has the same buying power as $125 in that year.
 
 ## Tax_Tables
 

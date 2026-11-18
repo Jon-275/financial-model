@@ -3,17 +3,17 @@
 from lxml import etree
 
 from example_inputs import example_cells
-from plan_report import APPENDIX, DECISION_TABS, DETAIL_GROUPS, INDEX
+from plan_report import DECISION_TABS, DETAIL_GROUPS, INDEX
 from workbook_metadata import make_sheets_visible
 
 _MAIN = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 _PROPS = '{http://schemas.openxmlformats.org/officeDocument/2006/extended-properties}'
 _VT = '{http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes}'
 _TAB_ORDER = (
-    'Start Here', 'Inputs', 'Summary', *DECISION_TABS, APPENDIX, INDEX,
+    'Start Here', 'Inputs', 'Summary', *DECISION_TABS, INDEX,
     *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules),
 )
-_INPUT_GROUPS = ((17, 24), (55, 57), (59, 60), (102, 124))
+_INPUT_GROUPS = ((55, 57), (59, 60), (102, 124))
 
 
 def _tab_name(name):
@@ -65,41 +65,11 @@ def _group_inputs(root):
     root.find(_MAIN + 'sheetFormatPr').set('outlineLevelRow', '1')
     rows = {int(row.get('r')): row for row in root.find(_MAIN + 'sheetData')}
     for first, last in _INPUT_GROUPS:
-        rows[first - 1].set('collapsed', '1')
+        rows[first - 1].attrib.pop('collapsed', None)
         for number in range(first, last + 1):
             if number in rows:
                 rows[number].set('outlineLevel', '1')
-                rows[number].set('hidden', '1')
-
-
-def _validate_inputs(root):
-    rules = (
-        ('B4', 'whole', 'between', 1, 3, 'Choose scenario 1, 2 or 3.'),
-        ('D8:F10 D53:F53', 'whole', 'between', 0, 125, 'Enter a whole age from 0 to 125.'),
-        ('D98:F98 D101:F101', 'whole', 'between', 0, 1, 'Enter 0 or 1.'),
-        ('D55:F55', 'decimal', 'between', 0, 1, 'Enter a share from 0% to 100%.'),
-        ('B130', 'whole', 'between', 2026, 9874, 'Enter a whole opening year from 2026 to 9874.'),
-        ('B131', 'decimal', 'between', 0, 0.999999999999999, 'Enter a fee from 0% to less than 100%.'),
-        ('B132', 'decimal', 'greaterThan', -1, None, 'Enter inflation above -100%, or leave this blank.'),
-    )
-    validations = root.find(_MAIN + 'dataValidations')
-    if validations is None:
-        validations = etree.Element(_MAIN + 'dataValidations')
-        later = ('hyperlinks', 'printOptions', 'pageMargins', 'pageSetup', 'headerFooter',
-                 'rowBreaks', 'colBreaks', 'drawing', 'legacyDrawing', 'tableParts', 'extLst')
-        following = next((node for node in root if etree.QName(node).localname in later), None)
-        if following is None:
-            root.append(validations)
-        else:
-            following.addprevious(validations)
-    for cells, kind, operator, first, last, message in rules:
-        item = etree.SubElement(validations, _MAIN + 'dataValidation', sqref=cells, type=kind,
-                                operator=operator, allowBlank='1' if cells == 'B132' else '0',
-                                showErrorMessage='1', errorTitle='Check this input', error=message)
-        etree.SubElement(item, _MAIN + 'formula1').text = str(first)
-        if last is not None:
-            etree.SubElement(item, _MAIN + 'formula2').text = str(last)
-    validations.set('count', str(len(validations)))
+                rows[number].attrib.pop('hidden', None)
 
 
 def apply_sheet_layout(name, root):
@@ -111,7 +81,6 @@ def apply_sheet_layout(name, root):
     if name == 'Inputs':
         _freeze(view, columns=2, rows=6)
         _group_inputs(root)
-        _validate_inputs(root)
     if name in {'Cash_Flow', 'Roth_Access'}:
         _freeze(view, columns=2, rows=4)
     if name == 'README':

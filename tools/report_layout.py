@@ -1,13 +1,14 @@
 """Generate Excel styling, navigation and print settings for the planning views."""
 
 from copy import deepcopy
+import investment_results
 
 from lxml import etree as E
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string, get_column_letter
 
 import input_record
 from workbook_guide import TABLE_GUIDES, TAX_LINKS
-from plan_report import APPENDIX, CONVERSION_DETAIL, DECISION_TABS, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, METRICS, METRICS_REF, METRIC_SECTIONS, TODAY_DOLLARS, index_rows
+from plan_report import APPENDIX, CONVERSION_DETAIL, DECISION_TABS, DETAIL_GROUPS, DOLLAR_VIEW_CELL, FUTURE_DOLLARS, INDEX, INDEX_LINK_ROW, METRICS, METRICS_REF, METRIC_SECTIONS, REPORT_PAGE_BREAKS, TODAY_DOLLARS, index_rows
 import risk_presentation as risk
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
@@ -19,12 +20,12 @@ PALE = 'E9F2F8'
 LINE = 'C9D9E4'
 TAB_COLORS = {
     'README': ACCENT, 'Inputs': BLUE, 'Summary': INK,
-    APPENDIX: '48617A', INDEX: '718090', risk.SHEET: '3E686A',
+    APPENDIX: '48617A', INDEX: '718090', risk.SHEET: '48617A',
     **dict.fromkeys(DECISION_TABS, '3E686A'),
 }
 DETAIL_SHEETS = {*DECISION_TABS, *(name for _, schedules in DETAIL_GROUPS for name, _, _ in schedules)}
 SOLVERS = {'Funding_Calc', 'Targeting_Calc'}
-ANNUAL_TABLES = {'Cash_Flow': 'AW', 'Projection': 'CF', 'Roth_Access': 'AP',
+ANNUAL_TABLES = {'Cash_Flow': 'AW', 'Projection': 'CG', 'Roth_Access': 'AP',
                  'Healthcare': 'AF', 'Checks': 'M'}
 FORMATS = {
     'detail_title': (17, INK, True, None, None),
@@ -41,6 +42,8 @@ FORMATS = {
     'report_table_head': (10, 'FFFFFF', True, INK, None),
     'report_row': (11, INK, False, None, 1),
     'report_row_alt': (11, INK, False, 'F2F6F9', 1),
+    'report_label': (11, INK, False, None, None),
+    'report_label_alt': (11, INK, False, 'F2F6F9', None),
     'report_case_age': (11, INK, False, None, 1),
     'report_case_age_alt': (11, INK, False, 'F2F6F9', 1),
     'report_money': (11, INK, False, None, "report_currency"),
@@ -52,6 +55,7 @@ FORMATS = {
     'report_section_gutter': (13, INK, True, None, None),
     'report_write_in': (11, BLUE, False, None, None),
     'report_active': (11, INK, True, PALE, 1),
+    'report_decimal': (11, INK, False, None, 2),
 }
 
 
@@ -114,7 +118,8 @@ def install_styles(root, style_ids):
                           applyFont='1', applyFill='1', applyBorder='1',
                           applyNumberFormat='1', applyAlignment='1')
         align = E.SubElement(xf, X + 'alignment', vertical='center')
-        if name in ('report_table_head', 'report_body', 'report_result', 'report_caption'):
+        if name in ('report_table_head', 'report_body', 'report_result', 'report_caption',
+                    'report_label','report_label_alt'):
             align.set('wrapText', '1')
         if name.endswith('_gutter'):
             align.set('horizontal', 'left')
@@ -122,7 +127,7 @@ def install_styles(root, style_ids):
             align.set('wrapText', '1')
         if name in ('report_amount', 'report_percent_amount'):
             align.set('horizontal', 'left')
-        if name in ('report_money', 'report_money_alt'):
+        if name in ('report_money', 'report_money_alt', 'report_cost', 'report_cost_alt'):
             align.set('horizontal', 'right')
         if name in ('report_table_head', 'report_case_age', 'report_case_age_alt'):
             align.set('horizontal', 'center')
@@ -294,7 +299,7 @@ def _print(root, pages=(), *, appendix=False):
     _replace(root, 'pageSetup', ('headerFooter', 'rowBreaks', 'colBreaks', *_AFTER_PRINT),
              paperSize='1', orientation='portrait', **settings)
     footer = _replace(root, 'headerFooter', ('rowBreaks', 'colBreaks', *_AFTER_PRINT))
-    E.SubElement(footer, X + 'oddFooter').text = '&L&"Arial,Regular"&9Retirement plan&R&"Arial,Regular"&9Page &P of &N'
+    E.SubElement(footer, X + 'oddFooter').text = '&L&"Arial,Regular"&9Planning estimate. US federal and California taxes.&R&"Arial,Regular"&9Page &P of &N'
     if pages:
         breaks = _replace(root, 'rowBreaks', ('colBreaks', *_AFTER_PRINT),
                           count=str(len(pages)), manualBreakCount=str(len(pages)))
@@ -309,6 +314,22 @@ def _select_top(root, cell):
         if child.tag in (X + 'pane', X + 'selection'):
             view.remove(child)
     E.SubElement(view, X + 'selection', activeCell=cell, sqref=cell)
+
+
+def _collapse_empty_return_rows(root):
+    # Keep saved scenario addresses stable. Only entirely empty retired rows may be collapsed.
+    for row in root.find(X + 'sheetData'):
+        if int(row.get('r')) in investment_results.RETIRED_ROWS:
+            if any(cell.find(X + 'f') is not None or cell.find(X + 'v') is not None or
+                   ''.join(cell.itertext()).strip() for cell in row):
+                raise ValueError(f"Retired input row {row.get('r')} still contains data")
+            for cell in list(row):
+                row.remove(cell)
+            row.attrib.pop('outlineLevel', None)
+            row.attrib.pop('collapsed', None)
+            row.set('hidden', '1')
+            row.set('ht', '0')
+            row.set('customHeight', '1')
 
 
 def _style_inputs(root, styles, number_formats, active_fill):
@@ -340,7 +361,8 @@ def _style_inputs(root, styles, number_formats, active_fill):
                 elif column in 'DEF' and not formula and (content or row_index in (8, 10, 12, 36, 37, 53)):
                     style = ('input_value', code)
                     editable.append(coordinate)
-                elif column in 'BC' and row_index in (*range(75, 83), 130, 131, 132) and not formula:
+                elif not formula and ((column in 'ABC' and 75 <= row_index <= 82)
+                                      or (column == 'B' and 130 <= row_index <= 132)):
                     style = ('input_value', code)
                 elif column == 'B' and formula:
                     style = ('input_selected', code)
@@ -350,6 +372,7 @@ def _style_inputs(root, styles, number_formats, active_fill):
                     style = ('input_section' if row_index in sections else 'input_label', code)
             if style:
                 cell.set('s', styles[style])
+    _collapse_empty_return_rows(root)
     _merges(root, ['A2:G2', 'A3:G3', 'C4:F4', 'G4:H4'])
     _link(root, {
         'G4': "'Summary'!B3", 'J5': 'Inputs!A8', 'J6': 'Inputs!A25',
@@ -381,6 +404,22 @@ def prepare_summary(root):
     root.find(X + 'sheetData').clear()
 
 
+def summary_merges():
+    """Keep printable sections and side controls within their own columns."""
+    single=(2,3,5,6,8,9,29,30,31,33,34,36,38,39,55,56,57,58,59,60,
+            65,66,68,69,74,75,76,77,78,79,80,81,82,84,86,87,92,94,
+            97,98,100,102,110,111,115,117,118,120,124)
+    return ([f'B{row}:I{row}' for row in single]
+            +[f'{left}{row}:{right}{row}' for row in (11,12,13)
+              for left,right in (('B','E'),('F','I'))]
+            +[f'{left}{row}:{right}{row}' for row in range(70,74)
+              for left,right in (('B','D'),('E','F'),('H','I'))]
+            +[f'{left}{row}:{right}{row}' for row in (*range(103,109),112,113,114)
+              for left,right in (('B','D'),('H','I'))]
+            +['B61:I62','B90:C90','D90:I90','B121:I122',
+              'K22:K23','K25:K26','K27:K28','K31:K32',*input_record.merges()])
+
+
 def apply(name, root, style_ids, numbers, active_fill):
     view = root.find(f'{X}sheetViews/{X}sheetView')
     view.set('showGridLines', '0')
@@ -396,29 +435,28 @@ def apply(name, root, style_ids, numbers, active_fill):
         properties.remove(color_node)
     if name == 'README':
         _columns(root, (3, 11, 11, 11, 11, 11, 11, 11, 11))
-        _rows(root, 21, 18, {3: 39, 5: 35, 8: 26, 11: 26, 15: 27})
-        _merges(root, [f'B{row}:I{row}' for row in (3, 5, 7, 8, 10, 11, 12, 14, 15, 16, 19)])
         _select_top(root, 'B3')
-        root.find(X + 'dimension').set('ref', 'A1:I21')
-        _link(root, {'B12': 'Inputs!A1', 'B16': 'Summary!B3'})
+        from start_here import CONTENT, LINKS
+        _merges(root, [f'{address}:I{address[1:]}' for address in CONTENT])
+        _rows(root, 20, 18, {3: 38, 5: 30, 8: 30, 11: 34, 15: 36, 19: 30})
+        _link(root, LINKS)
+        root.find(X + 'dimension').set('ref', 'A1:I20')
     elif name == 'Inputs':
         _style_inputs(root, style_ids, numbers, active_fill)
     elif name == 'Summary':
         _columns(root, (3, 8, 7, 12.5, 12.5, 12.5, 12.5, 12.5, 12.5, 3, 28))
         _rows(root, input_record.LAST_ROW, 18, {3: 37, 8: 30, 9: 28, 12: 32, 34: 37, 40: 31, 55: 27,
                             58: 28, 66: 37, 70: 36, **dict.fromkeys(range(71, 74), 22),
-                            74: 25, 79: 24, 82: 31, 84: 22, 87: 31,
-                            **{100: 24, 132: 24, 98: 37, 130: 37},
-                            **dict.fromkeys((*range(105, 117), *range(137, 149)), 23)})
-        single = (2, 3, 5, 6, 8, 9, 29, 30, 31, 33, 34, 36, 38, 39, 55, 56, 57, 58, 59,
-                  60, 65, 66, 68, 69, 74, 75, 76, 77, 78, 79, 81, 82, 84, 86, 87)
-        paired = (11, 12, 13)
-        funding_rows = range(70, 74)
-        _merges(root, [f'B{row}:I{row}' for row in single]
-                + [f'{left}{row}:{right}{row}' for row in paired for left, right in (('B', 'E'), ('F', 'I'))]
-                + [f'{left}{row}:{right}{row}' for row in funding_rows
-                   for left, right in (('B', 'D'), ('E', 'F'), ('H', 'I'))]
-                + ['B61:I62', 'B90:C90', 'D90:I90', *input_record.merges()])
+                            31:25,69:27,74:25,75:30,78:27,79:27,80:25,82:31,84:22,87:31,92:27,94:27,
+                            98:37,100:27,103:32,111:27,112:32,115:30,118:32,124:21,
+                            **dict.fromkeys((*range(104,109),113,114),28),
+                            **dict.fromkeys((67,83,85,88,89,91,93,95,96,99,101,109,116,119,123,125,126,127,128),6),
+                            **{input_record.FIRST_ROW+1:37,input_record.FIRST_ROW+3:24,
+                               input_record.SECOND_ROW+1:37,input_record.SECOND_ROW+3:24},
+                            **dict.fromkeys((*range(input_record.FIRST_HEADERS+1,input_record.FIRST_HEADERS+13),
+                                             *range(input_record.SECOND_HEADERS+1,input_record.SECOND_HEADERS+13)),23),
+                            **dict.fromkeys(range(input_record.FIRST_ROW+25,input_record.FIRST_ROW+28),28)})
+        _merges(root,summary_merges())
         for row in range(71, 74):
             suffix = '_alt' if row % 2 else ''
             for column, style in (('G', 'report_case_age'), ('H', 'report_money')):
@@ -426,13 +464,13 @@ def apply(name, root, style_ids, numbers, active_fill):
                 cell.set('s', style_ids[style + suffix])
         _link(root, {
             'K5': 'Inputs!A1', 'K6': 'Summary!B34', 'K7': 'Summary!B66',
-            'K8': 'Summary!K25', 'K10': "'Annual Detail'!B2",
+            'K8':'Summary!K29','K9':'Summary!B98','K10':"'Annual Detail'!B2",
             'K11': 'Appendix!B3', 'K12': "'Risk Results'!B2",
             'K13': 'Cash_Flow!A1', 'K14': 'Roth_Access!A1',
-            'K15': 'Risk_Settings!A1', 'K30': f'Summary!B{input_record.FIRST_ROW+1}',
-            'K31': f'Summary!B{input_record.SECOND_ROW+1}',
-            'K32': 'Asset_Allocation!A1', 'K33': 'Income_Targeting!A1',
-            'K34': f'{METRICS_REF}A1', 'K35': 'Tax_Tables!A1',
+            'K15':'Risk_Settings!A1','K34':f'Summary!B{input_record.FIRST_ROW+1}',
+            'K35':f'Summary!B{input_record.SECOND_ROW+1}',
+            'K36':'Asset_Allocation!A1','K37':'Income_Targeting!A1',
+            'K38':f'{METRICS_REF}A1','K39':'Tax_Tables!A1',
         })
         alert = E.Element(X + 'conditionalFormatting', sqref='B8:I8')
         rule = E.SubElement(alert, X + 'cfRule', type='expression', priority='1',
@@ -449,7 +487,7 @@ def apply(name, root, style_ids, numbers, active_fill):
         E.SubElement(dollar_view, X + 'formula1').text = f'"{TODAY_DOLLARS},{FUTURE_DOLLARS}"'
         validations.set('count', str(len(validations)))
         _select_top(root, 'B3')
-        _print(root, (32, 64, *input_record.PAGE_BREAKS))
+        _print(root, REPORT_PAGE_BREAKS)
     elif name == METRICS:
         _columns(root, (49, 23, 75, 4, 24))
         _rows(root, 50, 25, {1: 36, 2: 23, 3: 34, 6: 32, 8: 32, 17: 32, 18: 32,
@@ -477,8 +515,10 @@ def apply(name, root, style_ids, numbers, active_fill):
         _merges(root, [f'B{row}:I{row}' for row in (3, 5, 6, *sections)]
                 + [f'{left}{row}:{right}{row}' for row in (INDEX_LINK_ROW, *(row for row, _ in items))
                    for left, right in (('B', 'D'), ('E', 'I'))])
-        _link(root, {**{f'B{row}': f"'{sheet}'!{TABLE_GUIDES[sheet][0]+'1' if sheet in TABLE_GUIDES else 'A1'}" for row, sheet in items},
-                     f'B{INDEX_LINK_ROW}': 'Summary!B3', f'E{INDEX_LINK_ROW}': "'Annual Detail'!B2"})
+        targets = {sheet: guide[0]+'1' for sheet, guide in TABLE_GUIDES.items()}
+        targets.update({APPENDIX: 'B2', risk.SHEET: 'B2'})
+        _link(root, {**{f'B{row}': f"'{sheet}'!{targets.get(sheet, 'A1')}" for row, sheet in items},
+                     f'B{INDEX_LINK_ROW}': 'Summary!B3'})
         _select_top(root, 'B3')
     elif name == risk.SHEET:
         _columns(root, (3, 15, 9, 15, 9, 15, 9, 15, 9, 15, 12, 4, 23, 20))
@@ -550,6 +590,10 @@ def apply(name, root, style_ids, numbers, active_fill):
             if heights:
                 row.set('ht', str(max(float(row.get('ht', '0')), *heights)))
                 row.set('customHeight', '1')
+        if name == 'Asset_Allocation':
+            existing = [item.get('ref') for item in root.iter(X + 'mergeCell')]
+            _merges(root, existing + ['A97:E97', 'A106:E106', 'A107:E107'])
+            _rows(root, 107, 22, {97: 26, 98: 25, 106: 26, 107: 26}, first=97)
         if name in {'Asset_Allocation', 'Income_Targeting', 'Risk_Settings'}:
             for cell in data.iter(X + 'c'):
                 style = style_ids.get(('advanced_input', cell.get('s', '0')))

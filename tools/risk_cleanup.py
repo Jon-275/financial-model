@@ -20,7 +20,7 @@ def configure(model, baseline):
     values = example_risk_cells()
     put = lambda address, value, style: model.put(RISK_SHEET, address, value, style)
     put('A1', 'Risk settings', 'title')
-    put('A2', 'Use a spending cut you could live with. Save and close before refreshing market risk.', 'report_caption')
+    put('A2', 'Choose a spending cut you could live with. Then select Run market risk on Summary.', 'report_caption')
     put('A3', 'Compare success rates and the number of runs with cuts on Summary.', 'report_caption')
     put('A4', 'Setting', 'header')
     put('B4', 'Value', 'header')

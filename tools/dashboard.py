@@ -1,7 +1,7 @@
 """Build the detailed measures and the data that feed the retirement plan."""
 
 from plan_report import METRICS_REF, display_dollars
-from risk_presentation import CURRENT, result
+from risk_presentation import CURRENT, annual_dollars, result
 
 SHEET = 'Report_Data'
 LAST_PORTFOLIO_ROW = 127
@@ -101,12 +101,12 @@ def configure(put):
     for row in range(2, LAST_PORTFOLIO_ROW + 1):
         source = row + 44
         current_year = f'AND({risk_current},{row - 1}<=$Q$2)'
-        cpi = f'Projection!G{row + 3}'
         for column, expression in {
-            'AF': result(f'AI{source}'),
-            'AG': f'{result(f"AK{source}")}-{result(f"AI{source}")}', 'AH': result(f'AJ{source}'),
+            'AF': annual_dollars('D','BI',source-41),
+            'AG': f'({annual_dollars("F","BK",source-41)})-({annual_dollars("D","BI",source-41)})',
+            'AH': annual_dollars('E','BJ',source-41),
         }.items():
-            put(SHEET, f'{column}{row}', f'=IF({current_year},{display_dollars(expression, cpi)},"")', 'money')
+            put(SHEET, f'{column}{row}', f'=IF({current_year},{expression},"")', 'money')
 
     # Two-point guide lines survive Excel's PDF export and also mark a
     # shortfall when the portfolio is already depleted.

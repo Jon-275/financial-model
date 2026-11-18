@@ -1,6 +1,7 @@
 """Protect the risk refresh file boundary and workbook payload."""
 
 from datetime import date
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -17,7 +18,8 @@ from run_risk import _check_closed, _publish
 class RiskWorkbookTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        workbook = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsx'
+        default = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'
+        workbook = Path(os.environ.get('RISK_TEST_WORKBOOK', default))
         cls.scenario = load_scenario(workbook)
         cls.report = run_analysis(cls.scenario, trials=3, seed=2**64 - 1, volatility=1,
                                   source_sha256=cls.scenario.workbook_sha256,

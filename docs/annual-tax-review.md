@@ -21,12 +21,12 @@ If an agency has yet to publish a value, record the estimate and how the model c
 
 - Update federal, California and payroll values in [published tax data](../tools/published_tax.py). Check [tax formulas](../tools/tax_policy.py) when an effective year or calculation changes.
 - Update IRA limits in [Roth contributions](../tools/roth_contributions.py). Update Marketplace figures and coverage-year logic in [healthcare](../tools/healthcare.py).
-- Check any affected values in `workbook/build-template.xlsx`, including the Medicare surcharge and required withdrawal tables. Follow the [template privacy check](../README.md#keep-private-workbook-copies-out-of-git) if the template changes.
+- Check any affected values in `workbook/build-template.xlsx`, including the Medicare surcharge and required withdrawal tables. Follow the [template privacy check](../tests/README.md#prepare-the-release-file) if the template changes.
 - Check the [risk engine’s tax rules](../tools/risk_engine/tax.py) for matching year boundaries. If the **Tax_Tables** layout changes, update the [workbook reader](../tools/risk_engine/scenario.py) and its tests.
 
 ## Verify and record the release
 
-1. [Build a candidate workbook](../README.md#rebuild-the-workbook) with the fictional scenario.
+1. [Build a candidate workbook](../README.md#build-the-next-edition) with the fictional scenario.
 2. Run the [workbook and risk tests](../tests/README.md) against the candidate. Exercise the years before and after each changed figure takes effect. Check the workbook against the risk report with returns set to the plan assumptions.
 3. Complete the [desktop Excel release check](../tests/README.md#microsoft-excel-release-check) and open a PR with the source changes, fixtures and rebuilt workbook.
 4. Record the review date, the years checked, the agency links, any values or estimates that changed, and the checks that passed. Link the merged PR from the release record. [Current release record](release-notes/workbook-layout.md)

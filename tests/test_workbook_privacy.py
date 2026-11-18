@@ -3,12 +3,16 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
+from contextlib import redirect_stderr
+from io import StringIO
 from xml.etree import ElementTree as E
 from zipfile import ZipFile
 
-from workbook_privacy import audit_fixture, audit_package
-from check_workbook_commit import check_sample_workbook
-from xlsx_read import Workbook, sheet_parts
+from workbook_privacy import audit_fixture, audit_package, audit_start_here
+from check_workbook_commit import check_native_package, check_sample_workbook, main as check_index
+from start_here import CONTENT
+from xlsx_read import Cell, Sheet, Workbook, address_parts, sheet_parts
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +21,17 @@ X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 
 
 class WorkbookPrivacyTests(unittest.TestCase):
+    def test_tracked_audit_checks_unchanged_files_and_requires_both_artifacts(self):
+        required = b'workbook/build-template.xlsx\0workbook/retirement-model.xlsm\0'
+        for listing, message in ((b'README.md\0', 'both the shared workbook'),
+                                 (b'personal.xlsx\0' + required, 'Keep extra workbook copies')):
+            with self.subTest(listing=listing), patch('check_workbook_commit.git', return_value=listing) as git:
+                errors = StringIO()
+                with redirect_stderr(errors):
+                    self.assertEqual(check_index(tracked=True), 1)
+                git.assert_called_once_with('ls-files', '--cached', '-z')
+                self.assertIn(message, errors.getvalue())
+
     def copy_with(self, directory, changes, source_path=TEMPLATE):
         destination = Path(directory) / 'changed.xlsx'
         with ZipFile(source_path) as source, ZipFile(destination, 'w') as output:
@@ -26,8 +41,37 @@ class WorkbookPrivacyTests(unittest.TestCase):
                 output.writestr(part, payload)
         return destination
 
-    def change_cell(self, sheet, address, value):
-        with ZipFile(TEMPLATE) as source:
+    def test_saved_summary_buttons_call_the_macro_on_their_label(self):
+        release = ROOT / 'workbook/retirement-model.xlsm'
+        check_native_package(release)
+        with ZipFile(release) as archive:
+            summary = sheet_parts(archive)['Summary']
+            sheet = E.fromstring(archive.read(summary))
+            drawing_part, = [part for part in archive.namelist()
+                             if part.startswith('xl/drawings/') and part.endswith('.xml')
+                             and b'[0]!RunMarketRisk' in archive.read(part)]
+            drawing = E.fromstring(archive.read(drawing_part))
+        sheet.remove(sheet.find(X + 'drawing'))
+        controls = [shape for shape in drawing.findall('.//{*}sp') if shape.get('macro')]
+        self.assertEqual(len(controls), 2)
+        run, cancel = controls
+        run_action, cancel_action = run.get('macro'), cancel.get('macro')
+        run.set('macro', cancel_action)
+        cancel.set('macro', run_action)
+        cases = [('detached', {summary: E.tostring(sheet)}, 'button drawing'),
+                 ('swapped', {drawing_part: E.tostring(drawing)}, 'macro named by its label')]
+        run.set('macro', run_action)
+        cancel.set('macro', cancel_action)
+        cancel.find('{*}nvSpPr/{*}cNvPr').set('hidden', '1')
+        cases.append(('hidden', {drawing_part: E.tostring(drawing)}, 'show both'))
+        for name, changes, diagnostic in cases:
+            with self.subTest(name=name), TemporaryDirectory() as directory:
+                changed = self.copy_with(directory, changes, release)
+                with self.assertRaisesRegex(ValueError, diagnostic):
+                    check_native_package(changed)
+
+    def change_cell(self, sheet, address, value, source_path=TEMPLATE):
+        with ZipFile(source_path) as source:
             part = sheet_parts(source)[sheet]
             root = E.fromstring(source.read(part))
         cell = root.find(f".//{X}c[@r='{address}']")
@@ -64,6 +108,22 @@ class WorkbookPrivacyTests(unittest.TestCase):
             path = self.copy_with(directory, self.change_cell('Inputs', 'D25', 123456))
             with Workbook(path) as workbook, self.assertRaisesRegex(ValueError, 'synthetic'):
                 audit_fixture(workbook)
+
+    def test_introduction_rejects_private_data_or_formulas_anywhere(self):
+        def put(sheet, address, value, formula=None):
+            row, col = address_parts(address)
+            sheet.rows.setdefault(row, {})[col] = Cell(address, value, 's', formula)
+
+        for address, value, formula in (('E27', 123456, None), ('G44', 'Household note', None),
+                                        ('E30', None, '=Inputs!B12'), ('B3', 'Household name', None)):
+            with self.subTest(cell=address):
+                sheet = Sheet('Start Here')
+                for location, (text, _) in CONTENT.items():
+                    put(sheet, location, text)
+                audit_start_here(sheet)
+                put(sheet, address, value, formula)
+                with self.assertRaisesRegex(ValueError, f'Start Here!{address}'):
+                    audit_start_here(sheet)
 
     def test_unused_shared_string_is_rejected(self):
         with ZipFile(TEMPLATE) as source:
@@ -103,7 +163,7 @@ class WorkbookPrivacyTests(unittest.TestCase):
                     audit_package(path, template=True)
 
     def test_added_notes_outside_known_ranges_are_rejected(self):
-        release = ROOT / 'workbook/retirement-model.xlsx'
+        release = ROOT / 'workbook/retirement-model.xlsm'
         with ZipFile(release) as source:
             part = sheet_parts(source)['Summary']
             root = E.fromstring(source.read(part))

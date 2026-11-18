@@ -12,7 +12,7 @@ Phase 1 replaces the workbook’s separate working and retirement funding shortc
 
 ## Build and rollback
 
-Use the [current build and test instructions](../../README.md#rebuild-the-workbook).
+Use the [current build and test instructions](../../README.md#build-the-next-edition).
 
 ## Verification scope
 

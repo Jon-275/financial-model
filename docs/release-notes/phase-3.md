@@ -1,16 +1,16 @@
 # Phase 3 release record
 
-This record describes the Phase 3 workbooks. See the current release record for the latest print layout, tab order, and risk refresh checks. [Current release record](workbook-layout.md)
+This record describes the Phase 3 workbooks. For the current six-page report, see the print instructions. [Print your plan](../model-guide.md#print-your-plan)
 
 ## Published workbook
 
 **Start Here** links to setup and results. **Inputs** highlights the selected scenario and links to groups of assumptions. **Summary** reports whether the plan pays its bills, identifies the first shortfall when one occurs, and explains what to do if an input is missing.
 
-The print package includes two pages of input decisions and three pages covering the outlook, retirement cash flow, and next decisions. Print **Annual Detail** separately for a year-by-year view of the plan. The funding result and the savings benchmark appear in different parts of the report.
+At this stage the print package included two pages of input decisions and three pages covering the outlook, retirement cash flow and next decisions. Print **Annual Detail** separately for a year-by-year view of the plan. The funding result and the savings benchmark appear in different parts of the report.
 
 The workbook generator writes the layout, report links, chart and print settings. **Appendix** marks where the supporting sheets begin and provides an index to the calculations and advanced tools. The published workbook uses fictional figures and all 17 sheets are visible.
 
-Excel for Mac 16.115 opened the workbook and recalculated a scenario through age 125. The combined Inputs and Summary report exported as five pages on US Letter and A4. Annual Detail printed through the selected ending age with repeating headers. All 80 workbook scenarios and 29 risk tests passed during the redesign. Windows print verification remains open. [Workbook redesign](https://github.com/Jon-275/financial-model/pull/8)
+Excel for Mac 16.115 opened the workbook and recalculated a scenario through age 125. The combined Inputs and Summary report exported as five pages on US Letter and A4. Annual Detail printed through the selected ending age with repeating headers. All 80 workbook scenarios and 29 risk tests passed during the redesign. [Workbook redesign](https://github.com/Jon-275/financial-model/pull/8)
 
 ## Current review and maintenance rules
 

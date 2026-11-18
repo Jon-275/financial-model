@@ -13,6 +13,7 @@ from typing import Mapping
 from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile
 
+import investment_results
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.exceptions import InvalidFileException
@@ -85,6 +86,7 @@ class Scenario:
     years: tuple[YearSnapshot, ...]
     digest: str
     workbook_sha256: str
+    retained_investment_basis: bool = False
 
     @property
     def tax_tables(self) -> Cells:
@@ -179,12 +181,27 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
     # The planning-fields validation formula identifies workbooks with the
     # opening-year, fee and healthcare-inflation settings regardless of labels.
     modern = raw['Inputs']['B133'].data_type == 'f'
+    ages = []
+    for row in (8, 10, 53):
+        location = f'Inputs!{selected_col}{row}'
+        ages.append(_integer(_cell(source[row - 4][selected + 2], location), location, 0, 125))
+    opening_age, retirement_age, last_age = ages
+    unused = {12, 36} if last_age <= opening_age or retirement_age <= opening_age + 1 else set()
+    if last_age < max(retirement_age, opening_age + 1):
+        unused.add(37)
     for row in SCENARIO_INPUT_ROWS:
         location = f'Inputs!{selected_col}{row}'
         value = _cell(source[row - 4][selected + 2], location)
+        saved = data[row]['B']
         if row == 7:
             if not isinstance(value, str) or not value.strip():
                 _invalid(location, 'expected a scenario name')
+        elif row in unused and value is None:
+            value = 0
+            # Excel and Calc can save a reference to an empty input as blank or zero.
+            if saved not in (None, '', 0):
+                _invalid(f'Inputs!B{row}', 'saved calculation differs from the empty input; recalculate the workbook')
+            saved = 0
         elif value is None and not detailed and 102 <= row <= 124:
             # INDEX returns zero for an unused blank legacy healthcare input.
             value = 0
@@ -194,10 +211,19 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             if not 0 <= value <= 1:
                 _invalid(location, 'expected a share from zero to one')
             value *= inputs[44]
-        _matches(data[row]['B'], value, f'Inputs!B{row}')
+        _matches(saved, value, f'Inputs!B{row}')
         inputs[row] = value
 
+    selected_rates = raw['Asset_Allocation']['B99'].data_type == 'f'
+    if selected_rates:
+        grid = _grid(cached['Asset_Allocation'], 99, 105, 3)
+        for row, address in investment_results.CELLS.items():
+            value = grid[int(address[1:])][address[0]]
+            inputs[row] = _number(value, f'Asset_Allocation!{address}')
+
     for row in CACHED_INPUT_ROWS:
+        if selected_rates and row in investment_results.CELLS:
+            continue
         value = data[row]['B']
         if row in (71, 99, 125, 129):
             if value != 'OK':
@@ -216,7 +242,7 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             _invalid('Inputs!B131:B132', 'fee or healthcare inflation is outside the supported range')
         if _cell(cached['Inputs']['B133'], 'Inputs!B133') != 'OK':
             _invalid('Inputs!B133', 'planning assumptions have not passed validation')
-    if raw['Inputs']['B134'].data_type == 'f':
+    if not selected_rates and raw['Inputs']['B134'].data_type == 'f':
         for row in HSA_RETURN_ROWS:
             location = f'Inputs!B{row}'
             inputs[row] = _number(_cell(cached['Inputs'][f'B{row}'], location), location)
@@ -282,6 +308,13 @@ def _allocation(raw, inputs) -> Allocation:
     def numbers(col, indexes):
         return tuple(_number(rows[row][col], f'Asset_Allocation!{col}{row}') for row in indexes)
 
+    selected_rates = sheet['B99'].data_type == 'f'
+
+    def rate_location(row):
+        if selected_rates:
+            return f'Asset_Allocation!{investment_results.CELLS[row]}'
+        return f'Inputs!B{row}'
+
     asset_rows = ASSET_ROWS
     names = tuple(rows[row]['A'] for row in asset_rows)
     if any(not isinstance(name, str) or not name.strip() for name in names) or len(set(names)) != 5:
@@ -323,9 +356,9 @@ def _allocation(raw, inputs) -> Allocation:
                 continue
             gross = math.fsum(x * y for x, y in zip(weight, means))
             net = (1 + gross) * (1 - inputs.get(131, 0)) - 1
-            _matches(inputs[row], net, f'Inputs!B{row}')
+            _matches(inputs[row], net, rate_location(row))
         for row, yields in ((qualified_row, qualified), (ordinary_row, ordinary)):
-            _matches(inputs[row], math.fsum(x * y for x, y in zip(weights[0], yields)), f'Inputs!B{row}')
+            _matches(inputs[row], math.fsum(x * y for x, y in zip(weights[0], yields)), rate_location(row))
     return Allocation(names, means, vols, ordinary, qualified, corr, working, retirement)
 
 
@@ -367,6 +400,13 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
                                        'Bridge' if age < 60 else
                                        'Pre-Medicare' if age < 65 else 'Medicare')
     projection_expected = dict(A=step, B=year, C=age, D=spouse, E=phase, F=filing, G=index, H=(1 + inputs[14]) ** (year - _OPENING_YEAR))
+    benefit_index = index
+    if 'CG' in p:
+        # After claiming, deflation holds the nominal benefit at its prior high.
+        # With constant CPI the peak is either today's index or the claim-year index.
+        first_claim_step = min(step, max(0, int(inputs[45] - inputs[8])))
+        benefit_index = max(index, (1 + inputs[14]) ** first_claim_step)
+        projection_expected['CG'] = benefit_index
     if step == 0:
         projection_expected.update(BC=inputs[25], BD=inputs[51], BE=inputs[26], BF=inputs[27],
                                    BG=inputs[31], BW=inputs[127], BY=inputs[128])
@@ -389,7 +429,7 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
         hsa_eligible = inputs[101] == 0 or ((owner == 1 or not single)
                                             and (medicare_age == 126 or owner_age < medicare_age))
         hsa = min(wages - deferral, inputs[34] * index) if working and hsa_eligible else 0
-        social_security = (inputs[55] if single else inputs[44]) * index if age >= inputs[45] else 0
+        social_security = (inputs[55] if single else inputs[44]) * benefit_index if age >= inputs[45] else 0
         other = inputs[52] * index if inputs[87] <= age <= inputs[88] else 0
         exempt = inputs[46] * index
         fixed = inputs[38] if year < inputs[39] else 0
@@ -417,8 +457,9 @@ def _validate_year(row, p, cash, health, roth, checks, inputs, one_offs, real_wa
         _invalid(f'Healthcare!T{row}', 'healthcare assumptions need review')
 
 
-def _model_rows(cached, inputs, one_offs, *, real_wage_growth) -> tuple[YearSnapshot, ...]:
-    ranges = {sheet: _grid(cached[sheet], _FIRST_ROW, _LAST_ROW, columns)
+def _model_rows(cached, inputs, one_offs, *, real_wage_growth, benefit_floor) -> tuple[YearSnapshot, ...]:
+    ranges = {sheet: _grid(cached[sheet], _FIRST_ROW, _LAST_ROW,
+                           columns + int(sheet == 'Projection' and benefit_floor))
               for sheet, columns in _MODEL_RANGES.items()}
     active_last = int(inputs[70]) + _FIRST_ROW - 1
     snapshots = []
@@ -476,7 +517,7 @@ def _risk_inputs(raw) -> tuple[dict[int, float], tuple[float, ...], int]:
     return sequence, stress_returns, _integer(basis, f'{basis_sheet.title}!B{basis_row}', 1, 2)
 
 
-def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_basis, *, real_wage_growth) -> str:
+def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_basis, *, real_wage_growth, benefit_floor, retained_basis) -> str:
     # Numeric cells are canonicalized across engines that distinguish 1 and 1.0.
     payload = {
         'schema': 'risk-scenario-v1',
@@ -493,6 +534,10 @@ def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_
         payload['planning'] = [inputs[row] for row in (130, 131, 132)]
     if not real_wage_growth:
         payload['wage_growth_includes_inflation'] = True
+    if benefit_floor:
+        payload['social_security_deflation_floor'] = True
+    if retained_basis:
+        payload['basis_on_retained_investments'] = True
     canonical = json.dumps(payload, sort_keys=True, separators=(',', ':'), allow_nan=False)
     return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
 
@@ -521,7 +566,7 @@ def load_scenario(path: str | Path) -> Scenario:
 def _read(raw, cached, workbook_sha256: str) -> Scenario:
     # Stable model headers guard fixed-coordinate reads against moved or replaced sheets.
     for sheet, cell, expected in (
-        ('Projection', 'CF4', 'Taxable basis added'), ('Roth_Access', 'AP4', 'Roth net transfer'),
+        ('Roth_Access', 'AP4', 'Roth net transfer'),
         ('Healthcare', 'AF4', 'Healthcare paid from cash'), ('Cash_Flow', 'AC4', 'ACA premium credit'),
         ('Cash_Flow', 'AR4', 'Opening unpaid spending'),
         ('Checks', 'M4', 'Taxable basis reconciliation'), ('Inputs', 'A129', 'Tax inputs'),
@@ -529,6 +574,10 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     ):
         if raw[sheet][cell].value != expected:
             _invalid(f'{sheet}!{cell}', 'workbook layout is incompatible with this risk engine')
+    basis_header = raw['Projection']['CF4'].value
+    if basis_header not in ('Taxable basis added', 'Basis added to retained investments'):
+        _invalid('Projection!CF4', 'unknown taxable basis treatment')
+    retained_basis = basis_header == 'Basis added to retained investments'
     selected, inputs, one_offs = _inputs(raw, cached)
     wage_label = raw['Inputs']['A13'].value
     if wage_label not in ('Real wage growth', 'Annual wage growth'):
@@ -539,10 +588,15 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     tax, tax_source = _tax_tables(raw, cached)
     if not real_wage_growth and not 0 <= _number(tax_source.get('B251'), 'Tax_Tables!B251') <= 1:
         _invalid('Tax_Tables!B251', 'expected a fraction from zero to one')
-    opening, *years = _model_rows(cached, inputs, one_offs, real_wage_growth=real_wage_growth)
+    benefit_header = raw['Projection']['CG4'].value
+    if benefit_header not in (None, 'Social Security price index'):
+        _invalid('Projection!CG4', 'unknown Social Security benefit index')
+    benefit_floor = benefit_header is not None
+    opening, *years = _model_rows(cached, inputs, one_offs, real_wage_growth=real_wage_growth,
+                                  benefit_floor=benefit_floor)
     return Scenario(selected, MappingProxyType(inputs), MappingProxyType(tax), allocation,
                     MappingProxyType(sequence), stress_returns, return_basis,
                     opening.projection, opening.cash, opening.health, opening.roth, tuple(years),
                     _digest(inputs, one_offs, tax_source, allocation, sequence, stress_returns, return_basis,
-                            real_wage_growth=real_wage_growth),
-                    workbook_sha256)
+                            real_wage_growth=real_wage_growth, benefit_floor=benefit_floor, retained_basis=retained_basis),
+                    workbook_sha256, retained_basis)

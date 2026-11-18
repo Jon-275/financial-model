@@ -1,8 +1,21 @@
 # Retirement model improvement plan
 
-November 17, 2026
+November 18, 2026
 
-Status — implementation in progress. Retained history and known local checkouts have been cleaned. GitHub cached references and the colleague's clone remain open. Funding corrections and the compact solver have passed financial testing; their release review is in progress. Excel-only risk is being prototyped. Design, licensing and cross-platform release checks remain open.
+The published workbook includes the funding corrections from PRs 16 and 17. The macro-enabled workbook is a release candidate. It calculates market risk in Excel and presents the results in the six-page Summary. [Published financial fixes](https://github.com/Jon-275/financial-model/pull/17)
+
+## Current status
+
+| Phase | Completed | Still open |
+| --- | --- | --- |
+| 1. Privacy and history | Replaced the publication sources with synthetic data, cleaned the working clones and enabled GitHub email privacy. On November 18 the owner confirmed that GitHub deleted the affected workbook history. | One retained commit on main still uses an earlier author email. The details are kept privately. |
+| 2. Annual funding and account access | PRs 16 and 17 corrected account depletion, Medicare surcharges and the first shortfall shown in the printed report. All 88 financial scenarios and four Mac Excel release cases passed for PR 17. The draft corrects cost basis after brokerage sales. Its independent ledger, three Mac Excel cases and all 93 financial scenarios passed. The protected calculation sheets passed all 93 cases and the final workbook passed three direct trials. | Publish the brokerage correction with the reviewed workbook. |
+| 3. Calculation size and performance | In Mac Excel, changing an input at maximum capacity took 1.69 seconds. The in-memory annual withdrawal search matched all 2,337,000 fields tested. Reusing the base plan and calculating market diagnostics on demand reduced a ten-path age-125 test from 18.23 to 14.37 seconds. All 2,830 figures matched live Excel exactly. Writing the batch took less than a millisecond. | Speed up the calculation of market returns and annual account balances. Verify each change against the visible formulas, including the first shortfall and tax and benefit thresholds. Repeat the full timing before changing the shared workbook. |
+| 4. Workbook risk calculation | Before the longevity display correction, Excel for Mac completed 1,000 pairs in 7 min 52 sec for ages 35–95 and 33 min 10 sec for ages 0–125. Both runs matched the independent calculation across all 588,054 fields, covering 2,033 outcomes and three complete funding histories each. Excel verified and reused 515 identical flexible paths in the example and 501 in the longer plan. Saved-file checks confirmed that Excel restored the selected trial and cleared unused years. Separate tests confirmed that scheduled bills can change the funding result. | Reduce full-run times to two minutes for the example and five minutes through age 125. Automated cancellation passed. The owner deferred the on-screen Cancel-button check. |
+| 5. Design and first use | The fictional workbook printed in six pages on Letter and A4 in Mac Excel. Each export included all 335 printable Summary cells. Switching dollar views updated Annual Detail and preserved the current risk results. An editorial walkthrough traced all 57 navigation links and led to clearer instructions for refreshing, saving a comparison report and entering the survivor benefit. | The owner will complete the first walkthrough in Excel for Mac, then share the clean example with colleagues. |
+| 6. Release and enablement | The public build creates a macro-enabled workbook directly from the reviewed VBA source. The dated fictional PDF passed its financial, page and metadata checks. The original Mac-authored test project contained a local profile path and was excluded. | Verify the final revision in Excel for Mac and complete the required PR checks. Licensing remains pending at the owner’s request. |
+
+The published file remains the macro-free workbook. The release candidate should replace it after the outstanding workbook and release checks pass. [Runner evidence](native-risk-implementation.md) · [Release checks](../tests/README.md)
 
 ## Purpose and release standard
 
@@ -12,7 +25,7 @@ Give a first-time user a clear answer to three questions.
 2. How does the answer change with weaker markets, higher prices and a longer retirement?
 3. Which assumption or decision should I review next?
 
-The shared workbook must calculate its own projections, funding analysis and market risk in desktop Excel. Its report must explain the results in plain language and print directly from Summary. Every supporting sheet and formula must remain available for inspection.
+The shared workbook must calculate its own projections, funding analysis and market risk in Excel for Mac. Its report must explain the results in plain language and print directly from Summary. Every supporting sheet and formula must remain available for inspection.
 
 Retain the existing GitHub repository. Address its sensitive template and history before promoting another release. A clean current download and a clean repository history require separate evidence.
 
@@ -45,7 +58,7 @@ Read the current calculation explanations alongside this plan. They describe the
 | 3. Simplify the annual calculation | Required before workbook risk | Financial engineering and software engineering | A compact annual engine that preserves taxes, account access, discontinuities and the full age range. |
 | 4. Calculate risk inside Excel | Required for the requested workbook | Financial engineering, software engineering and financial planning | Reproducible Excel-only risk refresh with inflation and longevity stresses, visible calculation detail and verified performance. |
 | 5. Finish the experience and example | Required before public promotion | Product design, financial planning and editorial | A simple first-use route, coherent report, credible fictional example and accessible supporting sheets. |
-| 6. Verify and release | Required before public promotion | Independent financial review, engineering and design review | Cross-platform evidence, reproducible public build, current guidance and all required PR checks. |
+| 6. Verify and release | Required before public promotion | Independent financial review, engineering and design review | Excel for Mac test results, reproducible public build, current guidance and all required PR checks. |
 
 Phases 2 and 3 feed Phase 4. Report wireframes can proceed during the calculation work. Final report figures and screenshots follow the verified engine. Keep each phase's changes and evidence in a focused PR.
 
@@ -53,7 +66,7 @@ Phases 2 and 3 feed Phase 4. Report wireframes can proceed during the calculatio
 
 ### Replace the source of the exposure
 
-1. Inventory the current files, every historical workbook path, branch and tag, open and closed pull requests, releases, Actions artifacts, caches and known local clones. Include the colleague's review clone. Keep raw personal strings and sensitive object identifiers in a private cleanup record.
+1. Inventory the current files, every historical workbook path, branch and tag, open and closed pull requests, releases, Actions artifacts, caches and known local clones. Keep raw personal strings and sensitive object identifiers in a private cleanup record.
 2. Inspect both workbook packages beyond their visible cells. Cover shared strings, unused strings, cached formula results, defined names, comments, hidden rows and columns, links, connections, drawings and document properties. Review cached financial outputs as well as input cells.
 3. Replace the template's household-derived labels, inputs and allocations with a documented synthetic fixture. Replace the corresponding allocations in the distributed example. Changing the profile names alone leaves the original numerical pattern.
 4. Review the template's formulas and tax tables as functional source material. Preserve their verified behavior while replacing household data. Longer term, generate the clean template from explicit source tables and layout definitions.
@@ -80,7 +93,7 @@ Use `git-filter-repo` in a disposable mirror to remove affected workbook paths f
 
 Rehearse the rewrite, compare the intended source tree, record affected refs and coordinate open PRs. Arrange the narrowly scoped force update through the repository owner. Restore branch rules and the required Workbook, Greptile and Gemini checks afterward. Treat the force update as a separate controlled maintenance action.
 
-Inspect pull-request refs and cached commit views after updating writable refs. Request GitHub Support assistance where the exposure qualifies. Coordinate replacement of known clones, including this project's earlier working copies and the colleague's clone. Record any remaining copies or cached references that cannot be verified. Previously downloaded copies remain outside the maintainer's control. [GitHub removal limits](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#fully-removing-the-data-from-github)
+Inspect pull-request refs and cached commit views after updating writable refs. The owner confirmed GitHub deleted the affected history. Anyone with a pre-cleanup clone should replace it before pushing changes. Record any remaining copies or cached references that cannot be verified. Previously downloaded copies remain outside the maintainer's control. [GitHub removal limits](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository#fully-removing-the-data-from-github)
 
 ### Evidence required to close Phase 1
 
@@ -160,13 +173,13 @@ Separate the annual engine into visible steps that read from one set of active a
 
 Use labeled cells and bounded references for the calculation steps. Keep source assumptions in one place. Checks independently reconcile the completed schedules. Business calculations should derive their own required status from the responsible module.
 
-Refactor the existing funding solver using its documented breakpoints and feasible intervals. Preserve testing around tax changes and Marketplace credit cliffs. Reuse year-specific inputs and evaluate tax-independent values once. Stop refinement when the requested dollar precision is met. Convergence failures must remain visible.
+Refactor the existing funding solver using its documented breakpoints and feasible intervals. Preserve testing around tax changes and Marketplace credit cliffs. Reuse year-specific inputs and evaluate tax-independent values once. Keep the full withdrawal search until an alternative reproduces the funding decision and the balances carried into later years. Even a small change near a tax or health-insurance threshold can alter a later decision. Keep convergence failures visible.
 
 Treat Targeting_Calc separately. It compares conversion amounts in one chosen year. Reduce repeated context and unnecessary refinement across its 51 trials.
 
 Retain interactive capacity through age 125. Changing the end age from 95 to 125 must work inside Excel. Rows, charts and print areas stop at the selected end age. Permanently building only the current horizon would break that requirement.
 
-Record baseline and candidate formula counts, compressed and expanded size, memory, open time and recalculation time on named Mac and Windows test machines. Initial design targets are a workbook below 15 MB, ordinary edits below 2 seconds and a full deterministic recalculation below 10 seconds. These are proposed targets to validate with the prototype.
+Record baseline and candidate formula counts, compressed and expanded size, memory, open time and recalculation time on the reference Mac. Record the Mac model and Excel version with each benchmark. Initial design targets are a workbook below 15 MB, ordinary edits below 2 seconds and a full deterministic recalculation below 10 seconds. These are proposed targets to validate with the prototype.
 
 Phase 3 closes when the compact engine matches the verified annual cash, tax, access and balance results, handles discontinuities and changes the horizon through 125 without regeneration.
 
@@ -174,17 +187,26 @@ Phase 3 closes when the compact engine matches the verified annual cash, tax, ac
 
 ### Workbook ownership and refresh
 
-The target deliverable is one self-contained `.xlsx` workbook for supported desktop Excel on Mac and Windows. Its risk inputs, random-number method, annual calculation, trial results and report formulas must all be inspectable.
+The target deliverable is one self-contained workbook for desktop Excel on Mac. The recommended run control is an on-demand macro, which requires the `.xlsm` format. Its risk inputs, random-number method, annual calculation, trial results, macro source and report formulas must all be inspectable.
 
-Prototype a seeded trial selector and native Excel What-If Data Tables that rerun the same compact annual engine. A trial identifies its sequence of returns, inflation settings and spending policy. One-variable tables can capture several outputs from the same calculation. This is a proposed architecture whose speed and platform behavior need proof. [Microsoft Data Table guidance](https://support.microsoft.com/en-us/excel/calculate-multiple-results-by-using-a-data-table)
+Use a seeded trial selector that reruns the same compact annual engine. A trial identifies its sequence of returns, inflation settings and spending policy. The native Data Table prototype captured ten complete paths correctly but its larger-capacity run did not meet the performance requirement. The recommended runner is a small VBA procedure that runs only the requested trials, collects their outputs and refreshes the report after a complete batch. Financial rules remain in visible worksheet formulas. [Runner design and evidence](native-risk-implementation.md)
 
 Use a documented deterministic random-number method with stable trial and year identifiers. Avoid volatile random changes when the user opens the file or switches dollar views. Check the generator's distribution, independence and cross-asset correlation. Fixed and flexible spending must use the same market paths.
 
-Test 1, 10, 100 and 1,000 paired paths through both a typical horizon and age 125. Target a 1,000-pair refresh within two minutes for the example and five minutes for the longest horizon on the documented reference machines. If the prototype misses the targets, revise the annual engine and trial calculation before release. Publishing a saved Python result would leave the workbook-only requirement open.
+Test 1, 10, 100 and 1,000 paired paths through both a typical horizon and age 125. Target a 1,000-pair refresh within two minutes for the example and five minutes for the longest horizon on the reference Mac. If the prototype misses the targets, revise the annual engine and trial calculation before release. Publishing a saved Python result would leave the workbook-only requirement open.
 
-Make the refresh action visible in Excel and test the exact steps on both platforms. Record the full set of assumptions used for the results. Under the supported calculation setting, changed assumptions must mark saved results out of date before the user relies on them. Refresh must update the results, input record and run settings consistently.
+Keep the visible worksheets as the financial reference. For the walkthrough, use 100 paired paths while changing assumptions and 1,000 for the final report. Both settings run all 33 stress cases.
 
-Require automatic calculation for ordinary model edits and document the exact risk-table refresh action. A workbook using manual calculation needs a full recalculation before its results can be verified. Print the run context and assumptions used so a reader can assess a saved report. Test calculation settings, interrupted refreshes, save and reopen, and restoration of earlier assumptions.
+The annual withdrawal search took about one-fifth as long in memory in the seven-year test. Benchmark that change over 100 pairs first. Time the withdrawal search, returns and account balances separately. Compare the same scenarios, seed and end age with the worksheet version, including years when a bill goes unpaid or a tax or healthcare threshold changes the funding decision.
+
+The full in-memory prototype matched all 2,830 reported figures across ten 125-year trials. Its 14.37-second calculation excludes verification, saving and report preparation. Test it at full size in two steps.
+
+1. Expand the ten-trial test to use the workbook's full trial list. Use the current formulas, assumptions and seed from each saved Mac benchmark. Calculate 1,000 fixed paths, 1,000 flexible partners and 33 stress cases in memory. Compare all 283 financial values for each of the 2,033 outcomes with the saved reference. Record calculation and write times separately.
+2. Use the existing workbook runner to select the three representative funding histories, check annual balances, publish the results to Summary and restore the selected trial. Repeat the cancellation and recovery tests. Compare all 588,054 fields per horizon and time the refresh from launch through report update and restoration of Excel's settings. Compare the elapsed times with the worksheet runs for ages 35–95 and 0–125. Keep independent verification and saving outside the timed interval, as in the original benchmarks.
+
+Make the refresh action visible in Excel and test the exact steps in Excel for Mac. Record the full set of assumptions used for the results. Under the supported calculation setting, changed assumptions must mark saved results out of date before the user relies on them. Refresh must update the results, input record and run settings consistently.
+
+Require automatic calculation for ordinary model edits. Make **Run market risk** the explicit simulation action, with progress and cancellation. Restore Excel's prior settings after success, cancellation and errors. Print the run context and assumptions used so a reader can assess a saved report. Test calculation settings, interrupted refreshes, save and reopen, and restoration of earlier assumptions. Document that VBA requires desktop Excel and allowed macros; Excel for the web cannot run it. [Microsoft compatibility guidance](https://support.microsoft.com/en-us/excel/work-with-vba-macros-in-excel-for-the-web)
 
 The Python engine remains useful as an independent comparison during development. Runtime workbook users must be able to recalculate their own analysis offline in Excel.
 
@@ -217,17 +239,18 @@ Phase 4 closes only when every path uses the verified tax, healthcare, account-a
 
 ### The report sequence
 
-Keep Summary as the complete printable plan. Fit improvements into its five-page sequence. Establish a revised page count through design review if readability requires more space.
+Summary contains the complete printable plan. A separate stress page gives each test room to show what changed, whether costs were covered and the size of any gap.
 
 | Page | Reader's question | Content |
 | --- | --- | --- |
 | 1. Retirement outlook | Does this plan cover its costs? | Scenario, horizon, dollar view, funding result, conditional risk result, balance range and the most important caution |
 | 2. Retirement cash flow | Where does the money come from? | Wages, Social Security and other income, savings used, taxes, healthcare, bridge years and outstanding costs |
-| 3. Risk and next decisions | What could change the answer? | Complete low, median and high examples, inflation and longevity stresses, spending flexibility and one or two decisions to test |
-| 4. Input decisions | What assumptions did I choose? | Ages, income, saving, return and inflation conventions, investment profiles and access settings |
-| 5. Spending and account decisions | What commitments and restrictions did I enter? | Living costs, medical costs, one-time expenses, coverage, account rules and unresolved inputs |
+| 3. Risk and next decisions | What could change the answer? | Low, median and high funding examples, spending flexibility and the next decisions to test |
+| 4. Stress tests | What happens if conditions change? | Higher inflation, a longer retirement, combined pressures, medical budgets and the first unpaid costs |
+| 5. Input decisions | What assumptions did I choose? | Ages, income, saving, return and inflation conventions, investment profiles and access settings |
+| 6. Spending and account decisions | What commitments and restrictions did I enter? | Living costs, medical costs, one-time expenses, coverage, account rules and unresolved inputs |
 
-Risk Results can remain a supporting view before Appendix while it contributes distinct detail. Summary must contain the findings, stresses and explanation needed to read the plan on its own. Keep full trial calculations behind Appendix.
+Summary contains the findings, stress tests and decision record. Put the full annual timeline and market outcome tables immediately after Appendix. Keep the underlying annual schedules, trial calculations and source data with them.
 
 Planning Metrics remains its own supporting tab. Sequence and format every added block within that tab or the report's established page structure. Reserve the report's side navigation for links and controls.
 
@@ -247,11 +270,7 @@ Planning Metrics remains its own supporting tab. Sequence and format every added
 
 ### A short first-use route
 
-Extend Start Here with a compact **Start investing** illustration using five inputs — age, pay, saving percentage, assumed real return and retirement age. Give it one chart comparing an earlier and later start on the same basis, and distinguish contributions from growth.
-
-Keep this illustration in the main workbook. Label it as a simplified saving illustration and state its tax and account assumptions. Link the user into the full Inputs workflow for spending, taxes, benefits and risk. Read any displayed IRA limit from the maintained year-specific tax table and explain that eligibility can reduce it.
-
-Use navigation and progressive detail to make the workbook approachable. Keep the full schedules available for users who want to inspect them.
+Use Start Here for a short introduction. Readers enter household figures on Inputs, read and print the plan on Summary, and use the Appendix to inspect the calculations.
 
 ### A credible fictional example
 
@@ -269,9 +288,9 @@ State the scope near the start of the README, Start Here and the report footer.
 
 > Educational planning estimate. US federal and California taxes. Joint filing and modeled survivor-single status. Review the assumptions and obtain qualified financial and tax advice before acting.
 
-Explain the supported account types and material omissions beside that scope. Define compatible Excel versions based on actual Mac and Windows verification.
+Explain the supported account types and material omissions beside that scope. Record the Excel for Mac version used for each release.
 
-Recommend an MIT license for original code and workbook formulas, subject to the owner's confirmation of rights and intended sharing terms. State how workbook and documentation reuse is covered. Inventory dependency licenses and externally sourced tables. Add the selected license before describing the project as open source. [GitHub licensing guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)
+Licensing is pending at the owner's request. Apache 2.0 is under consideration for its explicit contributor patent terms. Do not apply a license until the owner selects it and confirms the rights to license the original work. State how workbook and documentation reuse is covered. Inventory dependency licenses and externally sourced tables. Add the selected license before describing the project as open source. [GitHub licensing guidance](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/licensing-a-repository)
 
 Replace the private authoring-runtime requirement with a documented public build path. Audit the existing OOXML packaging and use publicly installable, pinned dependencies to create the same formulas, charts, styles, validation and native Excel features. Build from the audited synthetic source in a clean environment. Verify source-to-workbook equivalence in CI.
 
@@ -292,7 +311,7 @@ Update the README, model guide, schedule explanations, risk guide, annual tax re
 | Risk | Exact seeded repeatability, zero-volatility comparison, every-year accounting, fixed/flexible pairing, valid correlations, inflation stresses and horizon changes through 125 |
 | Risk freshness | Every active assumption group, calculation settings, interrupted refresh, save and reopen, restored assumptions and changed trial count |
 | Native workbook | Offline Excel-only refresh, no repair prompt, no external calculation dependency and visible trial detail |
-| Performance | Measured open, edit, full recalculation and risk-refresh times, memory, formula count and file sizes on both reference platforms |
+| Performance | Measured open, edit, full recalculation and risk-refresh times, memory, formula count and file sizes on the reference Mac |
 | Public build | Clean installation, documented commands, deterministic financial outputs and preservation of workbook features |
 | Existing safeguards | Misplaced one-time expense entries, invalid ages, high-earner Roth phase-out, fee treatment and independent HSA allocation continue to work |
 | Input validation | Required blanks, valid zero values, pasted invalid amounts, unsupported choices and allocation totals produce clear local messages |
@@ -303,9 +322,9 @@ Use cent-level reconciliation and boundary fixtures for the annual ledger. Compa
 
 ### Editorial, design and platform checks
 
-Ask a first-time reader to enter a fictional plan, explain the funding answer, identify the source of income at benefit start, change an assumption, refresh risk and print the result. Record where the reader hesitates and revise those steps.
+The owner will take the first walkthrough on a working copy in Excel for Mac. Starting on **Start Here**, enter the plan on **Inputs**, explain the funding result on **Summary** and identify the income that begins at the benefit start age. Change one assumption, run market risk and preview all six Summary pages. Record any step that was hard to follow. After the walkthrough, the owner will share a fresh copy of the fictional example with colleagues.
 
-Preview every report page on US Letter and A4 in desktop Excel for Mac and Windows. Inspect both dollar views, long scenario names, shortfalls, missing inputs, age 95 and age 125. Check chart legends, row cutoffs, page breaks, grayscale legibility and formula protection.
+Preview every report page on US Letter and A4 in desktop Excel for Mac. Inspect both dollar views, long scenario names, shortfalls, missing inputs, age 95 and age 125. Check chart legends, row cutoffs, page breaks, grayscale legibility and formula protection.
 
 Use Workbook checks, Greptile Review and Gemini Review on each relevant PR. Resolve actionable review findings and record the reason for any disputed finding. A release needs completed financial, privacy and design evidence as well as passing automated checks.
 
@@ -324,8 +343,8 @@ Use Workbook checks, Greptile Review and Gemini Review on each relevant PR. Reso
 | N9. Public scope | Phase 6 adds visible tax and filing scope, limitations and the selected license | Consistent workbook, README and license review |
 | N10. Access defaults | Phase 2 makes workplace access confirmation explicit and documents the whole-year convention | Unknown-access and age-boundary tests |
 | N11. Workbook size | Phase 3 addresses annual solver duplication and selected-year trial cost while retaining capacity to 125 | Before/after measurements and interactive horizon test |
-| N12. Protection and Windows QA | Phases 5 and 6 protect editable boundaries and finish platform checks | Formula visibility and Mac/Windows print evidence |
-| Starter experience | Phase 5 adds the five-input illustration and a clear route into the full plan | First-time-reader test |
+| N12. Protection and desktop Excel testing | Phases 5 and 6 protect editable cells and verify the workbook on the owner's Mac | Formula visibility and Letter and A4 print evidence in Excel for Mac |
+| First use | Start Here links to Inputs, Summary and the Appendix | Owner’s walkthrough and notes |
 | Lighter sharing copy | Phase 6 supplies a sample PDF and measures the canonical workbook before adding another editable edition | Preview matches the released workbook |
 
 ### Plan preparation completed
@@ -345,13 +364,16 @@ Use Workbook checks, Greptile Review and Gemini Review on each relevant PR. Reso
 - [x] Verify automatic branch deletion with the publication cleanup PR.
 - [x] Rewrite retained history, restore required branch rules and verify a fresh clone with only the two approved workbook blobs.
 - [x] Replace the owner's checkout and disable normal pushes from 12 earlier task clones. Preserve the owner's earlier files and planning edits in restricted recovery storage.
-- [ ] Obtain GitHub Support's disposition of cached PR references and confirmation that the colleague replaced the review clone.
+- [x] Submit the authorized request to GitHub Support for cached views and old pull-request references. Keep its contents in restricted recovery storage.
+- [x] Record the owner's November 18 confirmation that GitHub deleted the affected workbook history.
+- [ ] Address the remaining author-email entry on a retained commit. Keep identifying details in the private record.
 - [ ] Phase 1 complete with privacy and history evidence.
-- [ ] Phase 2 complete with financial and access evidence.
+- [x] Phase 2 complete with financial and access evidence. PR #16 passed Workbook, Greptile and Gemini checks and merged.
 - [ ] Phase 3 complete with equivalent results and performance measurements.
+- [x] Run 1,000 pairs at both horizons on the Mac workbook before the longevity display correction. Compare all outcomes and ranked funding histories and verify the restored trial after a refresh and after interruption.
 - [ ] Phase 4 complete with Excel-only risk refresh and integrated report.
-- [ ] Phase 5 complete with example, design and first-use evidence.
-- [ ] Phase 6 complete with public build, documentation and platform evidence.
+- [ ] Complete the owner's first walkthrough in Excel for Mac and record any changes needed before sharing the clean workbook with colleagues.
+- [ ] Phase 6 complete with public build, documentation and Excel for Mac release checks.
 
 ### Implementation evidence
 
@@ -359,6 +381,6 @@ The publication cleanup passed nine privacy tests, all three required PR checks,
 
 The funding update adds working-year access to eligible Roth funds, carried spending obligations and visible repayment detail. It labels the spending benchmark before income and explains benefit timing on Summary. All 85 financial scenarios passed on the compact engine, including five new funding cases. The SEPP case was updated to carry bills and test repayment after age 60. Representative scenarios were also recalculated without trimming the calculation sheets. [Funding and solver evidence](release-notes/funding-and-solver.md)
 
-Local source links reduce the candidate from approximately 24 MB to 6.1 MB and expanded contents from 380 MB to 75 MB. Excel for Mac recalculated the full model and extended the example to age 125. Windows performance and print verification remain open. A native one-input table also captured ten complete model results and text context inside Excel. This establishes the trial mechanism; the integrated risk engine, full-scale performance tests and stresses remain unfinished.
+An earlier prototype reduced the calculation workbook from about 24 MB to 6.1 MB by replacing repeated source formulas with local links. Excel for Mac recalculated the full model through age 125. The current 13.8 MB draft also includes the on-demand runner, the market results and three complete funding examples.
 
-The next implementation task is the synthetic template and content-based privacy audit in Phase 1. The next design task is a wireframe of Summary page 3 that fits inflation, longevity and funding insights into the report sequence.
+The source-built VBA runner completed a desktop Excel for Mac run and the report printed in six pages. The full-size release candidate holds 2,033 calculated outcomes. The current status table records desktop timing and the remaining release checks. [Runner design and verification](native-risk-implementation.md)
