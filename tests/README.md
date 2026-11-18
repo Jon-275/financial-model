@@ -51,6 +51,8 @@ Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` t
 
 Run `python3 tests/survivor_floor_acceptance.py workbook/retirement-model.xlsm` to check the medical reserve after one spouse dies. It verifies the survivor’s medical costs with and without Social Security income.
 
+Run `python3 tests/one_time_expense_acceptance.py workbook/retirement-model.xlsm` to check scheduled bills in the base plan and both market spending policies. It checks bills that share a year, prices in a survivor year, the saved trial results and the refresh message after an amount changes.
+
 The phase-readiness test checks which pay and spending fields a plan needs. It also checks when the longer market tests require a retirement budget beyond the selected end age.
 
 Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
