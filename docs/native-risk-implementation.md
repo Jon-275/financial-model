@@ -1,6 +1,6 @@
 # Workbook risk refresh
 
-November 17, 2026
+November 18, 2026
 
 The development workbook runs market scenarios in desktop Excel and includes the results in its six-page Summary. The release checklist tracks final testing and publication. [Improvement plan](model-improvement-plan.md)
 
@@ -49,7 +49,19 @@ These tests used the same example inputs and retained the visible annual workshe
 | Run the complete annual withdrawal search in memory | In Excel for Mac, the VBA search read the starting assumptions, chose each withdrawal and returned the selected result. All 32,718 cells across seven fictional years matched the original worksheet, including the 231 proposed withdrawals and all funding decisions. Two timed blocks of 140 annual searches took 0.531 and 0.540 seconds in memory. The same worksheet searches took 2.633 and 2.650 seconds. These figures cover the withdrawal search. Separate portable comparisons against LibreOffice differed on five intermediate funding decisions near zero. |
 | Carry one market path across several years | A three-year test started from opening assumptions, crossed from work into retirement and included a scheduled bill. The independent in-memory calculation and Mac Excel agreed exactly on all 30,006 fields across the original and increased-bill cases. The larger bill changed the final year from funded to unfunded. This test used Python for the in-memory path and Excel for the worksheet comparison. A complete multi-year VBA market run still needs separate verification. |
 
-A separate VBA prototype now runs a complete market path in memory from the visible worksheet formulas. Its portable tests checked 1,039 independent values in each of three cases, including fixed and flexible spending. Changing a year-125 closing balance caused the check to fail as expected. A full-path comparison and timing in desktop Excel are still pending. The shared workbook continues to use the worksheet runner.
+### Complete paths calculated in memory
+
+The prototype reads the assumptions once, calculates returns, taxes, healthcare, withdrawals and balances in VBA, then writes the results back to Excel. The shared workbook continues to use the visible worksheet formulas.
+
+| Excel for Mac test | Result |
+| --- | --- |
+| Annual withdrawals through age 125 | Variable-inflation and depleted-portfolio cases matched the worksheets exactly on all 2,337,000 intermediate values, selected withdrawals and decisions. |
+| Crossing into retirement | Four three-year cases combined two bill amounts with fixed or flexible spending. Each matched 15,286 worksheet fields exactly, including the 283 figures used to publish the results. |
+| Full funded and unfunded paths | The tests agreed on whether all bills were paid, the first shortfall age, spending cuts and ending balances to the cent. The fully funded 125-year cases correctly left the first-shortfall age blank. The first funded comparison found fractional-cent differences. Excel and VBA evaluated annual compounding in a different multiplication order. Matching Excel’s order for whole-year exponents 1–125 produced exact agreement on all 36,026 fixed-policy and 40,738 flexible-policy fields in the funded follow-up. A separate set of 140 whole-year power tests also matched exactly. |
+| Ten 125-year trials in one batch | Reading and preparing inputs took 0.025 seconds. Calculation took 18.233 seconds. Writing all ten records took 0.00048 seconds. All 2,830 published figures agreed with the worksheet and independent financial model to the cent. The largest difference from the worksheet was below $0.000000004. |
+| Same ten trials after reusing the base plan | The revised prototype kept the unchanged base plan in memory, calculated market diagnostics on demand and used the verified whole-year compounding method. Calculation fell from 18.233 to 14.370 seconds in this comparison. The single write took 0.00047 seconds. All 2,830 financial fields matched live Excel exactly. Rejecting an invalid trial preserved 19,380 base values and 124 annual withdrawal calculations. The next valid trial also matched. |
+
+The ten-trial timing excludes the separate 16.53-second comparison with both references, saving to disk and compiling the final report. The batch spent almost all of its measured time calculating. The revised ten-trial test still averaged 1.44 seconds per path. Test a faster way to calculate market returns and the annual account schedules against the visible formulas before attempting a timed 1,000-pair in-memory run. The ten-trial workbook does not publish a complete production report.
 
 For a quick comparison, set **Paired market paths** on **Risk_Settings** to 100 and run the scenarios. Set it to 1,000 and run again for the final report. Both runs include the 33 stress cases. More paths reduce the sampling variation in the reported funding rate.
 
@@ -77,7 +89,7 @@ The current runner recalculates 12 closing amounts per year from the original fi
 
 The maximum-horizon run did not complete. Its elapsed time measures the failed attempt. The first recorded closing difference was a brokerage balance on trial 42. That trial recovered. After saving in Excel, all 595,814 stored trial and funding cells matched an untouched results bank saved in the same version of Excel. The previous completion date and assumptions also matched.
 
-A separate Mac test replayed 11 trial selections, including the transitions from 41 to 42, 114 to 115 and 249 to 250. All 11 matched the independent results on the first attempt. The short sequence did not reproduce the failure seen during the full run. Recovery needs to pass the longer sequence before release.
+A separate Mac test replayed 11 trial selections, including the transitions from 41 to 42, 114 to 115 and 249 to 250. All 11 matched the independent results on the first attempt. The failure occurred only in the longer test, so the release checks included the full 1,000-pair run.
 
 In a longer test, the first incorrect annual balance and the ending balance matched the preceding trial on 30 occasions. Rebuilding Excel's dependencies corrected 29. It stopped at trial 839 after 15 minutes 38 seconds when balances were missing from age 99 onward. The discrepancy was already in the worksheet before the macro read the result.
 
@@ -99,7 +111,14 @@ The six runs matched on the first attempt. In a separate recovery test, the firs
 
 ### Full calculation with a year-by-year retry
 
-The example run with 1,000 paired paths completed in 10 minutes 2 seconds on the Mac. Eight trial captures failed an annual closing check on the first attempt. Excel recalculated those eight trials in year order before accepting them. All 2,033 outcomes and three selected funding histories matched the independent results across 588,054 fields. The age-125 plan took 27 minutes 30 seconds. The checks caught 90 first-attempt discrepancies and Excel recovered all 90 by calculating the affected trials in year order. All 2,033 outcomes and the three selected funding histories matched across the same 588,054 fields. The example and maximum tests both exceeded their two- and five-minute targets.
+On November 18, Excel for Mac completed both 1,000-pair runs using the exact release candidate. Each run produced 2,033 outcomes and three complete ranked funding histories. All 588,054 fields in each run matched the independent reference.
+
+| Plan | Elapsed time | Flexible paths that matched their fixed partners and reused the result | Target |
+| --- | ---: | ---: | ---: |
+| Example, ages 35–95 | 7 min 52 sec (472 sec) | 515 | 2 min |
+| Maximum, ages 0–125 | 33 min 10 sec (1,990 sec) | 501 | 5 min |
+
+An earlier build recorded each retry. It took 10 min 2 sec for the example and 27 min 30 sec through age 125. Eight example trials and 90 maximum-horizon trials failed an initial closing check. Excel recalculated each affected trial in year order, and all 588,054 fields in both runs matched the independent reference.
 
 The final draft workbook also passed a fresh one-pair run using its public macro. All 35 outcomes and the three funding examples matched over 24,618 fields. Changing the displayed dollar units updated Annual Detail and preserved the completed market results. The run restored the original idle trial selection. Its withdrawal table retained all 555,875 formulas and contained no displayed amounts after the run. Desktop Excel exported the six-page Summary on Letter and A4, with all 335 printable cells present on each paper size.
 
@@ -128,10 +147,10 @@ An edit to the active wage assumption took 0.74 seconds in the example and 1.69 
 
 In a disposable copy, Excel for Mac cancelled a run at the first reusable pair, detected a changed seed, rejected an invalid trial and recovered from an error after three result ranges had been written. Each test preserved the previous outcomes, funding examples, completion date, inspection selector and protection settings. A comparison after saving and reopening matched all 595,814 stored trial and funding cells to the original example.
 
-In a separate Mac test, restoring the selected trial corrected 166 values left by the preceding trial. Shortening the plan by five and ten years cleared 2,410 and 5,570 values beyond the new end age. After each test, the saved file preserved the run settings and all 595,814 stored financial fields to well below one cent. The test also detected a deliberately inserted zero in a row that should have been blank.
+Restoring the selected trial in Excel for Mac corrected 166 values left by the preceding trial. Shortening the plan by five and ten years cleared 2,410 and 5,570 values beyond the new end age. Automated checks compared the files saved before and after three exercises covering the selected trial, interrupted runs and inactive withdrawal rows. All three preserved the prior run settings and all 595,814 stored financial fields. The checks also rejected a wrong selector and a zero in a row that should have been blank. [Saved-file checks](../tests/README.md)
 
 When a required comparison formula was removed, Excel evaluated all 14 flexible trials directly. After the formula was restored, it reused all 14 and produced the same results. The harness called the public cancellation procedure. The build also follows Summary’s saved drawing link and verifies that its visible Run market risk and Cancel buttons call their respective macros. Tests reject a detached drawing, swapped actions and a hidden control. In a separate test, neither Esc nor Command–Period sent through desktop automation interrupted a live 45-second checkpoint. The previous financial results and Excel settings were preserved. The visible Cancel button still needs a verified click during a run.
 
 ## Release checks
 
-On the exact release file, repeat the 1,000-pair example and age-125 runs after the changes that restore the selected trial and clear cells beyond its end age. Compare every outcome, rank and selected funding history. Verify the active trial after success and interruption. The exact file has passed a one-pair refresh and both six-page Mac print checks. The visible Cancel button and desktop Excel for Windows still need testing. The full-run targets remain two minutes for the example and five minutes through age 125. [Release checklist](model-improvement-plan.md)
+The exact release candidate passed both 1,000-pair Mac runs, a one-pair refresh and six-page print checks on Letter and A4. Both full runs exceeded their timing targets. A click on the visible Cancel button during a run and desktop Excel for Windows verification remain open. [Release checklist](model-improvement-plan.md)
