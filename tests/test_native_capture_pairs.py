@@ -1,11 +1,30 @@
 """Regression for a flexible trial containing the preceding trial's last years."""
 from math import inf, nan, nextafter
+from pathlib import Path
+import sys
 import unittest
 
-from xlsx_read import Cell, Sheet, address_parts, col_letter
-from native_capture_acceptance import expected_cut, validate_cut_decisions, validate_uncut_pairs
-from native_excel_acceptance import check_reuse_note
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 import native_capture as trial
+from xlsx_read import Cell, Sheet, address_parts, col_letter
+from native_capture_acceptance import compare_rows, expected_cut, validate_cut_decisions, validate_uncut_pairs
+from native_excel_acceptance import check_reuse_note
+
+
+class CaptureDateTests(unittest.TestCase):
+    def test_refresh_dates_can_differ_but_both_must_be_valid(self):
+        live, stored = Sheet('Live'), Sheet('Saved')
+
+        def compare(current_date, previous_date):
+            live.rows[7] = {28: Cell('AB7', current_date, 'n')}
+            stored.rows[8] = {28: Cell('AB8', previous_date, 'n')}
+            return compare_rows(live, stored, 7, 8, 28, 1, first=28, refresh_date=True)
+
+        self.assertEqual(compare(45001, 45000.0), 1)
+        for bad in (None, '', '45000', '#VALUE!', True, 0, -1, 45000.5, nan, inf, -inf):
+            for current, previous, address in ((bad, 45000, 'Live!AB7'), (45001, bad, 'Saved!AB8')):
+                with self.subTest(value=bad, address=address), self.assertRaisesRegex(AssertionError, address):
+                    compare(current, previous)
 
 
 class UncutPairTests(unittest.TestCase):

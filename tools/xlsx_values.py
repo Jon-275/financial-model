@@ -18,13 +18,33 @@ def sheet_parts(archive):
             for s in book.find(X+'sheets')}
 
 
+def _cell_reference(address):
+    column, row = coordinate_from_string(address)
+    return f'{column.upper()}{row}', row
+
+
+def _write_text(parent, value):
+    text = E.SubElement(parent, X + 't')
+    if value != value.strip():
+        text.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
+    text.text = value
+
+
 def update_sheet(root,values,*,shared_text=None):
     reference_delta=0
     data=root.find(X+'sheetData')
     rows={int(r.get('r')):r for r in data}
-    cells={c.get('r'):c for c in data.iter(X+'c')}
+    cells = {}
+    for cell in data.iter(X + 'c'):
+        original = cell.get('r')
+        address, _ = _cell_reference(original)
+        if address in cells:
+            raise ValueError(f'The worksheet contains duplicate references to cell {address}.')
+        if original != address:
+            cell.set('r', address)
+        cells[address] = cell
     for address,value in values.items():
-        _,number=coordinate_from_string(address)
+        address, number = _cell_reference(address)
         if address not in cells:
             if value is None:continue
             if number not in rows:rows[number]=E.SubElement(data,X+'row',r=str(number))
@@ -46,7 +66,7 @@ def update_sheet(root,values,*,shared_text=None):
             reference_delta+=1
         elif isinstance(value,str):
             cell.set('t','inlineStr')
-            E.SubElement(E.SubElement(cell,X+'is'),X+'t').text=value
+            _write_text(E.SubElement(cell, X + 'is'), value)
         else:raise ValueError('The requested cell value has an unsupported type.')
     for row in rows.values():
         row[:]=sorted(row,key=lambda c:column_index_from_string(coordinate_from_string(c.get('r'))[0]))
@@ -81,7 +101,7 @@ def write_values(source,destination,values,*,shared_strings=()):
             for value in sorted(set(shared_strings)-indexes.keys()):
                 indexes[value]=insert_at
                 entry=E.Element(X+'si')
-                E.SubElement(entry,X+'t').text=value
+                _write_text(entry, value)
                 shared.insert(insert_at,entry)
                 insert_at+=1
         for sheet,items in values.items():

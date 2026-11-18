@@ -27,6 +27,13 @@ def same(actual, expected):
     return actual == expected
 
 
+def check_refresh_date(sheet, cell, code):
+    # The trial stores a calendar date from TODAY(); the run time is recorded separately.
+    value = cell.value
+    if type(value) not in (int, float) or not isfinite(value) or value <= 0 or value != int(value):
+        raise AssertionError(f'Trial {code}, {sheet.title}!{cell.coordinate} needs a valid refresh date.')
+
+
 def compare_rows(sheet, saved_sheet, live, saved, last, code, *, first=1, refresh_date=False):
     count = 0
     for column in range(first, last + 1):
@@ -35,8 +42,8 @@ def compare_rows(sheet, saved_sheet, live, saved, last, code, *, first=1, refres
         stored = saved_sheet[f'{label}{saved}']
         # A release example can be checked on a different day.
         if refresh_date and label == 'AB':
-            if type(stored.value) not in (int, float) or stored.value <= 0:
-                raise AssertionError('The captured trial is missing its refresh date.')
+            check_refresh_date(sheet, calculated, code)
+            check_refresh_date(saved_sheet, stored, code)
         elif not same(stored.value, calculated.value):
             raise AssertionError(f'Trial {code}, {sheet.title}!{label}{saved} differs from its worksheet result.')
         count += 1
@@ -117,9 +124,7 @@ def validate_uncut_pairs(data, positions):
             for col in ('B', signature):
                 if data[f'{col}{saved}'].value != context:
                     raise AssertionError(f'Trial {number} has a different captured assumption record in {col}.')
-            date = _number(data[f'AB{saved}'].value, f'Trial {number} refresh date')
-            if date <= 0 or date != int(date):
-                raise AssertionError(f'Trial {number} has an invalid refresh date.')
+            check_refresh_date(data, data[f'AB{saved}'], number)
         years = _number(data[f'I{row}'].value, f'Flexible trial {code} cut years', trial.ANNUAL_CAPACITY - 1)
         amount = _number(data[f'J{row}'].value, f'Flexible trial {code} spending reduction')
         if years != int(years) or bool(years) != bool(amount):

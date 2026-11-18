@@ -81,6 +81,11 @@ class SavedInspectionTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, 'Trial 1'):
             compare_restoration(self.reference, self.after)
 
+    def test_restored_trial_requires_its_own_refresh_date(self):
+        write_values(self.reference, self.after, {trials.SHEET: {'AB7': None}})
+        with self.assertRaisesRegex(AssertionError, 'Risk_Trials!AB7 needs a valid refresh date'):
+            compare_restoration(self.reference, self.after)
+
     def test_recovery_can_preserve_the_bank_even_if_the_desktop_exercise_failed(self):
         saved = load_workbook(self.reference)
         saved.create_sheet('Exercise')['A2'] = 'FAIL'
@@ -105,7 +110,7 @@ class SavedInspectionTests(unittest.TestCase):
 
     def test_inactive_formula_cannot_keep_a_cached_amount_including_zero(self):
         address = 'A' + str(2 + FUNDING_ROWS_PER_YEAR)
-        for amount in ('0', '7.25'):
+        for amount in (None, '0', '7.25'):
             with self.subTest(amount=amount):
                 with ZipFile(self.reference) as source, ZipFile(self.after, 'w') as dest:
                     target = sheet_parts(source)['Trial_Funding_Calc']
@@ -115,11 +120,17 @@ class SavedInspectionTests(unittest.TestCase):
                             xml = etree.fromstring(raw)
                             cell = xml.find(f'.//{X}c[@r="{address}"]')
                             self.assertIsNotNone(cell.find(X + 'f'))
-                            cell.find(X + 'v').text = amount
+                            for cached in cell.findall(X + 'v'):
+                                cell.remove(cached)
+                            if amount is not None:
+                                etree.SubElement(cell, X + 'v').text = amount
                             raw = etree.tostring(xml)
                         dest.writestr(info, raw)
-                with self.assertRaisesRegex(AssertionError, f'Inactive funding cell Trial_Funding_Calc!{address}'):
-                    compare_restoration(self.reference, self.after)
+                if amount is None:
+                    self.assertTrue(compare_restoration(self.reference, self.after))
+                else:
+                    with self.assertRaisesRegex(AssertionError, f'Inactive funding cell Trial_Funding_Calc!{address}'):
+                        compare_restoration(self.reference, self.after)
 
 
 if __name__ == '__main__':

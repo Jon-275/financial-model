@@ -11,7 +11,7 @@ from zipfile import ZipFile
 from lxml import etree as E
 
 from xlsx_acceptance import patch_xml, prepare_xlsx
-from xlsx_read import q, sheet_parts
+from xlsx_read import Workbook, q, sheet_parts
 from xlsx_values import update_sheet, write_values
 
 
@@ -23,6 +23,21 @@ SHEET = b'''<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/20
  mc:Ignorable="xr xr2" xr:uid="fixture">
  <sheetData><row r="1"><c r="A1"><v>2</v></c>
  <c r="B1"><f>A1+1</f><v>3</v></c></row></sheetData></worksheet>'''
+
+
+def shared_string_fixture(source):
+    ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
+    r = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
+    with ZipFile(source,'w') as z:
+        z.writestr('xl/workbook.xml', f'<workbook xmlns="{ns}" xmlns:r="{r}"><sheets>'
+                    '<sheet name="Example" r:id="r1"/></sheets></workbook>')
+        z.writestr('xl/_rels/workbook.xml.rels','<Relationships><Relationship Id="r1" '
+                    'Target="worksheets/sheet1.xml"/></Relationships>')
+        cells = ''.join(f'<c r="{col}1" t="s"><v>0</v></c>' for col in 'ABCD')
+        z.writestr('xl/worksheets/sheet1.xml',f'<worksheet xmlns="{ns}"><dimension ref="A1:D1"/>'
+                    f'<sheetData><row r="1">{cells}</row></sheetData></worksheet>')
+        z.writestr('xl/sharedStrings.xml',f'<sst xmlns="{ns}" count="4" uniqueCount="1">'
+                    '<si><t>Example</t></si></sst>')
 
 
 class FixturePackageTests(unittest.TestCase):
@@ -45,18 +60,7 @@ class FixturePackageTests(unittest.TestCase):
     def test_shared_string_count_follows_replacements_without_new_shared_text(self):
         with TemporaryDirectory() as directory:
             source, output = (Path(directory) / name for name in ('source.xlsx','output.xlsx'))
-            ns = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main'
-            r = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships'
-            with ZipFile(source,'w') as z:
-                z.writestr('xl/workbook.xml', f'<workbook xmlns="{ns}" xmlns:r="{r}"><sheets>'
-                            '<sheet name="Example" r:id="r1"/></sheets></workbook>')
-                z.writestr('xl/_rels/workbook.xml.rels','<Relationships><Relationship Id="r1" '
-                            'Target="worksheets/sheet1.xml"/></Relationships>')
-                cells = ''.join(f'<c r="{col}1" t="s"><v>0</v></c>' for col in 'ABCD')
-                z.writestr('xl/worksheets/sheet1.xml',f'<worksheet xmlns="{ns}"><dimension ref="A1:D1"/>'
-                            f'<sheetData><row r="1">{cells}</row></sheetData></worksheet>')
-                z.writestr('xl/sharedStrings.xml',f'<sst xmlns="{ns}" count="4" uniqueCount="1">'
-                            '<si><t>Example</t></si></sst>')
+            shared_string_fixture(source)
             write_values(source,output,{'Example':{'A1':None,'B1':42,'C1':'Inline'}})
             with ZipFile(output) as z:
                 strings = E.fromstring(z.read('xl/sharedStrings.xml'))
@@ -65,6 +69,53 @@ class FixturePackageTests(unittest.TestCase):
                 self.assertEqual([c.get('r') for c in shared], ['D1'])
                 self.assertEqual(strings.get('count'), str(len(shared)))
                 self.assertEqual(strings.get('uniqueCount'), '1')
+
+    def test_coordinate_aliases_update_one_cell_and_protect_formulas(self):
+        root = E.fromstring(SHEET)
+        update_sheet(root, {'a1': 4, '$a$01': 5, 'aB02': 7})
+        self.assertEqual([cell.get('r') for cell in root.iter(q('c'))], ['A1', 'B1', 'AB2'])
+        self.assertEqual(root.findtext(f".//{q('c')}[@r='A1']/{q('v')}"), '5')
+        with self.assertRaisesRegex(ValueError, 'overlaps a calculation formula'):
+            update_sheet(root, {'$b$01': 8})
+        self.assertEqual(root.findtext(f".//{q('c')}[@r='B1']/{q('f')}"), 'A1+1')
+
+    def test_existing_noncanonical_cell_is_updated_without_a_duplicate(self):
+        root = E.fromstring(SHEET)
+        root.find(f".//{q('c')}[@r='A1']").set('r', 'a1')
+        update_sheet(root, {'A1': 8})
+        self.assertEqual([cell.get('r') for cell in root.iter(q('c'))], ['A1', 'B1'])
+        self.assertEqual(root.findtext(f".//{q('c')}[@r='A1']/{q('v')}"), '8')
+
+    def test_duplicate_source_coordinates_fail_before_a_value_can_replace_a_formula(self):
+        root = E.fromstring(SHEET)
+        row = root.find(f".//{q('row')}")
+        E.SubElement(row, q('c'), r='b1')
+        with self.assertRaisesRegex(ValueError, 'duplicate references to cell B1'):
+            update_sheet(root, {'B1': 8})
+        self.assertEqual(root.findtext(f".//{q('c')}[@r='B1']/{q('f')}"), 'A1+1')
+
+    def test_boundary_whitespace_survives_inline_and_shared_string_writes(self):
+        with TemporaryDirectory() as directory:
+            source, output = (Path(directory) / name for name in ('source.xlsx', 'output.xlsx'))
+            shared_string_fixture(source)
+            values = {'A2': '\tleading', 'B2': 'trailing\n', 'C2': 'inside only',
+                      'A3': ' shared ', 'B3': '\t\n', 'C3': 'shared only'}
+            shared = {values[a] for a in ('A3', 'B3', 'C3')}
+            write_values(source, output, {'Example': values}, shared_strings=shared)
+            with Workbook(output) as workbook, ZipFile(output) as archive:
+                table = E.fromstring(archive.read('xl/sharedStrings.xml')).findall(q('si'))
+                worksheet = E.fromstring(archive.read('xl/worksheets/sheet1.xml'))
+                for address, expected in values.items():
+                    with self.subTest(address=address):
+                        self.assertEqual(workbook['Example'][address].value, expected)
+                        cell = worksheet.find(f".//{q('c')}[@r='{address}']")
+                        if expected in shared:
+                            node = table[int(cell.findtext(q('v')))].find(q('t'))
+                        else:
+                            node = cell.find(f"{q('is')}/{q('t')}")
+                        self.assertEqual(node.text, expected)
+                        self.assertEqual(node.get('{http://www.w3.org/XML/1998/namespace}space'),
+                                         'preserve' if expected != expected.strip() else None)
 
     def test_ignored_namespace_and_formula_survive_literal_edit(self):
         original = E.fromstring(SHEET)
