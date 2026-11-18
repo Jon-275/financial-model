@@ -209,10 +209,13 @@ def _healthcare_rows(m):
             spouse_cost = f'IF({spouse}<65,Inputs!$B$42,Inputs!$B$43)'
             budget = f'IF({single},{primary_cost}*Inputs!$B$57,({primary_cost}+{spouse_cost})/2)'
             legacy_cost = f'IF({phase}="Working",0,({budget})*({med_index})+L{row})+K{row}'
-            # Marketplace coverage uses the guideline available for enrollment the year before.
+            # This branch starts at row 6, the first coverage year. Projection row 4
+            # has headers; H5 is the opening year's price index. For 2027 coverage
+            # H5 is 1; a later opening already includes inflation since 2026.
+            prior_year_prices = m.pj('H', row - 1)
             fpl = (f'IF(AND(M{row}>0,N{row}>0),IF(A{row}<=Tax_Tables!$A$214,'
                    f'IF({single},Tax_Tables!$B$214,Tax_Tables!$C$214),'
-                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{m.pj("H",row-1)}),0)')
+                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{prior_year_prices}),0)')
             actual_magi = magi(p('AK'), p('N'), p('AI'), p('AG'))
             cols = {
                 'A': year, 'B': age, 'C': spouse,

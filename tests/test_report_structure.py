@@ -117,13 +117,18 @@ class ReportStructureTests(unittest.TestCase):
             formats = etree.fromstring(archive.read('xl/styles.xml')).find(X+'cellXfs')
             def format_id(style):
                 return int(formats[int(style)].get('numFmtId','0'))
+            def column_styles(definitions):
+                return {
+                    get_column_letter(col): node.get('style', '0')
+                    for node in definitions
+                    for col in range(int(node.get('min')), int(node.get('max')) + 1)
+                }
             # Only read the column definitions and current row from the large trial ledger.
             with archive.open(parts['Risk_Trials']) as sheet:
                 columns = {}
-                for _, node in etree.iterparse(sheet, events=('end',), tag=(X+'col', X+'row')):
-                    if node.tag == X+'col':
-                        for col in range(int(node.get('min')), int(node.get('max'))+1):
-                            columns[get_column_letter(col)] = node.get('style')
+                for _, node in etree.iterparse(sheet, events=('end',), tag=(X+'cols', X+'row')):
+                    if node.tag == X+'cols':
+                        columns = column_styles(node)
                     elif node.get('r') == '7':
                         for col in ('B','C','D','E','F','I','K','L','AB','AE','AG'):
                             current = node.find(f"{X}c[@r='{col}7']")
@@ -134,8 +139,8 @@ class ReportStructureTests(unittest.TestCase):
                     self.fail('Missing current trial row')
             with archive.open(parts[native_funding_paths.DATA_SHEET]) as sheet:
                 for _, cols in etree.iterparse(sheet, events=('end',), tag=X+'cols'):
-                    source = list(cols)
-                    self.assertEqual(source[1].get('style'), source[native_funding_paths.SIGNATURE_COLUMN-1].get('style'))
+                    source = column_styles(cols)
+                    self.assertEqual(source['B'], source[get_column_letter(native_funding_paths.SIGNATURE_COLUMN)])
                     break
                 else:
                     self.fail('Missing funding path column formats')

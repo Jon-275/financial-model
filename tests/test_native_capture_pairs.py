@@ -1,8 +1,9 @@
 """Regression for a flexible trial containing the preceding trial's last years."""
 import unittest
 
-from native_capture_acceptance import validate_uncut_pairs
+# Both test helpers are beside this file in tests/.
 from xlsx_read import Cell, Sheet, address_parts
+from native_capture_acceptance import validate_uncut_pairs
 
 
 class UncutPairTests(unittest.TestCase):

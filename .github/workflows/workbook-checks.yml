@@ -40,8 +40,11 @@ jobs:
         run: python tests/model_acceptance.py --release workbook/retirement-model.xlsm
       - name: Install Python dependencies
         run: python -m pip install -r tools/requirements.txt
-      - name: Test workbook fixture portability
-        run: python -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
+      - name: Test workbook fixture and standalone script portability
+        run: |
+          python -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
+          env -u PYTHONPATH python tests/test_native_capture_pairs.py
+          env -u PYTHONPATH python tests/test_macro_runner_contract.py
       - name: Verify the embedded runner matches its published source
         run: python -c 'import os; from package_macro import verify_project; verify_project(os.environ["RISK_TEST_WORKBOOK"])'
       - name: Run financial, report and runner tests
