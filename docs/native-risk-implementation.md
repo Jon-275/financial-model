@@ -76,6 +76,10 @@ The maximum-horizon run did not complete. Its elapsed time measures the failed a
 
 A separate Mac test replayed 11 trial selections, including the transitions from 41 to 42, 114 to 115 and 249 to 250. All 11 matched the independent results on the first attempt. The short sequence did not reproduce the failure seen during the full run. Recovery needs to pass the longer sequence before release.
 
+In a longer test, the first incorrect annual balance and the ending balance matched the preceding trial on 30 occasions. Rebuilding Excel's dependencies corrected 29. It stopped at trial 839 after 15 minutes 38 seconds when balances were missing from age 99 onward. The discrepancy was already in the worksheet before the macro read the result.
+
+The next test calculated each year's visible formulas in dependency order. Eight selected trials and six selections that changed the end age matched the independent model. A 100-pair run using that order throughout took 160.64 seconds. All 80,454 compared fields matched on the first attempt, including the three complete funding histories. This run took longer than the 107.22-second example above. Full-length tests are needed to establish reliability and timing.
+
 ### Earlier timings by plan length
 
 The capacity test starts at age zero and ends at 125. It exercises all 126 annual positions, including the opening balance. The example has 61 positions, from age 35 through 95. Each run used the same seed and included all 33 required stress cases. These measurements preceded the 12 annual account checks.
