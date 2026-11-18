@@ -19,5 +19,3 @@ The workbook was rebuilt from the public fictional example. Use the workbook and
 - All 37 risk tests passed, including both withdrawal orders, mandatory distributions and access to Roth funds. An additional 480,000 synthetic allocations checked account limits and total cash across partial and full withdrawals.
 - Four fixture tests verified that editing test inputs preserves Excel's namespace declarations, formulas and other workbook parts. Nine privacy tests and 11 pull-request review tests passed.
 - All three new cases passed on full-size workbooks, including the first shortfall year and the headline printed on page one. The risk refresh was also tested through age 125 and with unpaid spending carried forward.
-
-Windows desktop verification remains open.

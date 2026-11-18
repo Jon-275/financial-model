@@ -55,7 +55,7 @@ Run `python3 tests/one_time_expense_acceptance.py workbook/retirement-model.xlsm
 
 The phase-readiness test checks which pay and spending fields a plan needs. It also checks when the longer market tests require a retirement budget beyond the selected end age.
 
-Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
+Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in Excel for Mac.
 
 ```sh
 python3 tests/native_flexible_policy_acceptance.py workbook/retirement-model.xlsm
@@ -91,7 +91,7 @@ A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review �
 
 ## Microsoft Excel release check
 
-Use the candidate workbook from the [build instructions](../README.md#build-the-next-edition). Set its path below. The commands create a copy with cleared formula results, leaving the candidate available for publication.
+Run this release check in Excel for Mac. Set the path below to the candidate workbook. The commands create a test copy with cleared formula results. Keep the clean fictional candidate for sharing. [Build instructions](../README.md#build-the-next-edition)
 
 ```sh
 candidate=/absolute/path/to/retirement-model.xlsm
@@ -100,11 +100,11 @@ excel_check=$(mktemp -d "$PWD/scratch/excel-check.XXXXXXXX")
 python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xlsm"
 ```
 
-1. Open the copy in desktop Excel and check for a repair prompt. In Excel for Mac, press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
+1. Open the copy and check for a repair prompt. Press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
 2. Verify the saved copy with the command below. On a second copy, change the end age. Check that the projection, balance chart, and shaded rows stop at that age. Refresh market risk for the new end age and check the last row on **Risk Results**.
 3. Verify that the fictional example opens with the success rate, shaded range, and funding examples already visible on **Summary**. On a test copy, change an active assumption and check that the figures and chart range clear. Restore the assumption and check that they return. Run market risk and confirm the results stay in the same workbook. Check progress, cancellation and a successful run after cancellation. Verify that failed or incomplete runs remain unavailable to the report. [Risk refresh instructions](../docs/risk-analysis.md#run-the-analysis)
 4. Open **Income_Targeting** and change the comparison age or conversion amount. Verify the selected-year results and the link to **Conversion Detail**. Check that the charts and detail table update with the selected year. On **Funding_Calc** and **Targeting_Calc**, filter **Calculation step** to **Selected draw**. Compare the annual withdrawal by account with **Cash_Flow** and a tested conversion with its row on **Conversion Detail**. Clear the filters before using the copy for other checks.
-5. Open **Planning Metrics** from **Summary**. Check the section headings, dollar units and links back to the report and annual detail. Preview **Summary** in Excel for Mac and Windows. With **Active Sheets** selected, verify that Letter and A4 each show four results pages followed by two decision pages. Page 4 must include all seven inflation, longevity and medical stresses. Preview **Annual Detail** separately. Check both dollar views, repeating headers and the last age. With variable inflation enabled, compare representative amounts with that path’s prices and chart bands with the separately calculated nominal percentiles. Save a PDF and inspect all six pages. [Print setup](../docs/model-guide.md#print-your-plan)
+5. Open **Planning Metrics** from **Summary**. Check the section headings, dollar units and links back to the report and annual detail. Select **Summary** and open print preview. With **Active Sheets** selected, verify that Letter and A4 each show four results pages followed by two decision pages. Page 4 must include all seven inflation, longevity and medical stresses. Preview **Annual Detail** separately. Check both dollar views, repeating headers and the last age. With variable inflation enabled, compare representative amounts with that path’s prices and chart bands with the separately calculated nominal percentiles. Save a PDF and inspect all six pages. [Print setup](../docs/model-guide.md#print-your-plan)
 6. Record the Excel versions, checks run, results and any pending platform checks. [Current release record](../docs/release-notes/workbook-layout.md)
 
 ```sh

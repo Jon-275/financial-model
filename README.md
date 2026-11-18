@@ -6,7 +6,7 @@ Use Excel to see whether your household can pay its spending and taxes through t
 2. Open **Summary**. The headline tells you whether the base plan covers its costs. If it falls short, the report gives the first age and year that bills go unpaid.
 3. Review the investment mix, spending policy and market results. Use the dollar selector on **Summary** to switch between today's purchasing power and projected amounts. Print **Summary** to keep a record of the report and your choices. [Model guide](docs/model-guide.md)
 
-The next edition adds **Run market risk** in desktop Excel and a six-page Summary with stress tests and funding examples. The current download uses the earlier risk refresh process. The new edition is in testing. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Preview the six-page example report (PDF)](docs/examples/retirement-plan-example.pdf) · [Implementation plan](docs/model-improvement-plan.md)
+The next edition adds **Run market risk** in desktop Excel and a six-page Summary with stress tests and funding examples. The current download uses the earlier risk refresh process. Release testing uses Excel for Mac. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Preview the six-page example report (PDF)](docs/examples/retirement-plan-example.pdf) · [Implementation plan](docs/model-improvement-plan.md)
 
 ## Understand the results
 

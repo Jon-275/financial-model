@@ -1,6 +1,6 @@
 # Market-risk runner
 
-The desktop workbook uses **Run market risk** to calculate the selected market paths and required stresses. The macro coordinates visible worksheet formulas. It does not contain tax, healthcare, withdrawal or account-access rules.
+In Excel for Mac, **Run market risk** calculates the selected market paths and required stresses. The macro coordinates the run. The visible worksheets calculate taxes, healthcare costs, withdrawals and account access.
 
 On the test Mac, the 100-pair example through age 95 completed in 63 seconds. The workbook produced all 233 outcomes, including 33 stress cases. Longer horizons and more paths take more time. [Desktop timing and verification](native-risk-implementation.md)
 
@@ -12,7 +12,7 @@ On the test Mac, the 100-pair example through age 95 completed in 63 seconds. Th
 4. Read the refreshed Summary. The workbook records the completed run's date, assumptions, seed and number of paths.
 5. Inspect Risk_Trials for individual outcomes and Funding_Paths for the complete low, median and high paths. Their calculations remain visible behind Appendix.
 
-A run uses the workbook's own formulas and needs no external service or Python process. VBA requires desktop Excel and permitted macros. The runner does not change macro security settings or use opening events. [Microsoft VBA compatibility guidance](https://support.microsoft.com/en-us/excel/work-with-vba-macros-in-excel-for-the-web)
+A run uses the workbook's own formulas and needs no external service or Python process. To refresh the scenarios, open the workbook in Excel for Mac with macros permitted. The runner does not change macro security settings or use opening events. [Microsoft VBA compatibility guidance](https://support.microsoft.com/en-us/excel/work-with-vba-macros-in-excel-for-the-web)
 
 ## Calculation and publication
 
@@ -65,7 +65,7 @@ For worksheets protected without a password, the runner temporarily allows macro
 
 For native algorithm checks, append `tools/vba/tests/RunnerChecks.fragment` to a disposable copy of the module, import it into a test workbook and run `VerifyMarketRiskRunner`. The checks cover trial numbers, path order, flexible spending, cancellation and numeric controls. Excel for Mac confirmed that a numeric zero is a valid seed, and rejected a blank cell and a number stored as text. The earlier reader treated a blank as zero. Keep this test-only fragment out of the release module.
 
-Native release tests must also cover a successful complete run, changed inputs during a run, Esc and button cancellation, a rejected trial, publication failure, a repeat run, both calculation modes and worksheet protection. Confirm prior results and global Excel settings after each failure. Compare seeded financial results with the independent model, then measure 10, 100 and 1,000 paired paths at the example and maximum horizons on Mac and Windows.
+Native release tests must also cover a successful complete run, changed inputs during a run, Esc and button cancellation, a rejected trial, publication failure, a repeat run, both calculation modes and worksheet protection. Confirm prior results and global Excel settings after each failure. Compare seeded financial results with the independent model, then measure 10, 100 and 1,000 paired paths at the example and maximum horizons in Excel for Mac.
 
 ## Prepare the example for release
 

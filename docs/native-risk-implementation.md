@@ -2,7 +2,7 @@
 
 November 18, 2026
 
-The development workbook runs market scenarios in desktop Excel and includes the results in its six-page Summary. The release checklist tracks final testing and publication. [Improvement plan](model-improvement-plan.md)
+The development workbook runs market scenarios in Excel for Mac and includes the results in its six-page Summary. The release checklist tracks final testing and publication. [Improvement plan](model-improvement-plan.md)
 
 ## Using the workbook
 
@@ -151,8 +151,8 @@ In a disposable copy, Excel for Mac cancelled a run at the first reusable pair, 
 
 Restoring the selected trial in Excel for Mac corrected 166 values left by the preceding trial. Shortening the plan by five and ten years cleared 2,410 and 5,570 values beyond the new end age. Automated checks compared the files saved before and after three exercises covering the selected trial, interrupted runs and inactive withdrawal rows. All three preserved the prior run settings and all 595,814 stored financial fields. The checks also rejected a wrong selector and a zero in a row that should have been blank. [Saved-file checks](../tests/README.md)
 
-When a required comparison formula was removed, Excel evaluated all 14 flexible trials directly. After the formula was restored, it reused all 14 and produced the same results. The harness called the public cancellation procedure. The build also follows Summary’s saved drawing link and verifies that its visible Run market risk and Cancel buttons call their respective macros. Tests reject a detached drawing, swapped actions and a hidden control. In a separate test, neither Esc nor Command–Period sent through desktop automation interrupted a live 45-second checkpoint. The previous financial results and Excel settings were preserved. The visible Cancel button still needs a verified click during a run.
+When a required comparison formula was removed, Excel evaluated all 14 flexible trials directly. After the formula was restored, it reused all 14 and produced the same results. The harness called the public cancellation procedure. The build also follows Summary’s saved drawing link and verifies that its visible Run market risk and Cancel buttons call their respective macros. Tests reject a detached drawing, swapped actions and a hidden control. In a separate test, neither Esc nor Command–Period sent through desktop automation interrupted a live 45-second checkpoint. The previous financial results and Excel settings were preserved.
 
 ## Release checks
 
-The exact release candidate passed both 1,000-pair Mac runs, a one-pair refresh and six-page print checks on Letter and A4. Both full runs exceeded their timing targets. A click on the visible Cancel button during a run and desktop Excel for Windows verification remain open. [Release checklist](model-improvement-plan.md)
+Before the longevity display correction, Excel for Mac passed both 1,000-pair runs, a one-pair refresh and six-page print checks on Letter and A4. Both full runs exceeded their timing targets. The owner deferred the manual **Cancel** button check. [Release checklist](model-improvement-plan.md)
