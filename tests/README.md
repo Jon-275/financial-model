@@ -119,6 +119,35 @@ python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-m
 
 For this fictional example and seed 2026, compare a fresh desktop run with the saved example using `--expect-reused 46` for 100 pairs or `--expect-reused 515` for 1,000 pairs. This also catches a change that preserves the financial results but quietly recalculates every flexible path. Use fresh, separate copies when timing two versions. Record the path count, Excel version, elapsed run time and the completion message on Risk_Settings.
 
+### Reproduce the age-125 comparison
+
+Use the fictional example, seed 2026 and 1,000 paired paths. In the Excel test copy, set both starting ages to 0 and the end age to 125. Set the four Roth opening years listed below to 2026. This fills all 126 annual positions, including the opening year. Run market risk and save the Excel copy.
+
+Build a separate reference from the repository template. Run these commands from the repository root with the usual build dependencies and `soffice` available.
+
+```sh
+mkdir -p scratch
+capacity=$(mktemp -d "$PWD/scratch/native-capacity.XXXXXXXX")
+python3 tools/model_plan.py workbook/build-template.xlsx "$capacity/plan.json"
+python3 tools/author_model.py "$capacity/plan.json" "$capacity/authored.xlsx"
+python3 tools/package_model.py workbook/build-template.xlsx "$capacity/plan.json" "$capacity/authored.xlsx" "$capacity/model.xlsx"
+PYTHONPATH=tools python3 - "$capacity" <<'PYTHON'
+from pathlib import Path
+import sys
+from xlsx_values import write_values
+
+folder = Path(sys.argv[1])
+inputs = {"D8": 0, "D9": 0, "D53": 125, "D29": 2026, "D92": 2026, "D93": 2026, "D94": 2026}
+write_values(folder / "model.xlsx", folder / "capacity.xlsx", {"Inputs": inputs})
+PYTHON
+python3 tools/native_bootstrap.py "$capacity/capacity.xlsx" "$capacity/reference.xlsx"
+python3 tests/native_excel_acceptance.py "$capacity/reference.xlsx" /path/to/age-125-mac-run.xlsm --expect-reused 501
+```
+
+The comparison covers all 2,033 outcomes, the three path rankings, their annual balances and their complete funding histories. The current fixture compares 588,054 fields. Record the Excel runtime separately from the reference build time.
+
+### Prepare the release file
+
 Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks household inputs, the fixed text on Start Here, investment profiles, stored text and file metadata. These checks run before the file checksum is approved. The template also requires empty formula and chart caches.
 
 After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` and `RELEASE_SHA256` in `tools/check_workbook_commit.py`. The trial checksum covers the saved report, the individual trials and the three full funding histories. The full-file checksum includes notes, charts, VBA and every other part of the file. The build template has its own checksum, `TEMPLATE_SHA256`. Audit each artifact before updating its checksum.
