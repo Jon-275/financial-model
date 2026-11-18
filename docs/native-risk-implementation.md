@@ -99,6 +99,8 @@ The six runs matched on the first attempt. In a separate recovery test, the firs
 
 The example run with 1,000 paired paths completed in 10 minutes 2 seconds on the Mac. Eight trial captures failed an annual closing check on the first attempt. Excel recalculated those eight trials in year order before accepting them. All 2,033 outcomes and three selected funding histories matched the independent results across 588,054 fields. The age-125 plan took 27 minutes 30 seconds. The checks caught 90 first-attempt discrepancies and Excel recovered all 90 by calculating the affected trials in year order. All 2,033 outcomes and the three selected funding histories matched across the same 588,054 fields. The example and maximum tests both exceeded their two- and five-minute targets.
 
+The final draft workbook also passed a fresh one-pair run using its public macro. All 35 outcomes and the three funding examples matched over 24,618 fields. Changing the displayed dollar units updated Annual Detail and preserved the completed market results. Desktop Excel exported the six-page Summary on Letter and A4, with all 335 printable cells present on each paper size.
+
 ### Earlier timings by plan length
 
 The capacity test starts at age zero and ends at 125. It exercises all 126 annual positions, including the opening balance. The example has 61 positions, from age 35 through 95. Each run used the same seed and included all 33 required stress cases. These measurements preceded the 12 annual account checks.
