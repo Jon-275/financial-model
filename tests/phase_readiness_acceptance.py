@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from lxml import etree
+from openpyxl.worksheet.cell_range import MultiCellRange
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from fixtures import COMMON
@@ -121,7 +122,27 @@ def check_case(source, folder, case, office):
     print(f'PASS {label}: base check {base!r}, market check {market!r}.', flush=True)
 
 
+def check_entry_rules(workbook):
+    # Check all three scenario columns, including adjacent amounts that still require a number.
+    expected = {f'{col}{row}': row in (12, 36, 37)
+                for col in 'DEF' for row in (12, 25, 35, 36, 37, 38)}
+    observed = {}
+    with ZipFile(workbook) as archive:
+        inputs = etree.fromstring(archive.read(sheet_parts(archive)['Inputs']))
+    for rule in inputs.iter(q('dataValidation')):
+        areas = MultiCellRange(rule.get('sqref'))
+        for address in expected:
+            if address in areas:
+                if address in observed:
+                    raise AssertionError(f'Multiple Excel entry rules at Inputs!{address}')
+                equal(f'Inputs!{address} entry amount', (rule.get('type'), rule.get('operator'), rule.findtext(q('formula1'))),
+                      ('decimal', 'greaterThanOrEqual', '0'))
+                observed[address] = rule.get('allowBlank') in ('1', 'true')
+    equal('Excel entry rules for pay and spending', observed, expected)
+
+
 def verify(workbook, office):
+    check_entry_rules(workbook)
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
         cleared = root / ('source' + workbook.suffix)
