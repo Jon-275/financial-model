@@ -145,7 +145,7 @@ class MacroRunnerContractTests(unittest.TestCase):
         }
         for name, label in expected.items():
             self.assertEqual(int(constant(name)), native_capture.FIELDS.index(label) + 1)
-        for name in ('ComparePaths','RepeatsPriorEnding','CaptureTrial','FailureAge'):
+        for name in ('ComparePaths','RepeatsPriorEnding','ValidateCaptureRecord','FailureAge'):
             self.assertIn('IsNumericInput(', procedure(name))
             self.assertNotIn('IsNumeric(', procedure(name))
         self.assertEqual(int(constant('MAX_PAIRED_PATHS')), native_capture.CAPACITY)
@@ -212,6 +212,18 @@ class MacroRunnerContractTests(unittest.TestCase):
         cleanup = run.split('CleanExit:', 1)[1]
         self.assertRegex(cleanup, r'If savedSettings Then\s+Application.EnableCancelKey = xlDisabled')
         self.assertIn('If savedSelector And selectorTouched And Not selectorRestored Then', cleanup)
+        self.assertIn('mLastFundingYears = ANNUAL_CAPACITY', run[:run.index('For index = 1 To total')])
+        self.assertIn('mLastFundingYears = ANNUAL_CAPACITY\n        RestoreInspection book, selector, previousSelector', cleanup)
+        self.assertIn('RestoreInspection book, selector, previousSelector\n    selectorRestored = True', run)
+        self.assertIn('UpdateInactiveFunding book, years', procedure('CaptureBalancesAgree'))
+        self.assertIn('UpdateInactiveFunding book, years', procedure('RestoreInspection'))
+        inspection = procedure('RestoreInspection')
+        self.assertLess(inspection.index('If years = 0 Then'), inspection.index('RecalculateTrialYears book, True'))
+        self.assertLess(inspection.index('RecalculateTrialYears book, True'), inspection.index('values = current.Value2'))
+        self.assertIn('CaptureBalancesAgree(book, values, True, noPartner, 0, detail)', inspection)
+        self.assertIn('ValidateCaptureRecord values, code, AssumptionRecord(book)', inspection)
+        self.assertIn('ValidateCaptureRecord values, code, context', procedure('CaptureTrial'))
+        self.assertIn('If yearRow Mod 8 = 0 And Not restoringInspection Then', procedure('RecalculateTrialYears'))
         self.assertIn('If runBegan And Not results Is Nothing Then', cleanup)
         self.assertIn('mRunning = False', cleanup)
         self.assertIn('DoEvents', procedure('ShowProgress'))
@@ -223,12 +235,33 @@ class MacroRunnerContractTests(unittest.TestCase):
             self.assertIn(f'Application.{prop} =', restored)
         self.assertIn('Application.EnableCancelKey = settings.CancelKey', cleanup)
 
-    def test_every_trial_attempt_runs_a_full_calculation(self):
+    def test_every_failed_or_suspect_full_calculation_gets_one_ordered_retry(self):
         capture = procedure('CaptureTrial')
-        self.assertRegex(capture, r'(?m)^        selector\.Value2 = code\n        FinishTrialCalculation\n        source\.Calculate$')
-        finish = procedure('FinishTrialCalculation')
-        self.assertRegex(finish, r'(?m)^    started = Timer\n    Application\.CalculateFull\n    Do While')
-        self.assertNotRegex(finish, r'(?m)^\s*Application\.Calculate\s*$')
+        expected = (
+            'For attempt = 1 To 2',
+            'selector.Value2 = code',
+            'If attempt = 1 Then',
+            'FinishTrialCalculation',
+            'Else',
+            'CheckCancelled',
+            'RecalculateTrialYears book',
+            'End If',
+            'source.Calculate',
+        )
+        primary = capture[capture.index(expected[0]):]
+        for operation in expected:
+            start = primary.index(operation)
+            primary = primary[start + len(operation):]
+        self.assertEqual(capture.count('RecalculateTrialYears book'), 1)
+        self.assertNotIn('selector.Value2 = 0', capture)
+        self.assertIn('If attempt > 2 Then RaiseRunError', capture)
+        self.assertIn('Application.CalculateFull', procedure('FinishTrialCalculation'))
+        self.assertNotIn('Application.CalculateFullRebuild', CODE)
+        ordered = procedure('RecalculateTrialYears')
+        self.assertIn('For yearRow = 5 To lastRow', ordered)
+        self.assertIn('CheckCancelled', ordered)
+        self.assertIn('LocalRange(book.Worksheets("Risk_Trials"), "RiskTrialCurrent").Calculate', ordered)
+        self.assertNotIn('Application.Calculate', ordered)
 
     def test_capture_waits_for_dependencies_and_reconciles_before_storage(self):
         capture = procedure('CaptureTrial')
@@ -237,12 +270,11 @@ class MacroRunnerContractTests(unittest.TestCase):
         self.assertIn('pathCurrent, code, context, False, batch', run)
         self.assertIn('ByVal primary As Boolean', capture)
         self.assertNotIn('source.Parent Is selector.Parent', capture)
-        order = ('selector.Value2 = code', 'FinishTrialCalculation', 'source.Calculate',
+        order = ('selector.Value2 = code', 'RecalculateTrialYears book', 'source.Calculate',
                  'values = source.Value2', 'CaptureBalancesAgree(', 'If attempt > 2 Then RaiseRunError',
                  'CaptureTrial = values')
         active_trial = capture[capture.index('selector.Value2 = code'):]
         self.assertEqual(sorted(map(active_trial.index, order)), list(map(active_trial.index, order)))
-        self.assertIn('selector.Value2 = 0\n            FinishTrialCalculation', capture)
         self.assertLess(capture.index('CaptureBalancesAgree('), capture.index('If attempt = 2 Then Exit For'))
         self.assertIn('RepeatsPriorEnding(values, batch, previousRow)', capture)
         self.assertIn('2 * ANNUAL_CAPACITY - 1', procedure('RepeatsPriorEnding'))
@@ -254,13 +286,15 @@ class MacroRunnerContractTests(unittest.TestCase):
         compare = procedure('CaptureBalancesAgree')
         self.assertIn('For period = 1 To years', compare)
         self.assertIn('batch(pairedRow, field)', compare)
-        self.assertIn('If Not AnnualClosingsAgree(book, years) Then Exit Function', compare)
+        self.assertIn('If Not AnnualClosingsAgree(book, years, detail) Then Exit Function', compare)
         balances = procedure('AnnualClosingsAgree')
         self.assertEqual(int(constant('CLOSING_CHECKS')), len(native_balance_checks.CLOSINGS))
         first_check = native_balance_checks.FIRST_COLUMN
         self.assertEqual(range_boundaries('N5:N5')[0], first_check)
         self.assertIn('Range("N5").Resize(years, CLOSING_CHECKS)', balances)
-        self.assertIn('If Not formulas Then Exit Function', balances)
+        self.assertIn('If Not formulas Then', balances)
+        self.assertIn('If Not checks.Cells(period, field).HasFormula Then', balances)
+        self.assertIn('AtTrialAge(book, period', balances)
         self.assertLess(balances.index('checks.Calculate'), balances.index('differences = checks.Value2'))
         self.assertIn('SameCaptureValue(differences(period, field), 0#)', balances)
         for name, label in (('ENDING_NOMINAL_FIELD', 'Ending portfolio, future dollars'),

@@ -15,7 +15,7 @@ from workbook_privacy import audit_fixture, audit_package
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsm'
-RELEASE_SHA256 = '730517d413322169d6a8700735c9cc9b7c50b446668653efd39eff3383f6a72a'
+RELEASE_SHA256 = '332fb361d3dd4944132c47acc9ddbe11f138f52295ce48d1c018545acb0b309b'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = 'fdf966bd8556733b946ce6c1ee36b812c8a1b1abe901c17fc94bb76b90e45221'
 EXAMPLE_RISK_SHA256 = '01a4f878657073b8814a6a5ce2df6c66127f3bc7f0f83f46523f6c7a31579894'

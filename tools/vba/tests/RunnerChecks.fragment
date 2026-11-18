@@ -8,6 +8,7 @@ Public Sub VerifyMarketRiskRunner()
     On Error GoTo Failed
 
     VerifyFlexibleReuseGuards
+    VerifyInactiveFundingDetail
     AssertRunner CompletedRunNote(1, 1) = "Updated 1 paired path and 33 stress cases. 1 flexible path used its verified fixed result.", "Singular run details are incorrect."
     AssertRunner CompletedRunNote(2, 0) = "Updated 2 paired paths and 33 stress cases. 0 flexible paths used their verified fixed results.", "Plural run details are incorrect."
     counts = Array(1, 37, 1000)
@@ -184,4 +185,65 @@ End Sub
 
 Private Sub AssertRunner(ByVal condition As Boolean, ByVal message As String)
     If Not condition Then Err.Raise vbObjectError + 5399, "MarketRiskRunnerTests", message
+End Sub
+
+' Test the current runner against live range calculation in a disposable workbook.
+Private Sub VerifyInactiveFundingDetail()
+    Dim probe As Workbook, sheet As Worksheet, calculation As XlCalculation
+    Dim oldYears As Long, failure As Long, reason As String, preserved As String
+    On Error GoTo Failed
+    calculation = Application.Calculation
+    oldYears = mLastFundingYears
+    Set probe = Application.Workbooks.Add(xlWBATWorksheet)
+    Set sheet = probe.Worksheets(1)
+    sheet.Name = "Trial_Funding_Calc"
+    Application.Calculation = xlCalculationManual
+    With sheet
+        .Range("BZ1").Value2 = 4#
+        .Range("BE2").Formula = "=BZ1"
+        .Range("A2").Formula = "=IF(BE2>=2,17,"""")"
+        .Range("A125").Formula = "=IF(BE2>=3,19,"""")"
+        .Range("A248").Formula = "=IF(BE2>=4,23,"""")"
+        .Range("AO370").Formula = "=IF(BE2>=4,29,"""")"
+        .Range("A371").Formula = "=BZ1"
+        .Calculate
+        preserved = .Range("A248").Formula
+        AssertRunner .Range("AO370").Value2 = 29#, "Funding test did not start with a longer horizon."
+        mLastFundingYears = 4
+        .Range("BZ1").Value2 = 3#
+        UpdateInactiveFunding probe, 3
+        AssertRunner .Range("A248").Value2 = "" And .Range("AO370").Value2 = "", "The deactivated solver year still displays values."
+        AssertRunner .Range("A125").Value2 = 19# And .Range("A371").Value2 = 4#, "Funding cleanup reached beyond the just-deactivated group."
+        AssertRunner .Range("A248").Formula = preserved, "Funding cleanup changed a formula."
+
+        .Range("BZ1").Value2 = 2#
+        UpdateInactiveFunding probe, 3
+        AssertRunner .Range("A125").Value2 = 19#, "An unchanged horizon recalculated the funding group."
+        UpdateInactiveFunding probe, 4
+        AssertRunner .Range("A125").Value2 = 19#, "A longer horizon recalculated the funding group."
+        UpdateInactiveFunding probe, 2
+        AssertRunner .Range("A125").Value2 = "", "A later contraction left stale detail."
+        .Range("BZ1").Value2 = 0#
+        UpdateInactiveFunding probe, 0
+        AssertRunner .Range("A2").Value2 = "", "Restoring the idle inspection left the first solver year visible."
+
+        ' A number, including zero, is a failure when the year is outside the horizon.
+        .Range("A248").Formula = "=0"
+        mLastFundingYears = 4
+        On Error Resume Next
+        UpdateInactiveFunding probe, 3
+        failure = Err.Number
+        On Error GoTo Failed
+        AssertRunner failure = RUN_ERROR And mLastFundingYears = 4, "A nonblank inactive result was accepted."
+    End With
+    GoTo Restore
+Failed:
+    reason = Err.Description
+Restore:
+    On Error Resume Next
+    If Not probe Is Nothing Then probe.Close SaveChanges:=False
+    Application.Calculation = calculation
+    mLastFundingYears = oldYears
+    On Error GoTo 0
+    If Len(reason) > 0 Then Err.Raise 5, "VerifyInactiveFundingDetail", reason
 End Sub

@@ -31,6 +31,8 @@ Private Type ExcelState
     Cursor As XlMousePointer
 End Type
 
+Private Const FUNDING_ROWS_PER_YEAR As Long = 123
+Private mLastFundingYears As Long
 Private mRunning As Boolean
 Private mCancelRequested As Boolean
 
@@ -65,6 +67,8 @@ Public Sub RunMarketRisk()
         Exit Sub
     End If
     mRunning = True
+    ' A pre-existing inspection can have populated any supported year.
+    mLastFundingYears = ANNUAL_CAPACITY
     mCancelRequested = False
     On Error GoTo RunFailed
 
@@ -173,9 +177,8 @@ Public Sub RunMarketRisk()
         ShowProgress total + caseIndex, total + 3, started
     Next caseIndex
     CheckCancelled
-    selector.Value2 = previousSelector
+    RestoreInspection book, selector, previousSelector
     selectorRestored = True
-    Application.Calculate
     RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
 
     ' Keep backups until the report confirms the complete replacement batch.
@@ -229,8 +232,10 @@ CleanExit:
         AddNote cleanupText, note
     End If
     If savedSelector And selectorTouched And Not selectorRestored Then
-        selector.Value2 = previousSelector
-        If Err.Number <> 0 Then AddNote cleanupText, "The inspection selector could not be restored.": Err.Clear
+        ' The failed or interrupted trial may have grown before its horizon was verified.
+        mLastFundingYears = ANNUAL_CAPACITY
+        RestoreInspection book, selector, previousSelector
+        If Err.Number <> 0 Then AddNote cleanupText, "The inspection selector or its inactive funding detail could not be restored.": Err.Clear
     End If
     If Not completed Or Len(cleanupText) > 0 Then
         If Len(failureText) = 0 Then failureText = "Run stopped during cleanup."
@@ -328,22 +333,21 @@ Private Function CanReuseFixedTrial(ByVal book As Workbook, ByRef batch As Varia
 End Function
 
 Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, ByVal source As Range, ByVal code As Long, ByVal context As String, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long, ByVal previousRow As Long) As Variant
-    Dim values As Variant, column As Long, attempt As Long
+    Dim values As Variant, attempt As Long, detail As String
     CheckCancelled
     For attempt = 1 To 2
-        If attempt = 2 Then
-            ' Clear the prior path before retrying a suspect capture.
-            selector.Value2 = 0
-            FinishTrialCalculation
-            CheckCancelled
-        End If
         selector.Value2 = code
-        FinishTrialCalculation
+        If attempt = 1 Then
+            FinishTrialCalculation
+        Else
+            CheckCancelled
+            RecalculateTrialYears book
+        End If
         source.Calculate
         CheckCancelled
         RequireText AssumptionRecord(book), context, "The assumptions changed during the run. Run market risk again."
         values = source.Value2
-        If CaptureBalancesAgree(book, values, primary, batch, pairedRow) Then
+        If CaptureBalancesAgree(book, values, primary, batch, pairedRow, detail) Then
             If Not primary Then Exit For
             If Not RepeatsPriorEnding(values, batch, previousRow) Then Exit For
             ' A genuine repeated ending is acceptable only after a fresh retry
@@ -351,16 +355,21 @@ Private Function CaptureTrial(ByVal book As Workbook, ByVal selector As Range, B
             If attempt = 2 Then Exit For
         End If
     Next attempt
-    If attempt > 2 Then RaiseRunError "Trial " & CStr(code) & " did not reconcile after a full recalculation. No results were published."
-    For column = 1 To source.Columns.Count
+    If attempt > 2 Then RaiseRunError "Trial " & CStr(code) & " could not be verified. " & detail & " Enter this trial in Risk_Trials and review Trial_Checks. Previous results were kept."
+    ValidateCaptureRecord values, code, context
+    CaptureTrial = values
+End Function
+
+Private Sub ValidateCaptureRecord(ByRef values As Variant, ByVal code As Long, ByVal context As String)
+    Dim column As Long
+    For column = 1 To UBound(values, 2)
         If IsError(values(1, column)) Then RaiseRunError "Trial " & CStr(code) & " contains a calculation error. Inspect Trial_Checks and the trial schedules."
     Next column
     RequireText values(1, 1), context, "A trial's assumptions do not match this run."
-    RequireText values(1, source.Columns.Count), context, "A trial's closing assumption record does not match this run."
+    RequireText values(1, UBound(values, 2)), context, "A trial's closing assumption record does not match this run."
     If Not IsNumericInput(values(1, VALID_FIELD)) Then RaiseRunError "Trial " & CStr(code) & " has no valid calculation status."
     If CDbl(values(1, VALID_FIELD)) <> 1 Then RaiseRunError "Trial " & CStr(code) & " did not pass its calculation checks. Inspect Trial_Checks and healthcare inputs."
-    CaptureTrial = values
-End Function
+End Sub
 
 Private Sub FinishTrialCalculation()
     Dim started As Double, elapsed As Double
@@ -378,25 +387,47 @@ Private Sub FinishTrialCalculation()
     Loop
 End Sub
 
-Private Function CaptureBalancesAgree(ByVal book As Workbook, ByRef values As Variant, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long) As Boolean
+Private Function CaptureBalancesAgree(ByVal book As Workbook, ByRef values As Variant, ByVal primary As Boolean, ByRef batch As Variant, ByVal pairedRow As Long, ByRef detail As String) As Boolean
     Dim ledger As Variant, years As Long, period As Long, field As Long
     years = WholeNumber(book.Worksheets("Trial_Inputs").Range("B70").Value2, 2, ANNUAL_CAPACITY, "The trial horizon is invalid.")
-    If Not AnnualClosingsAgree(book, years) Then Exit Function
+    UpdateInactiveFunding book, years
+    detail = ""
+    If Not AnnualClosingsAgree(book, years, detail) Then Exit Function
     ledger = book.Worksheets("Trial_Projection").Range("BH5").Resize(years, 7).Value2
     If primary Then
         ' BH is the closing portfolio; BN is the same balance in opening-year dollars.
         For period = 1 To years
             field = FIRST_YEAR_FIELD + period - 1
-            If Not SameCaptureValue(values(1, field), ledger(period, 7)) Then Exit Function
-            If Not SameCaptureValue(values(1, field + ANNUAL_CAPACITY), ledger(period, 1)) Then Exit Function
+            If Not SameCaptureValue(values(1, field), ledger(period, 7)) Then
+                detail = AtTrialAge(book, period, "The annual balance in today's dollars")
+                Exit Function
+            End If
+            If Not SameCaptureValue(values(1, field + ANNUAL_CAPACITY), ledger(period, 1)) Then
+                detail = AtTrialAge(book, period, "The annual balance in future dollars")
+                Exit Function
+            End If
         Next period
-        If Not SameCaptureValue(values(1, ENDING_REAL_FIELD), ledger(years, 7)) Then Exit Function
-        If Not SameCaptureValue(values(1, ENDING_NOMINAL_FIELD), ledger(years, 1)) Then Exit Function
+        If Not SameCaptureValue(values(1, ENDING_REAL_FIELD), ledger(years, 7)) Then
+            detail = AtTrialAge(book, years, "The ending balance in today's dollars")
+            Exit Function
+        End If
+        If Not SameCaptureValue(values(1, ENDING_NOMINAL_FIELD), ledger(years, 1)) Then
+            detail = AtTrialAge(book, years, "The ending balance in future dollars")
+            Exit Function
+        End If
         If pairedRow > 0 And SameCaptureValue(values(1, CUT_YEARS_FIELD), 0#) Then
             ' Identical returns and no spending cuts must reproduce the complete fixed path.
             For field = VALID_FIELD To UBound(values, 2) - 1
                 If field <> REFRESH_DATE_FIELD Then
-                    If Not SameCaptureValue(values(1, field), batch(pairedRow, field)) Then Exit Function
+                    If Not SameCaptureValue(values(1, field), batch(pairedRow, field)) Then
+                        If field >= FIRST_YEAR_FIELD And field < FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY Then
+                            period = 1 + ((field - FIRST_YEAR_FIELD) Mod ANNUAL_CAPACITY)
+                            detail = AtTrialAge(book, period, "The balance compared with its fixed-spending partner")
+                        Else
+                            detail = "The fixed and flexible records differ on " & book.Worksheets("Risk_Trials").Cells(6, field + 1).Value2 & "."
+                        End If
+                        Exit Function
+                    End If
                 End If
             Next field
         End If
@@ -404,26 +435,56 @@ Private Function CaptureBalancesAgree(ByVal book As Workbook, ByRef values As Va
         ' Each representative funding ledger must reproduce its already ranked fixed path.
         For period = 1 To years
             field = 2 + FUNDING_BALANCE_FIELD + (period - 1) * FUNDING_YEAR_WIDTH
-            If Not SameCaptureValue(values(1, field), ledger(period, 1)) Then Exit Function
-            If Not SameCaptureValue(values(1, field), batch(pairedRow, FIRST_YEAR_FIELD + ANNUAL_CAPACITY + period - 1)) Then Exit Function
+            If Not SameCaptureValue(values(1, field), ledger(period, 1)) Then
+                detail = AtTrialAge(book, period, "The ranked funding balance")
+                Exit Function
+            End If
+            If Not SameCaptureValue(values(1, field), batch(pairedRow, FIRST_YEAR_FIELD + ANNUAL_CAPACITY + period - 1)) Then
+                detail = AtTrialAge(book, period, "The ranked balance compared with its saved trial")
+                Exit Function
+            End If
         Next period
     End If
     CaptureBalancesAgree = True
 End Function
 
-Private Function AnnualClosingsAgree(ByVal book As Workbook, ByVal years As Long) As Boolean
+Private Function AtTrialAge(ByVal book As Workbook, ByVal period As Long, ByVal label As String) As String
+    Dim openingAge As Variant
+    openingAge = book.Worksheets("Inputs").Range("B8").Value2
+    If IsNumericInput(openingAge) Then
+        AtTrialAge = label & " did not reconcile at age " & CStr(CLng(openingAge) + period - 1) & "."
+    Else
+        AtTrialAge = label & " did not reconcile in model year " & CStr(period) & "."
+    End If
+End Function
+
+Private Function AnnualClosingsAgree(ByVal book As Workbook, ByVal years As Long, Optional ByRef detail As String = "") As Boolean
     Dim checks As Range, formulas As Variant, differences As Variant, period As Long, field As Long
     Set checks = book.Worksheets("Trial_Checks").Range("N5").Resize(years, CLOSING_CHECKS)
     formulas = checks.HasFormula
-    If VarType(formulas) <> vbBoolean Then Exit Function
-    If Not formulas Then Exit Function
+    If VarType(formulas) <> vbBoolean Or IsNull(formulas) Then formulas = False
+    If Not formulas Then
+        For period = 1 To years
+            For field = 1 To CLOSING_CHECKS
+                If Not checks.Cells(period, field).HasFormula Then
+                    detail = "The closing formula is missing at Trial_Checks!" & checks.Cells(period, field).Address(False, False) & "."
+                    Exit Function
+                End If
+            Next field
+        Next period
+        detail = "The closing formulas could not be verified."
+        Exit Function
+    End If
     ' Re-evaluate the financial expressions directly against the live openings,
     ' cash movements and returns. Read every difference in one block.
     checks.Calculate
     differences = checks.Value2
     For period = 1 To years
         For field = 1 To CLOSING_CHECKS
-            If Not SameCaptureValue(differences(period, field), 0#) Then Exit Function
+            If Not SameCaptureValue(differences(period, field), 0#) Then
+                detail = AtTrialAge(book, period, Replace(checks.Parent.Cells(4, checks.Column + field - 1).Value2, " difference", "") & " closing balance")
+                Exit Function
+            End If
         Next field
     Next period
     AnnualClosingsAgree = True
@@ -734,4 +795,144 @@ Private Sub AddNote(ByRef text As String, ByVal note As String)
     If Len(note) = 0 Then Exit Sub
     If Len(text) > 0 Then text = text & " "
     text = text & note
+End Sub
+
+
+Private Sub RestoreInspection(ByVal book As Workbook, ByVal selector As Range, ByVal savedValue As Variant)
+    Dim years As Long, code As Long, current As Range, values As Variant, noPartner As Variant, detail As String
+    selector.Value2 = savedValue
+    Application.Calculate
+    book.Worksheets("Market_Paths").Range("A3:AL3").Calculate
+    With book.Worksheets("Trial_Inputs").Range("B70")
+        .Calculate
+        years = WholeNumber(.Value2, 0, ANNUAL_CAPACITY, "The inspection horizon is invalid.")
+    End With
+    If years = 0 Then
+        UpdateInactiveFunding book, years
+        Exit Sub
+    End If
+    ' A restored nonzero selection must show the selected path, including after cancellation.
+    code = WholeNumber(savedValue, 1, 2207, "The restored trial number is invalid.")
+    RecalculateTrialYears book, True
+    Set current = LocalRange(book.Worksheets("Risk_Trials"), "RiskTrialCurrent")
+    values = current.Value2
+    If Not CaptureBalancesAgree(book, values, True, noPartner, 0, detail) Then
+        RaiseRunError "The restored inspection for trial " & CStr(code) & " could not be verified. " & detail
+    End If
+    ValidateCaptureRecord values, code, AssumptionRecord(book)
+End Sub
+
+Private Sub UpdateInactiveFunding(ByVal book As Workbook, ByVal years As Long)
+    Dim firstRow As Long, lastRow As Long, inactive As Range
+    ' The opening position has no withdrawal search. Each later year owns 123 rows.
+    If years < mLastFundingYears And mLastFundingYears > 1 Then
+        firstRow = 2
+        If years > 1 Then firstRow = firstRow + (years - 1) * FUNDING_ROWS_PER_YEAR
+        lastRow = 1 + (mLastFundingYears - 1) * FUNDING_ROWS_PER_YEAR
+        With book.Worksheets("Trial_Funding_Calc")
+            .Range("BE2").Calculate
+            Set inactive = .Range("A" & firstRow & ":AO" & lastRow)
+        End With
+        inactive.Calculate
+        ' COUNTBLANK accepts formulas returning empty text, and rejects zero, errors and other values.
+        If Application.WorksheetFunction.CountBlank(inactive) <> inactive.CountLarge Then
+            RaiseRunError "The inactive detail on Trial_Funding_Calc did not clear after the plan horizon changed."
+        End If
+    End If
+    mLastFundingYears = years
+End Sub
+
+Private Sub RecalculateTrialYears(ByVal book As Workbook, Optional ByVal restoringInspection As Boolean = False)
+    Dim market As Worksheet, inputs As Worksheet, projection As Worksheet, cash As Worksheet, roth As Worksheet
+    Dim health As Worksheet, checks As Worksheet, solver As Worksheet, draws As Worksheet
+    Dim marketYear As Range, projectionYear As Range, cashYear As Range, rothYear As Range, healthYear As Range, checksYear As Range
+    Dim firstSolverRow As Long, firstSourceRow As Long, yearRow As Long, lastRow As Long, firstUnused As Long
+
+    Set market = book.Worksheets("Market_Paths"): Set inputs = book.Worksheets("Trial_Inputs")
+    Set projection = book.Worksheets("Trial_Projection"): Set cash = book.Worksheets("Trial_Cash_Flow")
+    Set roth = book.Worksheets("Trial_Roth_Access"): Set health = book.Worksheets("Trial_Healthcare")
+    Set checks = book.Worksheets("Trial_Checks"): Set solver = book.Worksheets("Trial_Funding_Calc")
+    Set draws = book.Worksheets("Random_Numbers")
+
+    ' Rebuild this trial's seed, market draws and first inflation observation before setting up its accounts.
+    market.Range("A3:AL3").Calculate
+    draws.Range("B3").Calculate
+    draws.Range("S5:AR1004").Calculate
+    draws.Range("A5:P754").Calculate
+    market.Range("A6:AD7").Calculate
+    inputs.Range("B4:C133").Calculate
+    lastRow = 4 + WholeNumber(inputs.Range("B70").Value2, 2, ANNUAL_CAPACITY, "The trial horizon is invalid.")
+    solver.Range("BE2:BE233").Calculate
+
+    ' Each range resolves its own dependencies. These stages follow precedents between worksheets.
+    ' Every earlier year's accounts and funding records are complete before the next year starts.
+    For yearRow = 5 To lastRow
+        Set marketYear = market.Range("A" & (yearRow + 1) & ":AI" & (yearRow + 1))
+        Set projectionYear = projection.Range("A" & yearRow & ":CJ" & yearRow)
+        Set cashYear = cash.Range("A" & yearRow & ":AW" & yearRow)
+        Set rothYear = roth.Range("A" & yearRow & ":AP" & yearRow)
+        Set healthYear = health.Range("A" & yearRow & ":AH" & yearRow)
+        Set checksYear = checks.Range("A" & yearRow & ":Y" & yearRow)
+        If yearRow = 5 Then
+            projectionYear.Calculate
+            cashYear.Calculate
+            rothYear.Calculate
+            marketYear.Calculate
+            healthYear.Calculate
+            checksYear.Calculate
+            projectionYear.Calculate
+            cashYear.Calculate
+            checksYear.Calculate
+        Else
+            marketYear.Calculate
+            projectionYear.Calculate
+            healthYear.Calculate
+            rothYear.Calculate
+            cashYear.Calculate
+            projectionYear.Calculate
+            marketYear.Calculate
+            checksYear.Calculate
+            cashYear.Calculate
+            checksYear.Calculate
+            healthYear.Calculate
+            projectionYear.Calculate
+            cashYear.Calculate
+            If yearRow = 6 Then
+                solver.Range("BE2:BE233").Calculate
+            Else
+                firstSourceRow = 234 + (yearRow - 7) * 36
+                solver.Range("BE" & firstSourceRow & ":BE" & (firstSourceRow + 35)).Calculate
+            End If
+            firstSolverRow = 2 + (yearRow - 6) * 123
+            solver.Range("A" & firstSolverRow & ":AO" & (firstSolverRow + 122)).Calculate
+            projectionYear.Calculate
+            cashYear.Calculate
+            rothYear.Calculate
+            cashYear.Calculate
+            projectionYear.Calculate
+            checksYear.Calculate
+            rothYear.Calculate
+            projectionYear.Calculate
+            checksYear.Calculate
+            healthYear.Calculate
+            cashYear.Calculate
+            checksYear.Calculate
+        End If
+        If yearRow Mod 8 = 0 And Not restoringInspection Then
+            DoEvents
+            CheckCancelled
+        End If
+    Next yearRow
+
+    If lastRow < 130 Then
+        firstUnused = lastRow + 1
+        market.Range("A" & (firstUnused + 1) & ":AI131").Calculate
+        projection.Range("A" & firstUnused & ":CJ130").Calculate
+        cash.Range("A" & firstUnused & ":AW130").Calculate
+        health.Range("A" & firstUnused & ":AH130").Calculate
+        roth.Range("A" & firstUnused & ":AP130").Calculate
+        checks.Range("A" & firstUnused & ":Y130").Calculate
+    End If
+    ' The validity flag for the ranked funding ledger comes from the primary capture.
+    LocalRange(book.Worksheets("Risk_Trials"), "RiskTrialCurrent").Calculate
 End Sub

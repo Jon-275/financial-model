@@ -44,6 +44,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
       - name: Verify the embedded runner matches its published source
         run: python -c 'import os; from package_macro import verify_project; verify_project(os.environ["RISK_TEST_WORKBOOK"])'
+      - name: Verify the calculation order against workbook formulas
+        run: python tests/native_order_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Run financial, report and runner tests
         run: |
           python -m unittest discover -s tests -p 'test_risk_*.py'
