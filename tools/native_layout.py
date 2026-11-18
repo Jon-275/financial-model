@@ -90,11 +90,13 @@ def apply(name, root, styles, numbers, active_fill):
             if separator and source.strip("'") in MODEL_SHEETS:
                 link.set('location',MODEL_SHEETS[source.strip("'")]+separator+address)
     if name=='Trial_Inputs':
-        _columns(root,(49,24,4))
+        _columns(root,(49,24,24))
         _merges(root,['A1:C1','A2:C2','A3:C3'])
         _rows(root,133,21,{1:32,2:30,3:26})
         _collapse_empty_return_rows(root)
-        _stripe(root,'A4:B133','$A4',active_fill+2)
+        _stripe(root,'A4:B74','$A4',active_fill+2)
+        _stripe(root,'A75:C82','$B75',active_fill+2)
+        _stripe(root,'A83:B133','$A83',active_fill+2)
     elif name==MARKET:
         _columns(root,[13,11,11,15,*([16]*28),*([4]*8),*([19]*11)])
         _merges(root,['A1:J1','A2:J2','AO6:AS6','AO15:AS15'])

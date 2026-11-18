@@ -4,6 +4,7 @@ from copy import deepcopy
 import re
 from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import get_column_letter as L
+from risk_engine.scenario import ONE_TIME_EXPENSE_ROWS
 
 import native_random
 import native_capture
@@ -73,6 +74,12 @@ def _clone_annual(m, baseline):
                     continue
                 m.put(target,f'A{row}',f'=Inputs!A{row}','label')
                 m.put(target,f'B{row}',f'=IF(ISBLANK(Inputs!B{row}),"",Inputs!B{row})','money')
+            for column in 'ABC':
+                m.put(target,f'{column}74',f'=Inputs!{column}74','header')
+            for row in ONE_TIME_EXPENSE_ROWS:
+                for column, style in (('A','label'),('B','whole'),('C','report_money')):
+                    address = f'{column}{row}'
+                    m.put(target, address, f'=IF(ISBLANK(Inputs!{address}),"",Inputs!{address})', style)
             continue
         inherited = {}
         if source in baseline.sheetnames:
