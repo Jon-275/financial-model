@@ -57,6 +57,26 @@ class FixturePackageTests(unittest.TestCase):
                 dim = root.find(q('dimension'))
                 self.assertEqual(dim.get('ref') if dim is not None else None, 'A1:C7' if has_dimension else None)
 
+    def test_package_reads_use_explicit_xml_limits_for_each_part(self):
+        with TemporaryDirectory() as directory:
+            source = Path(directory) / 'original.xlsx'
+            shared_string_fixture(source)
+            for shared_strings in ((), ('New value',)):
+                with self.subTest(shared_strings=shared_strings):
+                    output = Path(directory) / f'updated-{len(shared_strings)}.xlsx'
+                    with patch('xlsx_values.E.XMLParser', wraps=E.XMLParser) as parser:
+                        write_values(source, output, {'Example': {'A1': 'New value'}},
+                                     shared_strings=shared_strings)
+                    calls = [call.kwargs for call in parser.call_args_list]
+                    self.assertEqual(len(calls), 4)  # Workbook, relationships, worksheet, strings.
+                    self.assertEqual(sum(options['huge_tree'] for options in calls), 1)
+                    for options in calls:
+                        self.assertIs(options['resolve_entities'], False)
+                        self.assertIs(options['load_dtd'], False)
+                        self.assertIs(options['no_network'], True)
+                    with Workbook(output) as workbook:
+                        self.assertEqual(workbook['Example']['A1'].value, 'New value')
+
     def test_shared_string_count_follows_replacements_without_new_shared_text(self):
         with TemporaryDirectory() as directory:
             source, output = (Path(directory) / name for name in ('source.xlsx','output.xlsx'))

@@ -10,9 +10,15 @@ X='{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 R='{http://schemas.openxmlformats.org/officeDocument/2006/relationships}'
 
 
+def _read_xml_part(archive, part, *, worksheet=False):
+    parser = E.XMLParser(resolve_entities=False, load_dtd=False, no_network=True, huge_tree=worksheet)
+    with archive.open(part) as stream:
+        return E.parse(stream, parser).getroot()
+
+
 def sheet_parts(archive):
-    book=E.fromstring(archive.read('xl/workbook.xml'))
-    relationships=E.fromstring(archive.read('xl/_rels/workbook.xml.rels'))
+    book=_read_xml_part(archive, 'xl/workbook.xml')
+    relationships=_read_xml_part(archive, 'xl/_rels/workbook.xml.rels')
     paths={r.get('Id'):r.get('Target') for r in relationships}
     return {s.get('name'):(lambda p:p.lstrip('/') if p.startswith('/') else 'xl/'+p)(paths[s.get(R+'id')])
             for s in book.find(X+'sheets')}
@@ -92,7 +98,7 @@ def write_values(source,destination,values,*,shared_strings=()):
         indexes={}
         delta=0
         if shared_strings and shared_part in original.namelist():
-            shared=E.fromstring(original.read(shared_part))
+            shared=_read_xml_part(original, shared_part)
             entries=shared.findall(X+'si')
             for index,entry in enumerate(entries):
                 if len(entry)==1 and entry[0].tag==X+'t' and entry[0].text in shared_strings:
@@ -105,11 +111,11 @@ def write_values(source,destination,values,*,shared_strings=()):
                 shared.insert(insert_at,entry)
                 insert_at+=1
         for sheet,items in values.items():
-            root=E.fromstring(original.read(parts[sheet]),E.XMLParser(resolve_entities=False,no_network=True,huge_tree=True))
+            root=_read_xml_part(original, parts[sheet], worksheet=True)
             delta+=update_sheet(root,items,shared_text=indexes)
             updates[parts[sheet]]=E.tostring(root,encoding='UTF-8',xml_declaration=True,standalone=True)
         if shared is None and delta and shared_part in original.namelist():
-            shared = E.fromstring(original.read(shared_part))
+            shared = _read_xml_part(original, shared_part)
         if shared is not None:
             if shared.get('count') is not None:
                 shared.set('count',str(int(shared.get('count'))+delta))
