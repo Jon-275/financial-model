@@ -91,6 +91,15 @@ class MacroPublicationTests(unittest.TestCase):
 
 
 class MacroRunnerContractTests(unittest.TestCase):
+    def test_empty_and_text_inputs_cannot_be_coerced_to_numeric_seeds_or_counts(self):
+        allowed = procedure('IsNumericInput')
+        self.assertIn('Select Case VarType(value)', allowed)
+        cases = re.search(r'^\s*Case (.+)$', allowed, re.M).group(1).split(', ')
+        self.assertEqual(set(cases), {'vbByte','vbInteger','vbLong','vbSingle','vbDouble','vbCurrency','vbDecimal'})
+        for function in ('SeedNumber','WholeNumber'):
+            body = procedure(function)
+            self.assertLess(body.index('If Not IsNumericInput(value) Then RaiseRunError'), body.index('CDbl(value)'))
+
     def test_compiler_exports_every_named_capture_area_used_by_runner(self):
         model = SimpleNamespace(cells=defaultdict(dict), styles=defaultdict(dict), MODULES=[])
         def put(sheet, address, value, style=None):
