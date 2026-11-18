@@ -13,6 +13,12 @@ from xlsx_read import Workbook, col_letter
 
 import native_capture as trials
 import native_funding_paths as funding
+from native_bootstrap import _funding_row
+from risk_engine.native_annual import NativeAnnualModel, price_path
+from risk_engine.native_paths import NativeReturnModel
+from risk_engine.paths import RiskInputs, TrialOutcome
+from risk_engine.report import _representative_trials
+from risk_engine.scenario import load_scenario
 
 
 def value(sheet, row, column):
@@ -61,6 +67,40 @@ def check_reuse_note(message, visible_message, no_cut_pairs, expected=None):
     return reused
 
 
+def reduced_funding_rows(reference, expected, ref_rows, count):
+    """Rank the smaller batch independently and rebuild its three full funding histories."""
+    table = expected[trials.SHEET]
+    outcomes = []
+    for code in range(1, count + 1):
+        row = ref_rows[code]
+        outcomes.append(TrialOutcome(trial=code, first_failure_age=value(table, row, 5),
+                                     ending_balance_real=value(table, row, 7),
+                                     max_cash_shortfall=value(table, row, 6)))
+    calendar = NativeAnnualModel(load_scenario(reference))
+    scenario = calendar.scenario
+    end_age = int(scenario.inputs[53])
+    inflation = scenario.inputs[14]
+    baseline = price_path(calendar, (inflation,) * (end_age - calendar.opening_age), end_age=end_age)
+    assets = scenario.allocation
+    returns = NativeReturnModel(RiskInputs(assets.means, assets.volatilities, assets.correlation,
+                                           assets.working, assets.retirement))
+    settings = expected['Risk_Settings']
+    seed, volatility, vary, sd, persistence, lower, upper = (settings[f'B{r}'].value for r in range(30, 37))
+    ledgers = {}
+    rows = []
+    for _, _, code in _representative_trials(outcomes):
+        # A one-pair run selects the same path for all three examples.
+        if code not in ledgers:
+            market = returns.market_path(baseline.ages, baseline.retirement_age, seed, code - 1, volatility,
+                                         scenario.return_basis, baseline.baseline_returns, inflation=inflation,
+                                         vary_inflation=bool(vary), inflation_sd=sd, persistence=persistence,
+                                         lower=lower, upper=upper)
+            annual = price_path(calendar, market.inflation, end_age=end_age) if vary else baseline
+            ledgers[code] = _funding_row(code, annual, annual.run(market.returns, audit=True), None)
+        rows.append(ledgers[code])
+    return rows
+
+
 def compare(reference, desktop, expected_reused=None):
     with Workbook(reference) as expected, Workbook(desktop) as actual:
         ref_rows, test_rows = positions(expected), positions(actual)
@@ -107,9 +147,13 @@ def compare(reference, desktop, expected_reused=None):
 
         ref_paths, test_paths = expected[funding.DATA_SHEET], actual[funding.DATA_SHEET]
         ranked_rows = range(funding.FIRST_ROW, funding.LAST_ROW + 1)
-        same_batch = len(ref_rows) == len(test_rows)
+        if len(ref_rows) == len(test_rows):
+            expected_ledgers = [[value(ref_paths, row, col) for col in range(1, funding.SIGNATURE_COLUMN)]
+                                for row in ranked_rows]
+        else:
+            expected_ledgers = reduced_funding_rows(reference, expected, ref_rows, actual['Risk_Settings']['B29'].value)
         total_offset = next(i for i, field in enumerate(funding.FIELDS) if field[0] == 'Total closing portfolio')
-        for row in ranked_rows:
+        for row, target in zip(ranked_rows, expected_ledgers, strict=True):
             code = value(test_paths, row, 1)
             if code not in test_rows or code >= 1001 or value(test_paths, row, 3) != 1:
                 raise AssertionError('A ranked funding path is missing or invalid.')
@@ -117,13 +161,9 @@ def compare(reference, desktop, expected_reused=None):
                 column = 4 + year * funding.FIELD_COUNT + total_offset
                 check('funding balance', code, column, value(test_paths, row, column),
                       value(ref_table, ref_rows[code], trials.ANNUAL_FIRST + trials.ANNUAL_CAPACITY + year))
-            if same_batch:
-                check('ranked path ID', code, 1, code, value(ref_paths, row, 1))
-            match = next((r for r in ranked_rows if value(ref_paths, r, 1) == code), None)
-            if match is not None:
-                for column in range(3, funding.SIGNATURE_COLUMN):
-                    check('funding ledger', code, column, value(test_paths, row, column),
-                          value(ref_paths, match, column))
+            check('ranked path ID', code, 1, code, target[0])
+            for column in range(3, funding.SIGNATURE_COLUMN):
+                check('funding ledger', code, column, value(test_paths, row, column), target[column - 1])
         print(f'{len(test_rows):,} outcomes. ' + ', '.join(f'{n:,} {key} fields' for key, n in compared.items()) + '.')
         if differences:
             print(f'{sum(differences.values()):,} differences in {len(differences)} comparisons by trial or path. '

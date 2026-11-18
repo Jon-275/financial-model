@@ -107,7 +107,7 @@ python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xls
 python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsm"
 ```
 
-Compare an Excel-saved run with the independently prepared example, including its annual balances and funding path details. Use a shorter run with the same assumptions and seed for a subset comparison. The command reports mismatches by trial and field without printing household amounts.
+Compare an Excel-saved run with the independently prepared example, using the same assumptions and seed. If the Excel run uses fewer pairs, the check ranks that smaller group and recalculates its low, middle and high funding histories. It checks every annual funding field in all three examples and reports mismatches by trial and field without printing household amounts.
 
 ```sh
 python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-model.xlsm"

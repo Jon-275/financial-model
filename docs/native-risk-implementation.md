@@ -31,7 +31,7 @@ The workbook builder uses an independent annual model to populate the fictional 
 | Falling prices after Social Security starts | In two three-year examples, nominal benefits held at $950 when first claimed after deflation, and $1,000 when already claimed. The workbook and independent reader agreed on 576 annual financial values. |
 | Brokerage sales | Three Excel for Mac cases passed all 20 checks for retained shares, a sale followed by a deposit and investment income when no shares were sold. Five direct worksheet trials also matched 15,803 fields in the full fictional example. |
 | Native refresh and printing | Excel for Mac completed three paired paths and all 33 stresses in a development build. The 25,407 compared financial and funding fields agreed with the independent saved example to the cent. Excel printed Summary in six pages. |
-| Annual balances and selected funding examples | An early run carried values from the preceding path into seven fixed paths and changed all three selected examples. The runner now checks each year's captured balances against its ledger and retries a suspicious repeated ending. The full Mac example matched all 573,306 trial fields, three selected path IDs, 378 annual balances and 14,367 detailed funding fields. |
+| Earlier annual balance and funding checks | An early run carried values from the preceding path into seven fixed paths and changed all three selected examples. The runner now checks each year's captured balances against its ledger and retries a suspicious repeated ending. With those earlier checks, the Mac example matched all 573,306 trial fields, three selected path IDs, 378 annual balances and 14,367 detailed funding fields. |
 
 ## What takes time in Excel
 
@@ -44,6 +44,7 @@ These tests used the same example inputs and retained the visible annual workshe
 | Remove unused withdrawal-search formulas for this plan | The saved test workbook had 173,186 search formulas, down from 560,571. The 100-pair run took 70.47 seconds, including 67.19 seconds of worksheet calculation and one full retry. All outcomes and ranked funding schedules matched. Removing unused formulas gave no measurable gain in this run. |
 | Calculate in a temporary workbook containing only the 21 required sheets | Excel completed all 233 outcomes and three ranked funding schedules. Every saved result matched the reference run. This test recorded the completion time only, so its duration is unknown. |
 | Calculate market paths and account balances in VBA arrays | Generating all 2,033 market paths took 2.49 seconds for 122,005 modeled years. Replaying 80,500 annual account closings took 0.19 seconds. Thirteen trials matched the worksheet reference for returns, prices and balances. The test used withdrawals and cash flows already calculated by the worksheets. Withdrawals, taxes and healthcare still ran on the worksheets. |
+| Evaluate a proposed withdrawal in memory using the worksheet formulas | A test generated a VBA evaluator from the 30 formulas used for one withdrawal. In Excel for Mac, 410 proposed withdrawals matched the live formulas exactly across 12,300 results, including the funding and health-credit decisions. The evaluator processed 2,050 withdrawals in 1.81 seconds. Five funding decisions differed from the archived LibreOffice values where a tiny negative amount had been saved as zero. The experiment covers a single proposed withdrawal. A full annual search and market run still require separate tests. |
 
 For a quick comparison, set **Paired market paths** on **Risk_Settings** to 100 and run the scenarios. Set it to 1,000 and run again for the final report. Both runs include the 33 stress cases. More paths reduce the sampling variation in the reported funding rate.
 
@@ -53,25 +54,42 @@ The runner checks whether flexible spending would change any year's cash flow. I
 
 Excel for Mac 16.115 on macOS 26.6.2 ran the same fictional plan with the same seed and assumptions. The clock covered the workbook run through publication and restoration of Excel's settings. Timing stopped before Excel saved the test copy.
 
-| Paired market paths | Earlier worksheet runner | With the paired-path check | Flexible results reused | Results checked |
+| Paired market paths | Original incremental calculation | Incremental calculation with the paired-path check | Flexible results reused | Results checked |
 | ---: | ---: | ---: | ---: | --- |
 | 100 | 71.16 seconds | 58.07 seconds | 46 | 233 outcomes and three detailed funding examples matched across 80,454 fields. |
 | 1,000 | 12 min 7 sec | 7 min 55 sec | 515 | 2,033 outcomes and three detailed funding examples matched across 588,054 fields. |
 
-The 100-pair comparison used the same timing procedure for both runs. The earlier 1,000-pair measurement was taken with other tests running. All runs include the 33 stress cases. The full example still exceeds the two-minute target.
+The 100-pair comparison used the same timing procedure for both runs. The earlier 1,000-pair measurement was taken with other tests running. This experiment established that verified pairs can share results. The current runner adds a full calculation to each trial it evaluates because incremental calculation returned stale balances in the longer plan.
 
-### Longest supported plan
+### Results with annual account checks
 
-The capacity test starts at age zero and ends at 125. It exercises all 126 annual positions, including the opening balance. The example has 61 positions, from age 35 through 95. Each run uses the same seed and includes all 33 required stress cases.
+The current runner recalculates 12 closing amounts per year from the original financial formulas. It checks the brokerage and its cost basis, the traditional account, each spouse’s Roth IRA and workplace Roth, the HSA, and the portfolio totals. A missing or nonzero check triggers one fresh calculation from the starting position. If the second check fails, Excel stops before replacing the saved results. The differences are visible in **Trial_Checks** columns N through Y.
 
-| Paired paths | Example | Ages 0–125 |
-| ---: | ---: | ---: |
-| 1 | 16 sec | 37 sec |
-| 10 | 21 sec | 1 min 1 sec |
-| 100 | 58 sec | 3 min 50 sec |
-| 1,000 | 7 min 55 sec | Under investigation at trial 1569 |
+| Excel for Mac run | Result |
+| --- | --- |
+| 100 pairs, ages 35–95 | Completed in 107.218 seconds. Excel calculated 187 outcomes and three ranked funding schedules directly. It reused 46 verified flexible results. One closing check needed a fresh calculation. All 233 outcomes and three funding histories matched across 80,454 fields. |
+| 1,000 pairs, ages 0–125 | Stopped at trial 250 after 447.64 seconds. Its closing amounts still failed to reconcile after a fresh calculation. The prior results and completion record were retained. The workbook marked the attempted refresh as failed. |
 
-The first 1,000-pair capacity run stopped at flexible trial 1569. All 595,814 stored cells in the previous 100-pair batch were unchanged, including individual outcomes and ranked funding histories. The workbook marked the attempted refresh as failed. When run separately in Excel, the fixed and flexible versions of this path agreed on every financial field.
+The maximum-horizon run did not complete. Its elapsed time measures the failed attempt. The first recorded closing difference was a brokerage balance on trial 42. That trial recovered. The cause of the persistent difference on trial 250 is under investigation.
+
+### Earlier timings by plan length
+
+The capacity test starts at age zero and ends at 125. It exercises all 126 annual positions, including the opening balance. The example has 61 positions, from age 35 through 95. Each run used the same seed and included all 33 required stress cases. These measurements preceded the 12 annual account checks.
+
+| Paired paths | Example, incremental | Ages 0–125, incremental | Example, full calculation | Ages 0–125, full calculation |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 16 sec | 37 sec | — | — |
+| 10 | 21 sec | 1 min 1 sec | — | — |
+| 100 | 58 sec | 3 min 50 sec | 73.02 sec | — |
+| 1,000 | 7 min 55 sec | Stopped at trial 1569 | 14 min 31 sec | 32 min 1 sec |
+
+The first 1,000-pair capacity run stopped at flexible trial 1569. All 595,814 stored cells in the previous 100-pair batch were unchanged, including individual outcomes and ranked funding histories. The workbook marked the attempted refresh as failed. When run separately in Excel, the fixed and flexible versions of this path agreed on every financial field. In a separate diagnostic, Excel’s incremental calculation carried the previous trial’s last 14 annual balances into trial 130. The terminal result and its source ledger agreed with each other but differed from the independent model. A full calculation corrected the 30 affected fields.
+
+A second trace checked results after the earlier runner had already accepted them. Trial 115 retained the prior trial’s balances from ages 109 through 125. Its investment returns were current. The captured balances agreed with the stored ledger, and its cash-flow status showed OK. Recalculating the brokerage close from the opening balance, transactions and return exposed the first error at age 109.
+
+In a desktop replay, the new checks rejected the single stale year and the 17-year stale sequence beginning at age 109. The same test passed before the stale amounts were inserted and after the original formulas were restored.
+
+Before the annual account checks were added, a full calculation for each directly evaluated trial completed the 1,000-pair capacity run in 32 minutes 1 second. All 2,033 outcomes, the three ranked path IDs and their detailed funding histories matched across 588,054 fields. The workbook verified that 501 flexible paths could use their fixed partners’ results.
 
 An edit to the active wage assumption took 0.74 seconds in the example and 1.69 seconds at maximum capacity. A full deterministic recalculation took 0.24 and 0.59 seconds, respectively. The market simulation runs separately on request.
 
@@ -83,4 +101,4 @@ When a required comparison formula was removed, Excel evaluated all 14 flexible 
 
 ## Release checks
 
-The full risk refresh still needs faster annual calculations. Recheck financial results, controls and the six-page printout on the final release revision. The owner uses Excel for Mac. A native Windows test remains open. [Release checklist](model-improvement-plan.md)
+First reproduce trial 250 from the preceding sequence and reconcile the first failing account against the independent annual results. Then test 1, 10 and 100 pairs on both plan lengths. Compare the 100-pair example with and without verified reuse under the same calculation and checking method. Require every outcome, rank and funding history to agree before interpreting the timing. Finally, run 1,000 pairs at each horizon and repeat the interruption, protection and six-page print checks on the same release revision. The targets remain two minutes for the example and five minutes for the maximum horizon. The owner uses Excel for Mac. A native Windows test remains open. [Release checklist](model-improvement-plan.md)
