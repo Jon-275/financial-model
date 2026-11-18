@@ -82,10 +82,16 @@ def check_case(source, folder, case, office):
         equal('Python same-year shock', modified.periods[index].aca[2], guidelines[index])
     with Workbook(result) as book:
         health = book['Trial_Healthcare']
+        projection = book['Trial_Projection']
+        prior_prices = 1.025 ** (opening - 2026)
+        equal('Opening balance year', health['A5'].value, opening)
         equal('Trial status', book['Risk_Trials']['C7'].value, 1)
         for index, (filers, fpl, base) in enumerate(zip(filing, guidelines, base_guidelines, strict=True)):
             row, year = 6 + index, opening + 1 + index
             equal('Coverage year', health[f'A{row}'].value, year)
+            equal('Year of the guideline price index', projection[f'B{row-1}'].value, year - 1)
+            equal('Prior year price index', projection[f'H{row-1}'].value, prior_prices)
+            prior_prices *= 1 + RATES[index]
             equal('Trial filing', book['Trial_Projection'][f'F{row}'].value, filers)
             equal('Annual inflation', book['Market_Paths'][f'F{row+1}'].value, RATES[index])
             equal('Base guideline', book['Healthcare'][f'O{row}'].value, base)
