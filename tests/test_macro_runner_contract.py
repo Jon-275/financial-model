@@ -7,6 +7,7 @@ from collections import defaultdict
 import os
 from pathlib import Path
 import re
+import sys
 from types import SimpleNamespace
 import unittest
 from xml.etree import ElementTree
@@ -15,12 +16,14 @@ from zipfile import ZipFile
 from openpyxl.utils.cell import range_boundaries
 from pyopenvba.cfb import CFB
 from pyopenvba.vba import compress, decompress
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'tools'))
 import native_capture
 import native_funding_paths
 import native_results
 from package_macro import audit_project_metadata
 
-ROOT = Path(__file__).resolve().parents[1]
 SOURCE = (ROOT / 'tools/vba/RunMarketRisk.bas').read_text()
 CODE = '\n'.join(line for line in SOURCE.splitlines() if not line.lstrip().startswith("'"))
 
