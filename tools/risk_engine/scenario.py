@@ -181,12 +181,27 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
     # The planning-fields validation formula identifies workbooks with the
     # opening-year, fee and healthcare-inflation settings regardless of labels.
     modern = raw['Inputs']['B133'].data_type == 'f'
+    ages = []
+    for row in (8, 10, 53):
+        location = f'Inputs!{selected_col}{row}'
+        ages.append(_integer(_cell(source[row - 4][selected + 2], location), location, 0, 125))
+    opening_age, retirement_age, last_age = ages
+    unused = {12, 36} if last_age <= opening_age or retirement_age <= opening_age + 1 else set()
+    if last_age < max(retirement_age, opening_age + 1):
+        unused.add(37)
     for row in SCENARIO_INPUT_ROWS:
         location = f'Inputs!{selected_col}{row}'
         value = _cell(source[row - 4][selected + 2], location)
+        saved = data[row]['B']
         if row == 7:
             if not isinstance(value, str) or not value.strip():
                 _invalid(location, 'expected a scenario name')
+        elif row in unused and value is None:
+            value = 0
+            # Excel and Calc can save a reference to an empty input as blank or zero.
+            if saved not in (None, '', 0):
+                _invalid(f'Inputs!B{row}', 'saved calculation differs from the empty input; recalculate the workbook')
+            saved = 0
         elif value is None and not detailed and 102 <= row <= 124:
             # INDEX returns zero for an unused blank legacy healthcare input.
             value = 0
@@ -196,7 +211,7 @@ def _inputs(raw, cached) -> tuple[int, dict[int, Cell], dict[int, float]]:
             if not 0 <= value <= 1:
                 _invalid(location, 'expected a share from zero to one')
             value *= inputs[44]
-        _matches(data[row]['B'], value, f'Inputs!B{row}')
+        _matches(saved, value, f'Inputs!B{row}')
         inputs[row] = value
 
     selected_rates = raw['Asset_Allocation']['B99'].data_type == 'f'

@@ -60,6 +60,7 @@ jobs:
       - name: Check input validation in Calc
         run: |
           python tests/input_validation_acceptance.py
+          python tests/phase_readiness_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Verify Marketplace credits under variable inflation
         run: python tests/aca_inflation_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Recalculate representative scenarios

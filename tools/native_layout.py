@@ -3,7 +3,7 @@ from lxml import etree as E
 from openpyxl.utils.cell import get_column_letter as L,column_index_from_string as C
 from report_layout import X,_columns,_rows,_merges,_stripe,_style_table,_replace,_link,_collapse_empty_return_rows
 from native_risk import MODEL_SHEETS,TRIAL,MARKET,RANDOM
-from native_capture import LAST,SIGNATURE_COLUMN
+from native_capture import COLUMN_STYLES,LAST,SIGNATURE_COLUMN
 import native_results
 import native_funding_paths
 
@@ -57,7 +57,8 @@ def apply(name, root, styles, numbers, active_fill):
         return
     if name==native_funding_paths.DATA_SHEET:
         _columns(root,[12,28,14,*([20]*(native_funding_paths.SIGNATURE_COLUMN-3))])
-        _column_styles(root,styles,{1:'whole',2:'report_caption',3:'whole'})
+        _column_styles(root,styles,{1:'whole',2:'report_caption',3:'whole',
+                                   native_funding_paths.SIGNATURE_COLUMN:'report_caption'})
         for elapsed in range(126):
             for offset,(_,_,unit) in enumerate(native_funding_paths.FIELDS):
                 if unit=='money':continue
@@ -119,10 +120,7 @@ def apply(name, root, styles, numbers, active_fill):
         _merges(root,['A1:L1','A2:L2','A4:L4'])
         _stripe(root,f'A8:{L(SIGNATURE_COLUMN)}{LAST}',
                 'IF($A8>0,$A8,"")',active_fill+2)
-        _column_styles(root,styles,{1:'whole',2:'report_caption',3:'whole',4:'whole',5:'whole',
-                                    9:'whole',11:'whole',12:'decimal',28:'report_date',31:'decimal',
-                                    33:'whole',SIGNATURE_COLUMN:'report_caption',
-                                    SIGNATURE_COLUMN+1:'whole',SIGNATURE_COLUMN+2:'whole'})
+        _column_styles(root,styles,COLUMN_STYLES)
         view.find(X+'pane').set('ySplit','7')
         view.find(X+'pane').set('topLeftCell','A8')
         view.find(X+'selection').set('activeCell','A8')

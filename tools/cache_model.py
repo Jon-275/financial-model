@@ -1,9 +1,11 @@
 """Copy independently recalculated values into the Excel-preserving package."""
 import math, re, sys, zipfile
+from datetime import date, time, timedelta
 from pathlib import Path
 from lxml import etree as E
 from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries
+from openpyxl.utils.datetime import CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900, to_excel
 from dashboard_package import dashboard_chart_data
 from plan_report import METRICS
 
@@ -24,6 +26,9 @@ risk_count=count if funding_status.value=='YES' else 1
 updates={}
 with zipfile.ZipFile(template) as src:
     wb=E.fromstring(src.read('xl/workbook.xml')); rr=E.fromstring(src.read('xl/_rels/workbook.xml.rels'))
+    properties = wb.find(x('workbookPr'))
+    uses_mac_epoch = properties is not None and properties.get('date1904') in ('1', 'true')
+    template_epoch = CALENDAR_MAC_1904 if uses_mac_epoch else CALENDAR_WINDOWS_1900
     paths={r.get('Id'):r.get('Target') for r in rr}
     for s in wb.find(x('sheets')):
         name=s.get('name'); path=paths[s.get(f'{{{R}}}id')]; path=path.lstrip('/') if path.startswith('/') else 'xl/'+path
@@ -33,6 +38,8 @@ with zipfile.ZipFile(template) as src:
             saved=ws[el.get('r')]
             assert saved.data_type!='e',(name,el.get('r'),saved.value)
             v=saved.value; old=el.find(x('v'))
+            if isinstance(v, (date, time, timedelta)):
+                v = to_excel(v, template_epoch)
             if old is not None: el.remove(old)
             el.attrib.pop('t',None)
             if isinstance(v,bool): el.set('t','b'); E.SubElement(el,x('v')).text='1' if v else '0'
