@@ -73,7 +73,8 @@ def reduced_funding_rows(reference, expected, ref_rows, count):
     outcomes = []
     for code in range(1, count + 1):
         row = ref_rows[code]
-        outcomes.append(TrialOutcome(trial=code, first_failure_age=value(table, row, 5),
+        age = value(table, row, 5)
+        outcomes.append(TrialOutcome(trial=code, first_failure_age=None if age == '' else age,
                                      ending_balance_real=value(table, row, 7),
                                      max_cash_shortfall=value(table, row, 6)))
     calendar = NativeAnnualModel(load_scenario(reference))
