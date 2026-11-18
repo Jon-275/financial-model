@@ -170,118 +170,125 @@ def _irmaa_per_beneficiary(mag, filing, factor, year):
     return f'INDEX(Tax_Tables!$E$89:$E$94,1+{others}+{top})*({factor})'
 
 
+def _write_healthcare_row(m, row, values):
+    if len(values) != len(HEADERS):
+        raise ValueError(f'Healthcare row {row}: got {len(values)} values, expected {len(HEADERS)}')
+    for i, expr in enumerate(values, 1):
+        col = m.L(i)
+        style = ('whole' if col in ('A', 'B', 'C', 'U', 'V', 'W', 'X') else
+                 'label' if col in ('D', 'E', 'T', 'Z') else
+                 'percent_active' if col == 'AD' else 'money')
+        m.put(SHEET, f'{col}{row}', m.active(row, expr), style)
+
+
 def _healthcare_rows(m):
     s = SHEET
     m.put(s, 'A1', 'Healthcare by person', 'title')
     m.put(s, 'A2', 'Costs are annual. Detailed mode separates Marketplace credits, Medicare surcharges and HSA reimbursements.', 'note')
     m.row(s, 4, HEADERS, 'header')
-    for row in range(5, m.END + 1):
+    if m.END < 5:
+        return
+
+    # The opening balance has no coverage period, premiums, poverty guideline or credit.
+    opening = [m.pj('B', 5), m.pj('C', 5), m.pj('D', 5), '"Opening balances"', '"Opening balances"',
+               *('0',) * 14, '"Opening balances"', *('0',) * 5, m.pj('F', 5), *('0',) * 6]
+    _write_healthcare_row(m, 5, opening)
+
+    for row in range(6, m.END + 1):
         p = lambda col: m.pj(col, row)
-        if row == 5:
-            vals = [p('B'), p('C'), p('D'), '"Opening balances"', '"Opening balances"',
-                    *('0',) * 14, '"Opening balances"', *('0',) * 5, p('F'), *('0',) * 6]
-        else:
-            year, age, spouse, phase, filing = (p(k) for k in ('B', 'C', 'D', 'E', 'F'))
-            detailed = 'Inputs!$B$101=1'
-            legacy = 'Inputs!$B$101=0'
-            single = f'{filing}="Single"'
-            retired = f'AND({detailed},{phase}<>"Working")'
-            living = f'{filing}<>"Single"'
-            owner_alive = f'OR(Inputs!$B$121=1,{living})'
-            hsa_owner_age = f'IF(Inputs!$B$121=1,{age},{spouse})'
-            premium_qualified = f'{hsa_owner_age}>=65'
-            coverage = lambda med, pre: f'IF({med}=1,"Medicare",CHOOSE({pre}+1,"None","Marketplace","Other","COBRA","Marketplace"))'
-            lookback = 'Inputs!$B$122' if row == 6 else 'Inputs!$B$123' if row == 7 else f'{m.pj("AK",row-2)}+{m.pj("AG",row-2)}'
-            prior_filing = (f'IF(Inputs!$B$8-{7-row}>Inputs!$B$54,"Single","MFJ")'
-                            if row < 8 else m.pj('F', row-2))
-            missing_irmaa = f'AND(W{row}+X{row}>0,Y{row}=-1)' if row < 8 else 'FALSE()'
-            legacy_year = max(5, row - 2)
-            legacy_magi = f'({m.pj("AK", legacy_year)}+{m.pj("AG", legacy_year)})/{p("H")}'
-            legacy_tier = (f'IF({single},MATCH({legacy_magi},Tax_Tables!$B$182:$B$187,1),'
-                           f'MATCH({legacy_magi},Tax_Tables!$B$89:$B$94,1))')
-            med_index = f'(1+IF(ISNUMBER(Inputs!$B$132),Inputs!$B$132,Inputs!$B$14))^{p("A")}'
-            legacy_count = f'--({age}>=65)+--AND(NOT({single}),{spouse}>=65)'
-            # Income below zero cannot enter an income-related surcharge tier.
-            # Keep the actual MAGI for tax calculations; do not approximate-match
-            # it against a bracket table whose first floor is zero.
-            legacy_irmaa = f'IF(OR({phase}="Working",({legacy_magi})<0),0,INDEX(Tax_Tables!$E$89:$E$94,{legacy_tier})*{p("H")}*({legacy_count}))'
-            primary_cost = f'IF({age}<65,Inputs!$B$42,Inputs!$B$43)'
-            spouse_cost = f'IF({spouse}<65,Inputs!$B$42,Inputs!$B$43)'
-            budget = f'IF({single},{primary_cost}*Inputs!$B$57,({primary_cost}+{spouse_cost})/2)'
-            legacy_cost = f'IF({phase}="Working",0,({budget})*({med_index})+L{row})+K{row}'
-            # Healthcare and Projection use the same calendar year on each row.
-            # For a 2026 opening, row 5 is the 2026 opening balance. Row 6 is
-            # 2027 coverage and uses H5 (1.0). Row 7 is 2028 coverage and uses
-            # H6 (the end of 2027). A later opening already indexes H5 from 2026.
-            prior_year_prices = m.pj('H', row - 1)
-            fpl = (f'IF(AND(M{row}>0,N{row}>0),IF(A{row}<=Tax_Tables!$A$214,'
-                   f'IF({single},Tax_Tables!$B$214,Tax_Tables!$C$214),'
-                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{prior_year_prices}),0)')
-            actual_magi = magi(p('AK'), p('N'), p('AI'), p('AG'))
-            cols = {
-                'A': year, 'B': age, 'C': spouse,
-                'D': f'IF({legacy},"Legacy budget",IF({phase}="Working","Working budget",{coverage(f"W{row}","Inputs!$B$102")}))',
-                'E': f'IF({single},"Not covered",IF({legacy},"Legacy budget",IF({phase}="Working","Working budget",{coverage(f"X{row}","Inputs!$B$103")})))',
-                'F': f'IF({retired},IF(W{row}=1,SUM(Inputs!$B$108,Inputs!$B$110),IF(Inputs!$B$102=0,0,Inputs!$B$106))*({med_index}),0)',
-                'G': f'IF(AND({retired},{living}),IF(X{row}=1,SUM(Inputs!$B$109,Inputs!$B$111),IF(Inputs!$B$103=0,0,Inputs!$B$107))*({med_index}),0)',
-                'H': f'IF({retired},Inputs!$B$112*({med_index}),0)',
-                'I': f'IF(AND({retired},{living}),Inputs!$B$113*({med_index}),0)',
-                'J': f'IF({retired},(Inputs!$B$114+IF({single},0,Inputs!$B$115))*({med_index}),0)',
-                'K': p('AY'),
-                'L': f'IF({legacy},{legacy_irmaa},IF({retired},AA{row}*(W{row}+X{row}),0))',
-                'M': f'IF(U{row}=1,F{row},0)+IF(V{row}=1,G{row},0)',
-                'N': f'IF(U{row}+V{row}=2,Inputs!$B$118,IF(U{row}=1,Inputs!$B$119,IF(V{row}=1,Inputs!$B$120,0)))*({med_index})',
-                'O': fpl,
-                'P': f'IF({legacy},{legacy_cost},SUM(F{row}:L{row}))',
-                'Q': (f'IF({legacy},IF({phase}="Working",0,P{row}),'
-                      f'IF(AND({retired},{owner_alive}),MIN(P{row},SUM(H{row}:I{row})+AB{row}+K{row}*Inputs!$B$124),0))'),
-                'R': credit(row, f'AC{row}'),
-                'S': f'MAX(0,P{row}-R{row})',
-                'T': (f'IF({legacy},"Legacy budget",IF(OR(AND(D{row}="Marketplace",F{row}<=0),AND(E{row}="Marketplace",G{row}<=0),'
-                      f'AND(U{row}+V{row}>0,N{row}<=0)),"Missing ACA quote",'
-                      f'IF({missing_irmaa},"Missing IRMAA MAGI",'
-                      f'IF(OR(AND(W{row}=1,F{row}<=0),AND(X{row}=1,G{row}<=0)),"Missing Medicare cost",'
-                      f'IF(AND(NOT({owner_alive}),{m.pj("BG",row-1)}>0),"Confirm HSA ownership","OK")))))'),
-                'U': f'--AND(D{row}="Marketplace",Inputs!$B$116=1,OR({age}<65,Inputs!$B$102=4))',
-                'V': f'--AND(E{row}="Marketplace",Inputs!$B$117=1,OR({spouse}<65,Inputs!$B$103=4))',
-                'W': f'--AND({retired},Inputs!$B$104<126,{age}>=Inputs!$B$104)',
-                'X': f'--AND({retired},{living},Inputs!$B$105<126,{spouse}>=Inputs!$B$105)',
-                'Y': f'IF(W{row}+X{row}=0,0,{lookback})',
-                'Z': f'IF(W{row}+X{row}=0,"",{prior_filing})',
-                'AA': f'IF(OR(W{row}+X{row}=0,Y{row}<0),0,{_irmaa_per_beneficiary(f"Y{row}",f"Z{row}",p("H"),year)})',
-                'AB': (f'IF(AND({retired},{owner_alive}),IF(D{row}="COBRA",F{row},0)+IF(E{row}="COBRA",G{row},0)'
-                       f'+IF({premium_qualified},(W{row}*Inputs!$B$108+X{row}*Inputs!$B$109)*({med_index})+L{row},0),0)'),
-                'AC': actual_magi,
-                'AD': f'IF(O{row}>0,AC{row}/O{row},0)',
-                'AE': p('P'),
-                'AF': f'MAX(0,S{row}-AE{row})',
-            }
-            vals = [cols[m.L(i)] for i in range(1, len(HEADERS)+1)]
+        year, age, spouse, phase, filing = (p(k) for k in ('B', 'C', 'D', 'E', 'F'))
+        detailed = 'Inputs!$B$101=1'
+        legacy = 'Inputs!$B$101=0'
+        single = f'{filing}="Single"'
+        retired = f'AND({detailed},{phase}<>"Working")'
+        living = f'{filing}<>"Single"'
+        owner_alive = f'OR(Inputs!$B$121=1,{living})'
+        hsa_owner_age = f'IF(Inputs!$B$121=1,{age},{spouse})'
+        premium_qualified = f'{hsa_owner_age}>=65'
+        coverage = lambda med, pre: f'IF({med}=1,"Medicare",CHOOSE({pre}+1,"None","Marketplace","Other","COBRA","Marketplace"))'
+        lookback = 'Inputs!$B$122' if row == 6 else 'Inputs!$B$123' if row == 7 else f'{m.pj("AK",row-2)}+{m.pj("AG",row-2)}'
+        prior_filing = (f'IF(Inputs!$B$8-{7-row}>Inputs!$B$54,"Single","MFJ")'
+                        if row < 8 else m.pj('F', row-2))
+        missing_irmaa = f'AND(W{row}+X{row}>0,Y{row}=-1)' if row < 8 else 'FALSE()'
+        legacy_year = max(5, row - 2)
+        legacy_magi = f'({m.pj("AK", legacy_year)}+{m.pj("AG", legacy_year)})/{p("H")}'
+        legacy_tier = (f'IF({single},MATCH({legacy_magi},Tax_Tables!$B$182:$B$187,1),'
+                       f'MATCH({legacy_magi},Tax_Tables!$B$89:$B$94,1))')
+        med_index = f'(1+IF(ISNUMBER(Inputs!$B$132),Inputs!$B$132,Inputs!$B$14))^{p("A")}'
+        legacy_count = f'--({age}>=65)+--AND(NOT({single}),{spouse}>=65)'
+        # Income below zero cannot enter an income-related surcharge tier.
+        # Keep the actual MAGI for tax calculations; do not approximate-match
+        # it against a bracket table whose first floor is zero.
+        legacy_irmaa = f'IF(OR({phase}="Working",({legacy_magi})<0),0,INDEX(Tax_Tables!$E$89:$E$94,{legacy_tier})*{p("H")}*({legacy_count}))'
+        primary_cost = f'IF({age}<65,Inputs!$B$42,Inputs!$B$43)'
+        spouse_cost = f'IF({spouse}<65,Inputs!$B$42,Inputs!$B$43)'
+        budget = f'IF({single},{primary_cost}*Inputs!$B$57,({primary_cost}+{spouse_cost})/2)'
+        legacy_cost = f'IF({phase}="Working",0,({budget})*({med_index})+L{row})+K{row}'
+        # Healthcare and Projection use the same calendar year on each row.
+        # For a 2026 opening, row 5 is the 2026 opening balance. Row 6 is
+        # 2027 coverage and uses H5 (1.0). Row 7 is 2028 coverage and uses
+        # H6 (the end of 2027). A later opening already indexes H5 from 2026.
+        prior_year_prices = m.pj('H', row - 1)
+        fpl = (f'IF(AND(M{row}>0,N{row}>0),IF(A{row}<=Tax_Tables!$A$214,'
+               f'IF({single},Tax_Tables!$B$214,Tax_Tables!$C$214),'
+               f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{prior_year_prices}),0)')
+        actual_magi = magi(p('AK'), p('N'), p('AI'), p('AG'))
+        cols = {
+            'A': year, 'B': age, 'C': spouse,
+            'D': f'IF({legacy},"Legacy budget",IF({phase}="Working","Working budget",{coverage(f"W{row}","Inputs!$B$102")}))',
+            'E': f'IF({single},"Not covered",IF({legacy},"Legacy budget",IF({phase}="Working","Working budget",{coverage(f"X{row}","Inputs!$B$103")})))',
+            'F': f'IF({retired},IF(W{row}=1,SUM(Inputs!$B$108,Inputs!$B$110),IF(Inputs!$B$102=0,0,Inputs!$B$106))*({med_index}),0)',
+            'G': f'IF(AND({retired},{living}),IF(X{row}=1,SUM(Inputs!$B$109,Inputs!$B$111),IF(Inputs!$B$103=0,0,Inputs!$B$107))*({med_index}),0)',
+            'H': f'IF({retired},Inputs!$B$112*({med_index}),0)',
+            'I': f'IF(AND({retired},{living}),Inputs!$B$113*({med_index}),0)',
+            'J': f'IF({retired},(Inputs!$B$114+IF({single},0,Inputs!$B$115))*({med_index}),0)',
+            'K': p('AY'),
+            'L': f'IF({legacy},{legacy_irmaa},IF({retired},AA{row}*(W{row}+X{row}),0))',
+            'M': f'IF(U{row}=1,F{row},0)+IF(V{row}=1,G{row},0)',
+            'N': f'IF(U{row}+V{row}=2,Inputs!$B$118,IF(U{row}=1,Inputs!$B$119,IF(V{row}=1,Inputs!$B$120,0)))*({med_index})',
+            'O': fpl,
+            'P': f'IF({legacy},{legacy_cost},SUM(F{row}:L{row}))',
+            'Q': (f'IF({legacy},IF({phase}="Working",0,P{row}),'
+                  f'IF(AND({retired},{owner_alive}),MIN(P{row},SUM(H{row}:I{row})+AB{row}+K{row}*Inputs!$B$124),0))'),
+            'R': credit(row, f'AC{row}'),
+            'S': f'MAX(0,P{row}-R{row})',
+            'T': (f'IF({legacy},"Legacy budget",IF(OR(AND(D{row}="Marketplace",F{row}<=0),AND(E{row}="Marketplace",G{row}<=0),'
+                  f'AND(U{row}+V{row}>0,N{row}<=0)),"Missing ACA quote",'
+                  f'IF({missing_irmaa},"Missing IRMAA MAGI",'
+                  f'IF(OR(AND(W{row}=1,F{row}<=0),AND(X{row}=1,G{row}<=0)),"Missing Medicare cost",'
+                  f'IF(AND(NOT({owner_alive}),{m.pj("BG",row-1)}>0),"Confirm HSA ownership","OK")))))'),
+            'U': f'--AND(D{row}="Marketplace",Inputs!$B$116=1,OR({age}<65,Inputs!$B$102=4))',
+            'V': f'--AND(E{row}="Marketplace",Inputs!$B$117=1,OR({spouse}<65,Inputs!$B$103=4))',
+            'W': f'--AND({retired},Inputs!$B$104<126,{age}>=Inputs!$B$104)',
+            'X': f'--AND({retired},{living},Inputs!$B$105<126,{spouse}>=Inputs!$B$105)',
+            'Y': f'IF(W{row}+X{row}=0,0,{lookback})',
+            'Z': f'IF(W{row}+X{row}=0,"",{prior_filing})',
+            'AA': f'IF(OR(W{row}+X{row}=0,Y{row}<0),0,{_irmaa_per_beneficiary(f"Y{row}",f"Z{row}",p("H"),year)})',
+            'AB': (f'IF(AND({retired},{owner_alive}),IF(D{row}="COBRA",F{row},0)+IF(E{row}="COBRA",G{row},0)'
+                   f'+IF({premium_qualified},(W{row}*Inputs!$B$108+X{row}*Inputs!$B$109)*({med_index})+L{row},0),0)'),
+            'AC': actual_magi,
+            'AD': f'IF(O{row}>0,AC{row}/O{row},0)',
+            'AE': p('P'),
+            'AF': f'MAX(0,S{row}-AE{row})',
+        }
+        vals = [cols[m.L(i)] for i in range(1, len(HEADERS)+1)]
 
-            # Projection is the book of record for gross spending and HSA draws.
-            m.put('Projection', f'AY{row}', m.active(row,
-                f'IF(AND(C{row}>=Inputs!$B$58,C{row}<Inputs!$B$58+Inputs!$B$60),Inputs!$B$59*({med_index}),0)'))
-            m.put('Projection', f'AZ{row}', m.active(row, _hc('L', row)))
-            m.put('Projection', f'BA{row}', m.active(row, _hc('P', row)))
-            m.put('Projection', f'P{row}', m.active(row, f'MIN(BG{row-1},{_hc("Q",row)})'))
-            # Employee HSA payroll contribution is separate from reimbursement.
-            # In detailed mode, no contribution is made for an owner already
-            # enrolled in Medicare or for the deceased spouse.
-            owner_age = f'IF(Inputs!$B$121=1,C{row},D{row})'
-            start = 'IF(Inputs!$B$121=1,Inputs!$B$104,Inputs!$B$105)'
-            prior_eligible = f'OR(Inputs!$B$121=1,F{row}<>"Single")'
-            eligibility = f'OR({legacy},AND({prior_eligible},OR({start}=126,{owner_age}<{start})))'
-            contrib = f'IF(AND(E{row}="Working",{eligibility}),MIN(MAX(0,I{row}-J{row}),Inputs!$B$34*G{row}),0)'
-            m.put('Projection', f'K{row}', m.active(row, contrib))
-
-        if len(vals) != len(HEADERS):
-            raise ValueError(f'Healthcare row {row}: got {len(vals)} values, expected {len(HEADERS)}')
-        for i, expr in enumerate(vals, 1):
-            col = m.L(i)
-            style = ('whole' if col in ('A', 'B', 'C', 'U', 'V', 'W', 'X') else
-                     'label' if col in ('D', 'E', 'T', 'Z') else
-                     'percent_active' if col == 'AD' else 'money')
-            m.put(s, f'{col}{row}', m.active(row, expr), style)
+        # Projection is the book of record for gross spending and HSA draws.
+        m.put('Projection', f'AY{row}', m.active(row,
+            f'IF(AND(C{row}>=Inputs!$B$58,C{row}<Inputs!$B$58+Inputs!$B$60),Inputs!$B$59*({med_index}),0)'))
+        m.put('Projection', f'AZ{row}', m.active(row, _hc('L', row)))
+        m.put('Projection', f'BA{row}', m.active(row, _hc('P', row)))
+        m.put('Projection', f'P{row}', m.active(row, f'MIN(BG{row-1},{_hc("Q",row)})'))
+        # Employee HSA payroll contribution is separate from reimbursement.
+        # In detailed mode, no contribution is made for an owner already
+        # enrolled in Medicare or for the deceased spouse.
+        owner_age = f'IF(Inputs!$B$121=1,C{row},D{row})'
+        start = 'IF(Inputs!$B$121=1,Inputs!$B$104,Inputs!$B$105)'
+        prior_eligible = f'OR(Inputs!$B$121=1,F{row}<>"Single")'
+        eligibility = f'OR({legacy},AND({prior_eligible},OR({start}=126,{owner_age}<{start})))'
+        contrib = f'IF(AND(E{row}="Working",{eligibility}),MIN(MAX(0,I{row}-J{row}),Inputs!$B$34*G{row}),0)'
+        m.put('Projection', f'K{row}', m.active(row, contrib))
+        _write_healthcare_row(m, row, vals)
 
 
 def configure(m, wb):

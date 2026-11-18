@@ -106,6 +106,9 @@ def verify(workbook, office):
             add_case(current, original, case, depleted=True)
             current[tab(case, PROJECTION)]['BG7'] = invalid
             bad[case] = ('P', 7)
+        add_case(current, original, 'cash_error')
+        current[tab('cash_error', CASH)]['AM7'] = '=1/0'
+        current[tab('cash_error', CASH)]['AM10'] = '=1/0'
         add_case(current, original, 'stale_roth')
         # A cached Roth opening and closing can agree while both are stale.
         current[tab('stale_roth', ROTH)]['D7'] = 450
@@ -143,14 +146,20 @@ def verify(workbook, office):
                     equal(f'{case} invalid actual', value, '#N/A')
                 elif type(value) not in (int, float) or value == 0:
                     raise AssertionError(f'{case} {col}{row}: expected a nonzero closing difference, found {value!r}')
-                if checks[f'J{row}'].value in (None, '', 'OK'):
-                    raise AssertionError(f'{case} passed with an invalid account close.')
+                equal(f'{case} annual status', checks[f'J{row}'].value, 'Review')
+            cash_error = book[tab('cash_error', CHECKS)]
+            equal('Cash-flow error remains visible at its source', book[tab('cash_error', CASH)]['AM7'].value, '#DIV/0!')
+            for col in RESIDUALS:
+                equal(f'Cash-flow error leaves {col}7 reconciled', cash_error[col+'7'].value, 0)
+            equal('Active year with a cash-flow error', cash_error['J7'].value, 'Review')
+            if cash_error['J10'].value not in ('', None):
+                raise AssertionError('An inactive year showed a cash-flow status.')
             base_ending = book[tab('flat', PROJECTION)]['BH9'].value
             equal('Interior change with unchanged terminal balance', book[tab('returns', PROJECTION)]['BH9'].value, base_ending)
             equal('Stale suffix with prior terminal balance', book[tab('gains', PROJECTION)]['BH9'].value, prior_ending)
             if prior_ending == base_ending:
                 raise AssertionError('The second prior trial must finish with a different balance.')
-    print(f'PASS {len(clean)} valid paths and {len(bad)} corrupt paths, including all 12 closing checks.')
+    print(f'PASS {len(clean)} valid paths, {len(bad)} corrupt closing paths and a cash-flow error, including all 12 closing checks.')
 
 
 if __name__ == '__main__':

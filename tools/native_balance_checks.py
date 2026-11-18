@@ -64,5 +64,5 @@ def configure(model):
     for row in range(5, 131):
         area = f'{first}{row}:{last}{row}'
         model.put(SHEET, f'J{row}',
-                  f'=IF({row}-4>Trial_Inputs!$B$70,"",IF(AND(Trial_Cash_Flow!AM{row}="OK",'
-                  f'COUNT({area})={len(CLOSINGS)},MIN({area})=0,MAX({area})=0),"OK","Review"))', 'report_caption')
+                  f'=IF({row}-4>Trial_Inputs!$B$70,"",IF(IFERROR(AND(Trial_Cash_Flow!AM{row}="OK",'
+                  f'COUNT({area})={len(CLOSINGS)},MIN({area})=0,MAX({area})=0),FALSE()),"OK","Review"))', 'report_caption')

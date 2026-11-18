@@ -65,6 +65,8 @@ Read the success rate and number of paths with spending cuts together. The rule 
 
 On **Trial_Checks**, columns N–Y compare each year’s recorded closing balances with amounts calculated again from the opening balances, contributions, withdrawals, conversions and market returns. Each difference should be zero. The checks cover brokerage, traditional, HSA and Roth accounts, taxable cost basis and the whole portfolio in both dollar views.
 
+If column J shows **Review**, look across N–Y for a difference or a formula error. If all twelve balances agree, check the cash-flow status in column AM of **Trial_Cash_Flow** for the same year.
+
 **Risk_Data** derives report statistics from the captured trial results and compares the active assumptions with the completed run. A failed or incomplete run cannot supply a current report. The report’s real and nominal balance percentiles are calculated separately, so future-dollar bands remain correct when inflation varies across paths.
 
 Read a success rate as the percentage of paths that paid all required costs. Ages and trial numbers are whole numbers. A price index of 1.25 means that $100 at the start of the plan has the same buying power as $125 in that year.
