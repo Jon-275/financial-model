@@ -11,6 +11,8 @@ from pyopenvba import ExcelFile
 from pyopenvba.cfb import CFB
 from pyopenvba.vba import decompress
 
+from vba_declarations import audit_vba_declarations
+
 
 SOURCE = Path(__file__).resolve().parent / 'vba' / 'RunMarketRisk.bas'
 MODULE = 'MarketRiskRunner'
@@ -46,8 +48,10 @@ def verify_project(path):
         modules = workbook.vba_modules()
         if set(modules) != expected or workbook.forms():
             raise ValueError('The VBA project contains unexpected modules or forms.')
-        if modules.pop(MODULE).splitlines() != SOURCE.read_text(encoding='ascii').splitlines():
+        runner = modules.pop(MODULE)
+        if runner.splitlines() != SOURCE.read_text(encoding='ascii').splitlines():
             raise ValueError('The embedded runner differs from its published source.')
+        audit_vba_declarations(runner)
         for source in modules.values():
             if any(line.strip() and not line.startswith('Attribute VB_') for line in source.splitlines()):
                 raise ValueError('Unexpected code in a workbook or worksheet module.')

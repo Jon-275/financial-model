@@ -8,11 +8,14 @@ import os
 from pathlib import Path
 import re
 import sys
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 from xml.etree import ElementTree
 from zipfile import ZipFile
 
+from openpyxl import Workbook
 from openpyxl.utils.cell import range_boundaries
 from pyopenvba.cfb import CFB
 from pyopenvba.vba import compress, decompress
@@ -24,7 +27,8 @@ import native_balance_checks
 import native_capture
 import native_funding_paths
 import native_results
-from package_macro import audit_project_metadata
+from package_macro import audit_project_metadata, package_macro
+from vba_declarations import audit_vba_declarations
 
 SOURCE = (ROOT / 'tools/vba/RunMarketRisk.bas').read_text()
 CODE = '\n'.join(line for line in SOURCE.splitlines() if not line.lstrip().startswith("'"))
@@ -93,6 +97,91 @@ class MacroPublicationTests(unittest.TestCase):
                 self.assertNotIn('/users/'.encode(encoding), payload.lower())
                 with self.assertRaisesRegex(ValueError, 'local profile path'):
                     audit_project_metadata(payload, self.module_names)
+
+
+class MacroDeclarationTests(unittest.TestCase):
+    def test_packaging_refuses_the_two_compile_defects_before_publishing(self):
+        samples = (
+            ('Private Function AuditBlank() As Boolean\nEnd Function\n'
+             'Public Sub auditblank()\nEnd Sub', 'duplicate VBA procedure'),
+            ('Private Sub LookupNative()\nDim dims(1 To 2, 1 To 3), _\n'
+             '    tAb As Variant\nEnd Sub', 'reserved VBA variable name'),
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            book = Workbook()
+            book.save(root / 'example.xlsx')
+            book.close()
+            module = root / 'reviewed.bas'
+            for source, error in samples:
+                with self.subTest(error=error), patch('package_macro.SOURCE', module):
+                    module.write_text('Attribute VB_Name = "MarketRiskRunner"\n' + source + '\n', encoding='ascii')
+                    with self.assertRaisesRegex(ValueError, error):
+                        package_macro(root / 'example.xlsx', root / 'example.xlsm')
+                    self.assertFalse((root / 'example.xlsm').exists())
+
+    def test_conditional_declarations_are_compared_on_each_target(self):
+        source = """#If Mac Then
+Private Sub DetectHost()
+End Sub
+#ElseIf Win64 Then
+Private Sub DetectHost()
+End Sub
+#Else
+Private Sub DetectHost()
+End Sub
+#End If
+"""
+        audit_vba_declarations(source)
+        for inactive_marker in ('#If Mac Then', '#ElseIf Win64 Then', '#Else\n'):
+            with self.subTest(branch=inactive_marker):
+                duplicate = source.replace(inactive_marker, inactive_marker + '\nPrivate Function detectHost()\nEnd Function\n')
+                with self.assertRaisesRegex(ValueError, 'duplicate VBA procedure'):
+                    audit_vba_declarations(duplicate)
+
+    def test_valid_names_attributes_and_distinct_property_accessors(self):
+        source = """Attribute VB_Name = "Settings"
+Private Type Holder
+    Tab As Variant
+End Type
+Public Property Get Item() As Variant
+Attribute Item.VB_Description = "Dim Tab: Public Sub Item()"
+End Property
+Public Property Let Item(ByVal value As Variant)
+End Property
+Public Property Set Item(ByVal value As Object)
+End Property
+Private Sub ReadTable()
+    Dim mode As Long, year As Integer
+    Dim [Tab] As Variant
+    Dim tableRange(1 To 3, 1 To 2), _
+        threshold As Double
+    Rem Dim Tab: Public Sub Item()
+    Print #1, Tab(2)
+End Sub
+"""
+        audit_vba_declarations(source)
+        with self.assertRaisesRegex(ValueError, 'duplicate VBA procedure'):
+            audit_vba_declarations(source + 'Private Property Get ITEM() As Variant\nEnd Property')
+        with self.assertRaisesRegex(ValueError, 'duplicate VBA procedure'):
+            audit_vba_declarations(source + 'Private Function ITEM() As Variant\nEnd Function')
+
+    def test_custom_directives_leave_unconditional_errors_visible(self):
+        source = """#Const Custom = 1 + 2
+#If Custom Then
+Private Sub Alternate()
+End Sub
+#Else
+Private Sub Alternate()
+End Sub
+#End If
+"""
+        with self.assertWarnsRegex(UserWarning, 'Conditional VBA declarations require Excel'):
+            audit_vba_declarations(source)
+        with self.assertWarns(UserWarning), self.assertRaisesRegex(ValueError, 'reserved VBA variable name'):
+            audit_vba_declarations(source + 'Private Sub Work()\nDim Spc As Double\nEnd Sub')
+        with self.assertRaisesRegex(ValueError, 'Unclosed #If'):
+            audit_vba_declarations(source.removesuffix('#End If\n'))
 
 
 class MacroRunnerContractTests(unittest.TestCase):
