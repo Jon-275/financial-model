@@ -78,7 +78,9 @@ A separate Mac test replayed 11 trial selections, including the transitions from
 
 In a longer test, the first incorrect annual balance and the ending balance matched the preceding trial on 30 occasions. Rebuilding Excel's dependencies corrected 29. It stopped at trial 839 after 15 minutes 38 seconds when balances were missing from age 99 onward. The discrepancy was already in the worksheet before the macro read the result.
 
-The next test calculated each year's visible formulas in dependency order. Eight selected trials and six selections that changed the end age matched the independent model. A 100-pair run using that order throughout took 160.64 seconds. All 80,454 compared fields matched on the first attempt, including the three complete funding histories. This run took longer than the 107.22-second example above. Full-length tests are needed to establish reliability and timing.
+The next test calculated each year's visible formulas in dependency order. Eight selected trials and six selections that changed the end age matched the independent model. A 100-pair run using that order throughout took 160.64 seconds. All 80,454 compared fields matched on the first attempt, including the three complete funding histories.
+
+The same method completed 1,000 pairs through age 125 in 46 minutes 21 seconds. All 2,033 outcomes, the three ranked path IDs and their funding histories matched across 588,054 fields. Excel reused 501 flexible results and accepted every directly calculated path on its first attempt. This schedule preserved the worksheet calculations and exceeded the five-minute target. The fixture had no scheduled one-time expenses. The release also needs tests on the revision that carries those expenses into each trial.
 
 ### Earlier timings by plan length
 
