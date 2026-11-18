@@ -6,6 +6,7 @@ from math import isclose
 from pathlib import Path
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
 from native_capture_acceptance import same
 from xlsx_read import Workbook, col_letter
 

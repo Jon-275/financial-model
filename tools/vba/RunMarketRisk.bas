@@ -489,16 +489,22 @@ Private Sub RequireNoFormulas(ByVal area As Range)
     If CBool(hasFormula) Then RaiseRunError "A result area overlaps calculation formulas. Use the current workbook release."
 End Sub
 
+Private Function IsNumericInput(ByVal value As Variant) As Boolean
+    ' Match worksheet ISNUMBER. A blank or text cell must never become zero or a seed.
+    Select Case VarType(value)
+        Case vbByte, vbInteger, vbLong, vbSingle, vbDouble, vbCurrency, vbDecimal
+            IsNumericInput = True
+    End Select
+End Function
+
 Private Function WholeNumber(ByVal value As Variant, ByVal low As Long, ByVal high As Long, ByVal message As String) As Long
-    If IsError(value) Then RaiseRunError message
-    If Not IsNumeric(value) Or VarType(value) = vbBoolean Then RaiseRunError message
+    If Not IsNumericInput(value) Then RaiseRunError message
     If CDbl(value) <> Fix(CDbl(value)) Or CDbl(value) < low Or CDbl(value) > high Then RaiseRunError message
     WholeNumber = CLng(value)
 End Function
 
 Private Function SeedNumber(ByVal value As Variant) As Double
-    If IsError(value) Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
-    If Not IsNumeric(value) Or VarType(value) = vbBoolean Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
+    If Not IsNumericInput(value) Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
     If CDbl(value) <> Fix(CDbl(value)) Or CDbl(value) < 0 Or CDbl(value) > 4294967295# Then RaiseRunError "Enter a whole random seed from 0 to 4,294,967,295."
     SeedNumber = CDbl(value)
 End Function
