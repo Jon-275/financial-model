@@ -86,6 +86,11 @@ def check_case(source, folder, case, office):
         prior_prices = 1.025 ** (opening - 2026)
         equal('Opening balance year', health['A5'].value, opening)
         equal('Trial status', book['Risk_Trials']['C7'].value, 1)
+        for sheet in (book['Healthcare'], health):
+            for column in ('M', 'N', 'O', 'R'):
+                cell = sheet[f'{column}5']
+                if type(cell.value) not in (int, float) or cell.value != 0:
+                    raise AssertionError(f'{sheet.title}!{cell.coordinate} must be numeric zero in the opening row.')
         for index, (filers, fpl, base) in enumerate(zip(filing, guidelines, base_guidelines, strict=True)):
             row, year = 6 + index, opening + 1 + index
             equal('Coverage year', health[f'A{row}'].value, year)

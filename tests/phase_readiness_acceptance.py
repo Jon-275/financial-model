@@ -6,6 +6,7 @@ from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from lxml import etree
+from openpyxl import Workbook as NewWorkbook
 from openpyxl.worksheet.cell_range import MultiCellRange
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
@@ -141,10 +142,47 @@ def check_entry_rules(workbook):
     equal('Excel entry rules for pay and spending', observed, expected)
 
 
+def check_trial_numbers(workbook, office, root):
+    with Workbook(workbook) as source:
+        selection = source['Market_Paths']['J3'].formula
+    book = NewWorkbook()
+    book.remove(book.active)
+    expected = {}
+    invalid_id = 'Enter a listed trial number'
+    review = 'Review risk assumptions'
+    stress_bounds = (2001, 2013, 2101, 2113, 2201, 2207)
+    invalid = (-2, 0.5, '2', '=NA()', 2014, 2100, 2114, 2200, 2208)
+    for count, status, allowed, rejected in (
+        (1, 'OK', (-1, 0, 1, 1001, *stress_bounds), (2, 1002, *invalid)),
+        (1000, 'OK', (1, 1000, 1001, 2000, *stress_bounds), invalid),
+        (5, LONGER, (1, 5, 1001, 1005, 2203), (6, 1006)),
+        ('bad count', review, (0, 1, 1001, 2203), invalid),
+        ('5', review, (-1, 1005), (2208,)),
+        ('=NA()', review, (0, 1, 1001, 2203), invalid),
+    ):
+        settings = book.create_sheet()
+        settings['B29'] = count
+        for codes, result in ((allowed, status), (rejected, invalid_id)):
+            for code in codes:
+                market = book.create_sheet()
+                market['B3'], market['AL3'] = code, status
+                market['J3'] = '=' + selection.replace('Risk_Settings!', settings.title + '!')
+                expected[market.title] = (count, code, result)
+    fixture = root / 'trial-numbers.xlsx'
+    book.save(fixture)
+    out = root / 'trial-numbers-out'
+    out.mkdir()
+    with Workbook(recalculate(fixture, out, root / 'trial-numbers-profile', office, 90)) as actual:
+        for name, (count, code, result) in expected.items():
+            equal(f'Trial {code!r}, path count {count!r}', actual[name]['J3'].value, result)
+    print(f'PASS {len(expected)} trial number and path-count cases.', flush=True)
+
+
 def verify(workbook, office):
     check_entry_rules(workbook)
     with TemporaryDirectory() as tmp:
         root = Path(tmp)
+        check_trial_numbers(workbook, office, root)
         cleared = root / ('source' + workbook.suffix)
         prepare_trial_copy(workbook, cleared)
         for index, case in enumerate(CASES):

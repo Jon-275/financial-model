@@ -109,11 +109,15 @@ def _calendar_and_returns(m):
     put = lambda a,v,s=None:m.put(MARKET,a,v,s)
     put('A1','Market path and annual prices','detail_title')
     put('A2','Inspect the selected trial. Fixed and flexible policies share its returns and inflation.','report_caption')
+    # AL3 reports an invalid path count. Keep invalid trial IDs distinguishable.
+    paired = ('AND(B3>=1,B3<=2000,IF(ISNUMBER(Risk_Settings!B29),'
+              'IF(B3>1000,B3-1000,B3)<=Risk_Settings!B29,TRUE()))')
+    listed = f'OR(B3=0,B3=-1,{paired},AND(B3>=2001,B3<=2013),AND(B3>=2101,B3<=2113),AND(B3>=2201,B3<=2207))'
     for address,label,value in (
         ('A3','Trial',f'={CONTROL}'),('C3','Modeled years',f'=IF(OR({CONTROL}<=0,Inputs!B70=0),0,F3-Inputs!B8+1)'),
         ('E3','End age',f'=MAX(Inputs!B53,IF({CONTROL}=2203,100,IF(OR({CONTROL}=2204,{CONTROL}=2205),105,0)))'),
         ('G3','Flexible spending',f'=OR(AND({CONTROL}>=1001,{CONTROL}<=2000),AND({CONTROL}>=2101,{CONTROL}<=2113))'),
-        ('I3','Input check','=IF(IF(ISNUMBER(B3),AND(B3=INT(B3),OR(B3=0,B3=-1,AND(B3>=1,B3<=Risk_Settings!B29),AND(B3>=1001,B3<=1000+Risk_Settings!B29),AND(B3>=2001,B3<=2013),AND(B3>=2101,B3<=2113),AND(B3>=2201,B3<=2207))),FALSE()),AL3,"Enter a listed trial number")'),
+        ('I3','Input check',f'=IF(IF(ISNUMBER(B3),AND(B3=INT(B3),{listed}),FALSE()),AL3,"Enter a listed trial number")'),
     ):
         col = ord(address[0])-64
         put(address,label,'label');put(f'{L(col+1)}3',value,'input_active' if address=='A3' else 'whole')
