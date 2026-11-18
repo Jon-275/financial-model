@@ -52,6 +52,17 @@ Public Sub VerifyMarketRiskRunner()
         AssertRunner order(row) = expected(row - 1), "Representative-path ordering differs from the independently specified order."
     Next row
 
+    For Each item In Array(Empty, "100")
+        data(1, ENDING_REAL_FIELD) = item
+        On Error Resume Next
+        Err.Clear
+        ignored = ComparePaths(1, 2, data, ids)
+        errorNumber = Err.Number
+        On Error GoTo Failed
+        AssertRunner errorNumber = RUN_ERROR, "A missing or text ending balance was accepted."
+    Next item
+    AssertRunner FailureAge(vbNullString) = FailureAge(Empty), "No shortfall must rank the same for both empty representations."
+
     ReDim captured(1 To 1, 1 To FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY)
     ReDim previous(1 To 1, 1 To FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY)
     captured(1, ENDING_REAL_FIELD) = 100#: previous(1, ENDING_REAL_FIELD) = 100#

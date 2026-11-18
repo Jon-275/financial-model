@@ -112,7 +112,7 @@ def _tables(m):
     m.put(s, 'A215', 2027, 'whole')
     m.put(s, 'B215', 15960, 'money')
     m.put(s, 'C215', 21640, 'money')
-    m.put(s, 'A216', 'Source: HHS 2025 and 2026 poverty guidelines. The 2027 coverage amounts use the 2026 HHS release and are increased with CPI after 2027.', 'note')
+    m.put(s, 'A216', '2026 and 2027 coverage use the previous year’s published HHS guideline. Later years use estimated inflation through the year before coverage.', 'note')
     m.put(s, 'A217', 'https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines/prior-hhs-poverty-guidelines-federal-register-references', 'note')
     m.row(s,220,('2027 FPL band starts at','Band ends at','Initial contribution rate','Final contribution rate'),'header')
     rates2027=((.0215,.0215),(.0323,.0430),(.0430,.0678),(.0678,.0866),(.0866,.1022),(.1022,.1022))
@@ -209,11 +209,10 @@ def _healthcare_rows(m):
             spouse_cost = f'IF({spouse}<65,Inputs!$B$42,Inputs!$B$43)'
             budget = f'IF({single},{primary_cost}*Inputs!$B$57,({primary_cost}+{spouse_cost})/2)'
             legacy_cost = f'IF({phase}="Working",0,({budget})*({med_index})+L{row})+K{row}'
-            # Annual premiums use inflation relative to the opening date. FPL
-            # starts from the published 2027 coverage guideline when available.
+            # Marketplace coverage uses the guideline available for enrollment the year before.
             fpl = (f'IF(AND(M{row}>0,N{row}>0),IF(A{row}<=Tax_Tables!$A$214,'
                    f'IF({single},Tax_Tables!$B$214,Tax_Tables!$C$214),'
-                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{p("H")}/(1+Inputs!$B$14)),0)')
+                   f'IF({single},Tax_Tables!$B$215,Tax_Tables!$C$215)*{m.pj("H",row-1)}),0)')
             actual_magi = magi(p('AK'), p('N'), p('AI'), p('AG'))
             cols = {
                 'A': year, 'B': age, 'C': spouse,

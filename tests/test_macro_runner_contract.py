@@ -124,6 +124,12 @@ class MacroRunnerContractTests(unittest.TestCase):
         self.assertEqual(secondary['RiskPathCurrent'][2] - secondary['RiskPathCurrent'][0] + 1,
                          len(native_funding_paths.FIELDS) * native_capture.ANNUAL_CAPACITY + 3)
         self.assertEqual(secondary['RiskPathTrials'], (1, native_funding_paths.FIRST_ROW, 1, native_funding_paths.LAST_ROW))
+        checks = procedure('ValidateRanges')
+        years = int(constant('ANNUAL_CAPACITY'))
+        self.assertIn('current.Columns.Count <> FIRST_YEAR_FIELD + 2 * ANNUAL_CAPACITY', checks)
+        self.assertEqual(int(constant('FIRST_YEAR_FIELD')) + 2 * years, native_capture.SIGNATURE_COLUMN - 1)
+        self.assertIn('pathCurrent.Columns.Count <> 3 + ANNUAL_CAPACITY * FUNDING_YEAR_WIDTH', checks)
+        self.assertEqual(3 + years * int(constant('FUNDING_YEAR_WIDTH')), native_funding_paths.SIGNATURE_COLUMN - 1)
 
     def test_ranking_fields_and_release_version_match_the_worksheet_compiler(self):
         expected = {
@@ -134,6 +140,9 @@ class MacroRunnerContractTests(unittest.TestCase):
         }
         for name, label in expected.items():
             self.assertEqual(int(constant(name)), native_capture.FIELDS.index(label) + 1)
+        for name in ('ComparePaths','RepeatsPriorEnding','CaptureTrial','FailureAge'):
+            self.assertIn('IsNumericInput(', procedure(name))
+            self.assertNotIn('IsNumeric(', procedure(name))
         self.assertEqual(int(constant('MAX_PAIRED_PATHS')), native_capture.CAPACITY)
         self.assertEqual(constant('EXPECTED_SCHEMA'), native_results.SCHEMA)
         self.assertEqual(constant('EXPECTED_ENGINE'), native_results.ENGINE)

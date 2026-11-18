@@ -52,6 +52,7 @@ def price_path(model,inflation_rates,*,end_age=None,medical_floor=0):
     i[53]=end_age;i[70]=length+1
     result.medical_floor=medical_floor
     cpi=medical_index=1
+    previous_tax_index=(1+base_inflation)**(model.opening_year-2026)
     benefit_peak=1 if model.opening_age>=i[45] else 0
     constant=len(set(rates))==1
     periods=[]
@@ -83,7 +84,8 @@ def price_path(model,inflation_rates,*,end_age=None,medical_floor=0):
         med_ratio=medical_index/(1+i[132])**elapsed
         aca_actual,benchmark,fpl=period.aca
         if fpl and period.sheet.year>result.scenario.tax['A214']:
-            fpl=(result.scenario.tax['B215' if period.single else 'C215']*tax_index/(1+i[14]))
+            fpl=result.scenario.tax['B215' if period.single else 'C215']*previous_tax_index
+        previous_tax_index=tax_index
         limits=annual_limits(result.scenario.tax,period.sheet.year,tax_index,i[14],period.single)
         if limits is None:
             limit,catchup=(result.scenario.tax[cell]*cpi for cell in ('B61','B62'))
