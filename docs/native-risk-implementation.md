@@ -70,7 +70,9 @@ The current runner recalculates 12 closing amounts per year from the original fi
 | 100 pairs, ages 35–95 | Completed in 107.218 seconds. Excel calculated 187 outcomes and three ranked funding schedules directly. It reused 46 verified flexible results. One closing check needed a fresh calculation. All 233 outcomes and three funding histories matched across 80,454 fields. |
 | 1,000 pairs, ages 0–125 | Stopped at trial 250 after 447.64 seconds. Its closing amounts still failed to reconcile after a fresh calculation. The prior results and completion record were retained. The workbook marked the attempted refresh as failed. |
 
-The maximum-horizon run did not complete. Its elapsed time measures the failed attempt. The first recorded closing difference was a brokerage balance on trial 42. That trial recovered. The cause of the persistent difference on trial 250 is under investigation.
+The maximum-horizon run did not complete. Its elapsed time measures the failed attempt. The first recorded closing difference was a brokerage balance on trial 42. That trial recovered. After saving in Excel, all 595,814 stored trial and funding cells matched an untouched results bank saved in the same version of Excel. The previous completion date and assumptions also matched.
+
+A separate Mac test replayed 11 trial selections, including the transitions from 41 to 42, 114 to 115 and 249 to 250. All 11 matched the independent results on the first attempt. The short sequence did not reproduce the failure seen during the full run. Recovery needs to pass the longer sequence before release.
 
 ### Earlier timings by plan length
 
