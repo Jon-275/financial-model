@@ -24,7 +24,7 @@ python3 -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
 node --test tests/gemini_review.test.mjs
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Start Here checks compare deposits, investment gains and ending balances against independently calculated amounts and verify the instructions for invalid entries. Protection tests check which inputs can be edited and whether formulas remain visible. The Node tests cover when Gemini should pass or fail a pull request.
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Start Here checks verify the links to Inputs, Summary and Appendix and confirm that the guide has no entry fields. Protection tests check which inputs can be edited and whether formulas remain visible. The Node tests cover when Gemini should pass or fail a pull request.
 
 These instructions cover the macro-enabled edition in development. Run the release, scenario and capture checks against your build until the new workbook is published. Set `RISK_TEST_WORKBOOK` to check a specific candidate.
 
@@ -107,6 +107,8 @@ Compare an Excel-saved run with the independently prepared example, including it
 ```sh
 python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-model.xlsm"
 ```
+
+For this fictional example and seed 2026, compare a fresh desktop run with the saved example using `--expect-reused 46` for 100 pairs or `--expect-reused 515` for 1,000 pairs. This also catches a change that preserves the financial results but quietly recalculates every flexible path. Use fresh, separate copies when timing two versions. Record the path count, Excel version, elapsed run time and the completion message on Risk_Settings.
 
 Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks household inputs, the fixed text on Start Here, investment profiles, stored text and file metadata. These checks run before the file checksum is approved. The template also requires empty formula and chart caches.
 

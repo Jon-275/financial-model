@@ -31,13 +31,11 @@ The workbook builder uses an independent annual model to populate the fictional 
 | Falling prices after Social Security starts | In two three-year examples, nominal benefits held at $950 when first claimed after deflation, and $1,000 when already claimed. The workbook and independent reader agreed on 576 annual financial values. |
 | Brokerage sales | Three Excel for Mac cases passed all 20 checks for retained shares, a sale followed by a deposit and investment income when no shares were sold. Five direct worksheet trials also matched 15,803 fields in the full fictional example. |
 | Native refresh and printing | Excel for Mac completed three paired paths and all 33 stresses in a development build. The 25,407 compared financial and funding fields agreed with the independent saved example to the cent. Excel printed Summary in six pages. |
-| Mac run times | Ten market pairs and 33 stresses completed in 64 seconds. One hundred pairs and 33 stresses completed in 84 seconds. Both timings include other tests running on the Mac. |
-| Repeated trial values | In the earlier 1,000-pair desktop run, seven fixed paths carried values from the preceding path and changed the three selected funding examples. The revised runner reconciles the annual capture and retries a repeated positive ending after a changed history. A fresh 100-pair Mac run completed all 233 outcomes in 78 seconds. All 65,706 primary fields and 378 ranked annual balances matched the independent calculation. |
-| Full native run | Excel for Mac completed 1,000 pairs and 33 stresses in 12 minutes 7 seconds with other tests running. All 2,033 outcomes agreed with the independent example, including 573,306 primary fields, all three selected path IDs, 378 annual balances and 14,367 funding-ledger fields. The run was compared with the finished report workbook. The final change only adjusted the nonprinting Run and Cancel labels. |
+| Annual balances and selected funding examples | An early run carried values from the preceding path into seven fixed paths and changed all three selected examples. The runner now checks each year's captured balances against its ledger and retries a suspicious repeated ending. The full Mac example matched all 573,306 trial fields, three selected path IDs, 378 annual balances and 14,367 detailed funding fields. |
 
 ## What takes time in Excel
 
-A separate Excel for Mac profiling run covered 100 pairs and all 33 stresses. Of its 70.13 seconds, Excel spent 67.22 seconds (95.85%) calculating and waiting for worksheets. Explicit worksheet reads and writes, including publication, took 0.21 seconds. The final report recalculation took 0.43 seconds and progress updates took 0.66 seconds. There were no retries. Improving worksheet calculation time has the greatest potential to bring the full run closer to the two-minute goal.
+A 100-pair run on the earlier worksheet runner took 70.13 seconds, including all 33 stresses. Excel spent 67.22 seconds recalculating worksheets. Reading and writing cells took 0.21 seconds, including publication. Updating the final report took 0.43 seconds.
 
 These tests used the same example inputs and retained the visible annual worksheets as the reference.
 
@@ -62,6 +60,27 @@ Excel for Mac 16.115 on macOS 26.6.2 ran the same fictional plan with the same s
 
 The 100-pair comparison used the same timing procedure for both runs. The earlier 1,000-pair measurement was taken with other tests running. All runs include the 33 stress cases. The full example still exceeds the two-minute target.
 
+### Longest supported plan
+
+The capacity test starts at age zero and ends at 125. It exercises all 126 annual positions, including the opening balance. The example has 61 positions, from age 35 through 95. Each run uses the same seed and includes all 33 required stress cases.
+
+| Paired paths | Example | Ages 0–125 |
+| ---: | ---: | ---: |
+| 1 | 16 sec | 37 sec |
+| 10 | 21 sec | 1 min 1 sec |
+| 100 | 58 sec | 3 min 50 sec |
+| 1,000 | 7 min 55 sec | Under investigation at trial 1569 |
+
+The first 1,000-pair capacity run stopped at flexible trial 1569. All 595,814 stored cells in the previous 100-pair batch were unchanged, including individual outcomes and ranked funding histories. The workbook marked the attempted refresh as failed. When run separately in Excel, the fixed and flexible versions of this path agreed on every financial field.
+
+An edit to the active wage assumption took 0.74 seconds in the example and 1.69 seconds at maximum capacity. A full deterministic recalculation took 0.24 and 0.59 seconds, respectively. The market simulation runs separately on request.
+
+### Interruption and recovery
+
+In a disposable copy, Excel for Mac cancelled a run at the first reusable pair, detected a changed seed, rejected an invalid trial and recovered from an error after three result ranges had been written. Each test preserved the previous outcomes, funding examples, completion date, inspection selector and protection settings. A comparison after saving and reopening matched all 595,814 stored trial and funding cells to the original example.
+
+When a required comparison formula was removed, Excel evaluated all 14 flexible trials directly. After the formula was restored, it reused all 14 and produced the same results. The harness called the public cancellation procedure. In a separate test, neither Esc nor Command–Period sent through desktop automation interrupted a live 45-second checkpoint. The previous financial results and Excel settings were preserved. The visible Cancel button still needs a verified click during a run.
+
 ## Release checks
 
-Verify a successful run after cancellation, changed assumptions, error handling, repeated runs, saved results after reopening and the unchanged base plan. Measure runs at the longest supported horizon and investigate the difference between the 12-minute full example run and the two-minute goal. Record the Excel version and test conditions. Recheck the finished workbook and printed report on the supported desktop platforms. [Release checklist](model-improvement-plan.md)
+The full risk refresh still needs faster annual calculations. Recheck financial results, controls and the six-page printout on the final release revision. The owner uses Excel for Mac. A native Windows test remains open. [Release checklist](model-improvement-plan.md)

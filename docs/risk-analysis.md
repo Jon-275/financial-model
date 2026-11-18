@@ -6,14 +6,14 @@ Market risk tests whether income and accessible savings pay the plan’s spendin
 
 1. Save a private copy of the macro-enabled `.xlsm` workbook before entering personal figures. Use desktop Excel and follow your organization’s macro rules. Excel for the web cannot run VBA. The workbook does not require a global change to macro security. [Microsoft compatibility guidance](https://support.microsoft.com/en-us/excel/work-with-vba-macros-in-excel-for-the-web)
 2. Complete **Inputs** and review the base funding result on **Summary**. Resolve missing inputs and calculation messages first.
-3. Review **Risk_Settings** and **Asset_Allocation**. Choose the number of paired paths, seed, spending policy and inflation mode. Use fewer paths for a quick comparison and 1,000 for the full run.
+3. Review the portfolio mix on **Asset_Allocation**. On **Risk_Settings**, enter how much spending you could cut and review the inflation assumptions. Use 100 paired market paths while editing and 1,000 for the final report. Keep the same seed when comparing plans. Both run sizes include all 33 stress cases.
 4. Choose **Run market risk** beside Summary’s navigation. The run shows progress and supports cancellation. Wait for the results to be marked current.
 5. Read Summary’s market paths, spending flexibility and inflation, longevity and medical tests. Open **Risk Results** for more detail or **Funding_Paths** for the annual cash flows of the three selected market paths.
 6. Choose the dollar view, then print **Summary** or save it as a PDF.
 
 Keep Excel’s calculation setting on **Automatic** while editing. Changes to the active financial assumptions mark the previous risk results out of date. Choose **Run market risk** again to replace them. A cancelled, failed or incomplete run does not supply current report results. Switching the dollar view uses the same completed run.
 
-The macro selects each trial, recalculates the visible annual engine and captures the results. It updates the report after a complete batch passes its checks. It does not run automatically when the file opens, saves or prints. The calculations stay in the workbook and do not need a separate risk report, Python installation or external service.
+Excel calculates annual cash flows in the visible worksheets. When the workbook verifies that flexible spending would leave every year unchanged, both spending policies use the same amounts. Each policy still has its own result. The report updates after the entire run passes its checks. You can open, save or print the workbook without starting a run.
 
 Earlier `.xlsx` releases used the local Python runner. Use the documentation from the matching release for those files.
 
@@ -28,7 +28,7 @@ To compare spending policies, enter a fixed trial number in **Risk_Trials** cell
 - **Fixed and flexible spending.** Both policies use the same returns and inflation for each paired path. Compare their success rates with the number of paths and years requiring cuts.
 - **Required stress tests.** Summary page 4 shows the inflation, longer-retirement and medical-budget comparisons. They are separate planning tests, each starting from the base plan.
 
-Print **Summary** for all six pages: outlook, retirement cash flow, market risk and decisions, inflation and longevity, input decisions, and spending and account decisions. The selected dollar view also applies to **Risk Results**, **Annual Detail** and **Funding_Paths**. Input decisions retain their opening-year amounts. [Print setup](model-guide.md#print-your-plan)
+The six-page **Summary** begins with the outlook and retirement cash flow, then covers market risk, inflation and longevity. The final two pages record the input, spending and account decisions. The selected dollar view also applies to **Risk Results**, **Annual Detail** and **Funding_Paths**. Input decisions retain their opening-year amounts. [Print setup](model-guide.md#print-your-plan)
 
 ## Spending flexibility
 

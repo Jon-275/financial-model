@@ -2,13 +2,13 @@
 
 The desktop workbook uses **Run market risk** to calculate the selected market paths and required stresses. The macro coordinates visible worksheet formulas. It does not contain tax, healthcare, withdrawal or account-access rules.
 
-The source-built project ran in desktop Excel for Mac. Its three-pair test included all 33 stresses and matched the independent example across 25,407 fields. The release checklist tracks interruption, larger runs and Windows testing. [Improvement plan](model-improvement-plan.md)
+Excel for Mac completed the fictional example in 7 minutes 55 seconds with 1,000 paired paths and all 33 stresses. Its outcomes and three detailed funding histories matched the independently calculated example. [Timing and recovery tests](native-risk-implementation.md)
 
 ## Run and inspect
 
-1. Finish Inputs, Asset_Allocation and Risk_Settings.
+1. Enter the plan on **Inputs**. Review the portfolio on **Asset_Allocation** and the market assumptions on **Risk_Settings**. Use 100 paired paths to compare edits and 1,000 for the final report.
 2. Select **Run market risk** on Summary. Progress appears in Excel's status bar.
-3. To stop early, choose **Cancel** beside the run button or press Esc. Excel keeps the previous completed batch. Run the scenarios again to update the report.
+3. To request a stop, choose **Cancel** beside the run button. Check that the status changes to cancelled. Excel keeps the previous completed batch. Run the scenarios again to update the report.
 4. Read the refreshed Summary. The workbook records the completed run's date, assumptions, seed and number of paths.
 5. Inspect Risk_Trials for individual outcomes and Funding_Paths for the complete low, median and high paths. Their calculations remain visible behind Appendix.
 
@@ -16,7 +16,7 @@ A run uses the workbook's own formulas and needs no external service or Python p
 
 ## Calculation and publication
 
-The public procedures are `RunMarketRisk` and `CancelMarketRisk` in [RunMarketRisk.bas](../tools/vba/RunMarketRisk.bas). The first prevents a second overlapping run; the second requests cancellation at the next progress update. Esc uses Excel's normal error-18 interruption mechanism. [Microsoft cancellation guidance](https://learn.microsoft.com/en-us/office/vba/api/excel.application.enablecancelkey)
+The runner prevents a second overlapping run. The cancellation procedure requests a stop at the next checkpoint. Excel can also deliver a keyboard interruption as error 18. The recovery test verified the procedure. The Mac keyboard test timed out, and the button still needs a verified click during calculation. [Runner source](../tools/vba/RunMarketRisk.bas) · [Microsoft cancellation guidance](https://learn.microsoft.com/en-us/office/vba/api/excel.application.enablecancelkey)
 
 A run records both spending policies for every requested market path. It also records 26 early-loss tests and seven inflation, longevity and medical tests. The runner collects the results in memory before updating the report.
 
@@ -57,7 +57,7 @@ For worksheets protected without a password, the runner temporarily allows macro
 
 `tests/test_macro_runner_contract.py` checks the live compiler-to-runner range contract, field order, release identifiers, publication ordering, cleanup guards and prohibited automation interfaces. These are source checks, not execution evidence.
 
-For native algorithm checks, append `tools/vba/tests/RunnerChecks.fragment` to a disposable copy of the module, import it into a test workbook and run `VerifyMarketRiskRunner`. The checks use independent expected trial coverage and a hand-specified path order. Keep this test-only fragment out of the release module.
+For native algorithm checks, append `tools/vba/tests/RunnerChecks.fragment` to a disposable copy of the module, import it into a test workbook and run `VerifyMarketRiskRunner`. The checks cover trial numbers, path order, flexible spending, cancellation and numeric controls. Excel for Mac confirmed that a numeric zero is a valid seed, and rejected a blank cell and a number stored as text. The earlier reader treated a blank as zero. Keep this test-only fragment out of the release module.
 
 Native release tests must also cover a successful complete run, changed inputs during a run, Esc and button cancellation, a rejected trial, publication failure, a repeat run, both calculation modes and worksheet protection. Confirm prior results and global Excel settings after each failure. Compare seeded financial results with the independent model, then measure 10, 100 and 1,000 paired paths at the example and maximum horizons on Mac and Windows.
 
