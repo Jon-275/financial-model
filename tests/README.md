@@ -49,6 +49,8 @@ Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory,
 
 Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` to check Marketplace coverage when inflation changes each year. It compares the workbook and the Python calculation with expected one- and two-person poverty guidelines and checks a case near the credit cutoff.
 
+Run `python3 tests/survivor_floor_acceptance.py workbook/retirement-model.xlsm` to check the medical reserve after one spouse dies. It verifies the survivor’s medical costs with and without Social Security income.
+
 The phase-readiness test checks which pay and spending fields a plan needs. It also checks when the longer market tests require a retirement budget beyond the selected end age.
 
 Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
