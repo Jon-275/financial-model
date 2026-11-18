@@ -81,7 +81,19 @@ In a longer test, the first incorrect annual balance and the ending balance matc
 
 The next test calculated each year's visible formulas in dependency order. Eight selected trials and six selections that changed the end age matched the independent model. A 100-pair run using that order throughout took 160.64 seconds. All 80,454 compared fields matched on the first attempt, including the three complete funding histories.
 
-The same method completed 1,000 pairs through age 125 in 46 minutes 21 seconds. All 2,033 outcomes, the three ranked path IDs and their funding histories matched across 588,054 fields. Excel reused 501 flexible results and accepted every directly calculated path on its first attempt. This schedule preserved the worksheet calculations and exceeded the five-minute target. The fixture had no scheduled one-time expenses. The release also needs tests on the revision that carries those expenses into each trial.
+The same method completed 1,000 pairs through age 125 in 46 minutes 21 seconds. All 2,033 outcomes, the three ranked path IDs and their funding histories matched across 588,054 fields. Excel reused 501 flexible results and accepted every directly calculated path on its first attempt. This schedule preserved the worksheet calculations and exceeded the five-minute target. The fixture had no scheduled one-time expenses. A separate test covered the corrected expense links. Two bills in the same calendar year were added together and adjusted for the prices on that path. Increasing a scheduled bill in a fictional plan marked its old results out of date. After a refresh, the fixed and flexible plans both showed their first shortfall at age 55. Across the two tests, all 35 outcomes and three detailed funding schedules per test matched the independent results.
+
+### Smaller runs on the corrected expense schedule
+
+Each pair uses the same markets under fixed and flexible spending. The following Mac runs also included all 33 stress cases. Excel calculated each year in order and checked the accounts. The independent comparison covered every reported outcome and the complete funding records for the three selected paths.
+
+| Pairs | Outcomes | Example, ages 35–95 | Maximum, ages 0–125 | Fields compared per run |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 35 | 9.0 sec | 17.0 sec | 24,618 |
+| 10 | 53 | 10.8 sec | 21.6 sec | 29,694 |
+| 100 | 233 | 35.0 sec | 5 min 15 sec | 80,454 |
+
+The six runs matched on the first attempt. In a separate recovery test, the first attempt deliberately reported the wrong brokerage balance at age 36. Excel identified the account and age, recalculated the same path in year order and matched all 24,618 fields after one retry.
 
 ### Earlier timings by plan length
 
@@ -112,4 +124,4 @@ When a required comparison formula was removed, Excel evaluated all 14 flexible 
 
 ## Release checks
 
-First reproduce trial 250 from the preceding sequence and reconcile the first failing account against the independent annual results. Then test 1, 10 and 100 pairs on both plan lengths. Compare the 100-pair example with and without verified reuse under the same calculation and checking method. Require every outcome, rank and funding history to agree before interpreting the timing. Finally, run 1,000 pairs at each horizon and repeat the interruption, protection and six-page print checks on the same release revision. The targets remain two minutes for the example and five minutes for the maximum horizon. The owner uses Excel for Mac. A native Windows test remains open. [Release checklist](model-improvement-plan.md)
+Recalculating each year in order completed the sequence that had failed at trial 250. Compare that schedule with using it only when a trial fails its annual checks. Test 1, 10 and 100 pairs on both plan lengths. Compare the 100-pair example with and without verified reuse under the same calculation and checking method. Require every outcome, rank and funding history to agree before interpreting the timing. Finally, run 1,000 pairs at each horizon and repeat the interruption, protection and six-page print checks on the same release revision. The targets remain two minutes for the example and five minutes for the maximum horizon. The owner uses Excel for Mac. A native Windows test remains open. [Release checklist](model-improvement-plan.md)
