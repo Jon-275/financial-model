@@ -116,18 +116,6 @@ def read_stages(source):
         found = re.search(pattern, setup)
         require(found and bindings.get(found[1]) == sheet, f'Missing or incorrect annual range for {sheet}')
         widths[sheet] = number(found[2])
-    def parse(part):
-        steps = []
-        for line in (s.strip() for s in part.splitlines()):
-            if line.endswith('Year.Calculate'):
-                key = line.removesuffix('.Calculate')
-                require(key in SHEETS, f'Unknown annual VBA range {key}')
-                steps.append(SHEETS[key])
-            elif line.startswith('solver.Range("BE2:BE'):
-                steps.append('sources')
-            elif line.startswith('solver.Range("A" & firstSolverRow'):
-                steps.append('solve')
-        return steps
     fixed = re.search(r'solver\.Range\("BE2:BE(\d+)"\)\.Calculate', setup)
     links = re.search(r'firstSourceRow = (\d+) \+ \(yearRow - (\d+)\) \* (\d+)', later)
     require(fixed and links, 'Funding source ranges are missing')
@@ -138,7 +126,38 @@ def read_stages(source):
             f'firstSolverRow + {ROWS - 1}' in later, 'Funding solver row count differs from its generator')
     last_col = re.search(r'firstSolverRow & ":([A-Z]+)"', later)
     require(last_col, 'Funding solver range is missing')
-    return (parse(opening), parse(later)), widths, (prefix, next_source, base_row, stride), number(last_col[1])
+    first_source = f'solver.Range("BE2:BE{prefix}").Calculate'
+    later_source = f'solver.Range("BE" & firstSourceRow & ":BE" & (firstSourceRow + {stride - 1})).Calculate'
+    solver = f'solver.Range("A" & firstSolverRow & ":{last_col[1]}" & (firstSolverRow + {ROWS - 1})).Calculate'
+
+    def parse(part):
+        steps = []
+        for text in part.splitlines():
+            line = text.strip()
+            require(not line.startswith(('If ', 'Else', 'End If')), f'Unclassified annual VBA branch: {line}')
+            if line.endswith('Year.Calculate'):
+                key = line.removesuffix('.Calculate')
+                require(key in SHEETS, f'Unknown annual VBA range {key}')
+                steps.append(SHEETS[key])
+            elif line in (first_source, later_source):
+                steps.append('sources')
+            elif line == solver:
+                steps.append('solve')
+            else:
+                require('.Calculate' not in line, f'Unclassified annual calculation: {line}')
+        return steps
+
+    # Year 6 uses the opening source block. Each subsequent year has its own
+    # source block. Ensure that each branch actually calculates its inputs.
+    before, selector, remainder = later.partition('            If yearRow = 6 Then\n')
+    initial, otherwise, remainder = remainder.partition('\n            Else\n')
+    following, end_if, after = remainder.partition('\n            End If\n')
+    require(selector and otherwise and end_if, 'The separate first-year and later funding source branches are missing')
+    require(initial.strip() == first_source and following.rstrip().endswith(later_source),
+            'Both funding source branches must calculate their own input ranges')
+    orders = (parse(opening), parse(before) + parse(initial) + parse(after),
+              parse(before) + parse(following) + parse(after))
+    return orders, widths, (prefix, next_source, base_row, stride), number(last_col[1])
 
 
 def verify_funding_cleanup(source, linked_horizon, solver_width):
@@ -369,7 +388,7 @@ def audit(workbook, vba):
                     require(addr <= prefix, f'Unrefreshed first-year funding source BE{addr}')
             graph['sources',0] = set().union(*(current_deps(source_rows[i],y) for i in linked))
             graph['solve',0] = {('sources',0)} | set().union(*(current_deps(ref,y) for ref in solver_direct[y]))
-        walk_order(graph, orders[int(y>FIRST)])
+        walk_order(graph, orders[min(y - FIRST, 2)])
     for sheet, trial_row, last_column in captures:
         graph = {}
         for col, links in terminals[sheet].items():

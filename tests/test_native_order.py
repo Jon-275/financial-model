@@ -1,7 +1,7 @@
 """The dependency check must reject a missing stage and unsafe dynamic addresses."""
 import unittest
 from pathlib import Path
-from native_order_acceptance import annual_reference, public_input_link, references, solver_references, verify_funding_cleanup, walk_order
+from native_order_acceptance import annual_reference, public_input_link, read_stages, references, solver_references, verify_funding_cleanup, walk_order
 
 
 class OrderedCalculationTests(unittest.TestCase):
@@ -42,6 +42,16 @@ class OrderedCalculationTests(unittest.TestCase):
             list(solver_references(2, 2, 'A3', 'B2:B124', 2, 41))
         local = list(solver_references(2, 2, 'A2', 'B2:B124', 2, 41))
         self.assertEqual({ref.top for ref in local}, {2, 124})
+
+    def test_later_funding_inputs_must_be_calculated_before_their_withdrawal_search(self):
+        source = (Path(__file__).resolve().parents[1] / 'tools/vba/RunMarketRisk.bas').read_text()
+        later_source = 'solver.Range("BE" & firstSourceRow & ":BE" & (firstSourceRow + 35)).Calculate'
+        solve = 'solver.Range("A" & firstSolverRow & ":AO" & (firstSolverRow + 122)).Calculate'
+        self.assertEqual(source.count(later_source), 1)
+        self.assertEqual(source.count(solve), 1)
+        unsafe = source.replace(later_source, '').replace(solve, solve + '\n            If yearRow > 6 Then ' + later_source)
+        with self.assertRaisesRegex(ValueError, 'funding source branches'):
+            read_stages(unsafe)
 
     def test_cumulative_index_endpoints_are_both_visible(self):
         rr=list(references('MAX(INDEX($G$5:G12,2):G12)','Trial_Projection'))
