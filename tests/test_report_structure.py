@@ -1,18 +1,29 @@
 """Protect report sequencing and prevent content from being merged away."""
 from collections import defaultdict
+from datetime import datetime
+import os
+from pathlib import Path
+import subprocess
+import sys
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from zipfile import ZipFile
 
 from lxml import etree
+from openpyxl import Workbook, load_workbook
 from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import get_column_letter, range_boundaries
+from openpyxl.utils.datetime import CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900
 
 import input_record
 import native_package
 import native_results
+import native_funding_paths
 import plan_report
 import report_layout
 import risk_presentation
+from xlsx_values import X, sheet_parts
 
 
 class ReportStructureTests(unittest.TestCase):
@@ -98,6 +109,63 @@ class ReportStructureTests(unittest.TestCase):
         for style, addresses in groups.items():
             for address in addresses:
                 self.assertEqual(table[address], style, address)
+
+    def test_live_and_saved_trial_columns_share_display_units(self):
+        default = Path(__file__).resolve().parents[1] / 'workbook/retirement-model.xlsm'
+        with ZipFile(os.environ.get('RISK_TEST_WORKBOOK', default)) as archive:
+            parts = sheet_parts(archive)
+            formats = etree.fromstring(archive.read('xl/styles.xml')).find(X+'cellXfs')
+            def format_id(style):
+                return int(formats[int(style)].get('numFmtId','0'))
+            # Only read the column definitions and current row from the large trial ledger.
+            with archive.open(parts['Risk_Trials']) as sheet:
+                columns = {}
+                for _, node in etree.iterparse(sheet, events=('end',), tag=(X+'col', X+'row')):
+                    if node.tag == X+'col':
+                        for col in range(int(node.get('min')), int(node.get('max'))+1):
+                            columns[get_column_letter(col)] = node.get('style')
+                    elif node.get('r') == '7':
+                        for col in ('B','C','D','E','F','I','K','L','AB','AE','AG'):
+                            current = node.find(f"{X}c[@r='{col}7']")
+                            self.assertEqual(format_id(current.get('s')), format_id(columns[col]), col)
+                        self.assertEqual(format_id(columns['AB']), 14)
+                        break
+                else:
+                    self.fail('Missing current trial row')
+            with archive.open(parts[native_funding_paths.DATA_SHEET]) as sheet:
+                for _, cols in etree.iterparse(sheet, events=('end',), tag=X+'cols'):
+                    source = list(cols)
+                    self.assertEqual(source[1].get('style'), source[native_funding_paths.SIGNATURE_COLUMN-1].get('style'))
+                    break
+                else:
+                    self.fail('Missing funding path column formats')
+
+    def test_date_formula_cache_uses_destination_workbook_epoch(self):
+        expected = datetime(2026, 11, 17, 9, 30)
+        cache = Path(__file__).resolve().parents[1] / 'tools/cache_model.py'
+        with TemporaryDirectory() as folder:
+            template, checked, output = [Path(folder) / name for name in ('template.xlsx','values.xlsx','output.xlsx')]
+            for source_epoch, destination_epoch in ((CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900),
+                                                    (CALENDAR_WINDOWS_1900, CALENDAR_MAC_1904)):
+                with self.subTest(destination_epoch=destination_epoch):
+                    book = Workbook()
+                    book.epoch = destination_epoch
+                    book.active.title = 'Inputs'
+                    book.active['B70'] = 1
+                    summary = book.create_sheet('Summary')
+                    summary['B12'] = '=NOW()'
+                    summary['B12'].number_format = 'yyyy-mm-dd hh:mm'
+                    book.save(template)
+                    book.epoch = source_epoch
+                    summary['B12'] = expected
+                    book.save(checked)
+                    subprocess.run([sys.executable, str(cache), str(template), str(checked), str(output)],
+                                   check=True, capture_output=True)
+                    result = load_workbook(output, data_only=True, read_only=True)
+                    try:
+                        self.assertEqual(result['Summary']['B12'].value, expected)
+                    finally:
+                        result.close()
 
     def test_new_named_ranges_precede_later_workbook_elements(self):
         x = native_package.X

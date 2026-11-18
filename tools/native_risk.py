@@ -61,7 +61,7 @@ def _settings(m):
     m.put('Risk_Settings','A40','The success rate depends on these assumptions. It is not a forecast or guarantee.','report_caption')
     m.put('Risk_Settings','A42','Last run status','report_section')
     m.put('Risk_Settings','A43','=IF(Risk_Data!Z6="","No completed workbook run",Risk_Data!Z6)','report_body')
-    m.put('Risk_Settings','A44','=IF(Risk_Data!Z9="","",Risk_Data!Z9)','report_caption')
+    m.put('Risk_Settings','A44','=IF(Market_Paths!AL3<>"OK",Market_Paths!AL3,IF(Risk_Data!Z9="","",Risk_Data!Z9))','report_caption')
 
 
 def _clone_annual(m, baseline):
@@ -238,8 +238,12 @@ def _validation():
         'Risk_Settings!B34>=0,Risk_Settings!B34<1,Risk_Settings!B35>-1,'
         'Risk_Settings!B35<=Inputs!B14,Risk_Settings!B36>=Inputs!B14),TRUE())',
     ]
+    retirement_in_tests = 'MAX(Inputs!B53,105)>=MAX(Inputs!B10,Inputs!B8+1)'
+    missing_budget = 'COUNT(INDEX(Inputs!D37:F37,1,Inputs!B4))<>1'
     return ('=IF(Inputs!B70<2,"Extend or correct the plan",'
-            f'IFERROR(IF(AND({",".join(checks)}),"OK","Review risk assumptions"),"Review risk assumptions"))')
+            f'IFERROR(IF(AND({retirement_in_tests},{missing_budget}),'
+            '"Enter retirement spending on Inputs for the longer market tests.",'
+            f'IF(AND({",".join(checks)}),"OK","Review risk assumptions")),"Review risk assumptions"))')
 
 
 def _bind_annual(m):

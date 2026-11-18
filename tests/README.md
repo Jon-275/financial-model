@@ -17,6 +17,7 @@ PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_native_*.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_macro_runner_contract.py'
 PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_protection.py'
 python3 tests/input_validation_acceptance.py
+python3 tests/phase_readiness_acceptance.py workbook/retirement-model.xlsm
 python3 tests/workbook_protection_acceptance.py workbook/retirement-model.xlsm
 python3 tests/native_integrity_acceptance.py
 python3 tests/report_formula_acceptance.py
@@ -24,7 +25,7 @@ python3 -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
 node --test tests/gemini_review.test.mjs
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Start Here checks compare deposits, investment gains and ending balances against independently calculated amounts and verify the instructions for invalid entries. Protection tests check which inputs can be edited and whether formulas remain visible. The Node tests cover when Gemini should pass or fail a pull request.
+The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Start Here checks verify its instructions and links against the published guide. Protection tests check which inputs can be edited and whether formulas remain visible. The Node tests cover when Gemini should pass or fail a pull request.
 
 These instructions cover the macro-enabled edition in development. Run the release, scenario and capture checks against your build until the new workbook is published. Set `RISK_TEST_WORKBOOK` to check a specific candidate.
 
@@ -47,6 +48,8 @@ Each case runs on a temporary copy in LibreOffice. For a completed native run, t
 Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
 
 Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` to check Marketplace coverage when inflation changes each year. It compares the workbook and the Python calculation with expected one- and two-person poverty guidelines and checks a case near the credit cutoff.
+
+The phase-readiness test checks which pay and spending fields a plan needs. It also checks when the longer market tests require a retirement budget beyond the selected end age.
 
 Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in desktop Excel.
 

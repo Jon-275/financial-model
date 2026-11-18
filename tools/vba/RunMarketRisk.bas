@@ -42,7 +42,7 @@ Public Sub RunMarketRisk()
     Dim settings As ExcelState, savedSettings As Boolean
     Dim trialCurrent As Range, trialResults As Range, trialIDs As Range
     Dim pathCurrent As Range, pathResults As Range, pathIDs As Range
-    Dim selector As Range, previousSelector As Variant, savedSelector As Boolean
+    Dim selector As Range, previousSelector As Variant, savedSelector As Boolean, marketCheck As Variant
     Dim trialProtection As Variant, resultProtection As Variant
     Dim preparedTrials As Boolean, preparedResults As Boolean, preparedPaths As Boolean
     Dim pathProtection As Variant, selectorRestored As Boolean
@@ -100,8 +100,9 @@ Public Sub RunMarketRisk()
     selectorTouched = True
     selector.Value2 = 0
     Application.Calculate
-    RequireText book.Worksheets("Market_Paths").Range("AL3").Value2, "OK", _
-                "Review the plan and risk assumptions before running market risk."
+    marketCheck = book.Worksheets("Market_Paths").Range("AL3").Value2
+    If VarType(marketCheck) <> vbString Then RaiseRunError "Review the plan and risk assumptions before running market risk."
+    RequireText marketCheck, "OK", CStr(marketCheck)
     count = WholeNumber(book.Worksheets("Risk_Settings").Range("B29").Value2, 1, MAX_PAIRED_PATHS, "Enter 1 to 1,000 paired paths on Risk_Settings.")
     seed = SeedNumber(book.Worksheets("Risk_Settings").Range("B30").Value2)
     context = AssumptionRecord(book)

@@ -50,8 +50,9 @@ def _read_plan(calculated):
     try:
         if book['Risk_Data']['Z2'].value != SCHEMA or book['Risk_Data']['Z4'].value != ENGINE:
             raise ValueError('Build the native template before preparing its market results.')
-        if book['Market_Paths']['AL3'].value != 'OK':
-            raise ValueError('Review the market assumptions before building the template.')
+        market_check = book['Market_Paths']['AL3'].value
+        if market_check != 'OK':
+            raise ValueError(market_check or 'Review the market assumptions before building the template.')
         if book['Risk_Data']['Z1'].value != 'missing':
             raise ValueError('Build from a fresh template with empty market result areas.')
         context = book['Market_Paths']['BB3'].value

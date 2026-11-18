@@ -17,6 +17,11 @@ ANNUAL_FIRST=34
 ANNUAL_CAPACITY=126
 SIGNATURE_COLUMN=ANNUAL_FIRST+2*ANNUAL_CAPACITY
 SIGNATURE=L(SIGNATURE_COLUMN)
+COLUMN_STYLES = {
+    1:'whole', 2:'report_caption', 3:'whole', 4:'whole', 5:'whole',
+    9:'whole', 11:'whole', 12:'decimal', 28:'report_date', 31:'decimal', 33:'whole',
+    SIGNATURE_COLUMN:'report_caption', SIGNATURE_COLUMN+1:'whole', SIGNATURE_COLUMN+2:'whole',
+}
 RANK=L(SIGNATURE_COLUMN+1)
 FAILURE_RANK=L(SIGNATURE_COLUMN+2)
 CONTEXT=f'{MARKET}!$BB$3'
@@ -87,7 +92,7 @@ def _context(m,baseline):
 
 
 def _outputs(m):
-    put=lambda a,v,s='money':m.put(SHEET,a,v,s)
+    put=lambda a,v,s='report_money':m.put(SHEET,a,v,s)
     n='Trial_Inputs!$B$70'
     p=lambda c:f'Trial_Projection!${c}$5:${c}$130'
     cash=lambda c:f'Trial_Cash_Flow!${c}$5:${c}$130'
@@ -120,7 +125,7 @@ def _outputs(m):
         put(f'{L(column)}6',label,'header')
         if column in (2,28):wrapped=formula
         else:wrapped=f'IF({has},{formula},{0 if column==3 else chr(34)+chr(34)})'
-        put(address,'='+wrapped)
+        put(address,'='+wrapped,COLUMN_STYLES.get(column,'report_money'))
     for offset in range(ANNUAL_CAPACITY):
         for nominal in (False,True):
             column=ANNUAL_FIRST+offset+int(nominal)*ANNUAL_CAPACITY
