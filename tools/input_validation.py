@@ -132,6 +132,10 @@ def core_input_checks():
                 if last is not None:
                     conditions.append(f'{ref}<={last}')
                 expression = 'AND(' + ','.join(conditions) + ')'
+            if row in (12, 36, 37):
+                # The selected phase requires pay and spending only in years that use them.
+                # Check the input itself: a reference to an empty scenario cell may display as zero.
+                expression = f'OR(ISBLANK(INDEX(D{row}:F{row},1,B4)),{expression})'
             expressions.append(expression)
         if expressions:
             # Each IFERROR isolates bad pasted text or Excel errors to the relevant inputs.
