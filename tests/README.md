@@ -47,7 +47,7 @@ Each case runs on a temporary copy in LibreOffice. For a completed native run, t
 
 Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
 
-Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` to check Marketplace coverage when inflation changes each year. It compares the workbook and the Python calculation with expected one- and two-person poverty guidelines and checks a case near the credit cutoff.
+Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` to check Marketplace coverage when inflation changes each year. It tests plans starting in 2026, 2027 and 2030, compares the workbook and Python results with expected one- and two-person guidelines, and checks a case near the credit cutoff.
 
 Run `python3 tests/survivor_floor_acceptance.py workbook/retirement-model.xlsm` to check the medical reserve after one spouse dies. It verifies the survivor’s medical costs with and without Social Security income.
 

@@ -2,10 +2,10 @@
 from math import inf, nan, nextafter
 import unittest
 
+from xlsx_read import Cell, Sheet, address_parts, col_letter
 from native_capture_acceptance import expected_cut, validate_cut_decisions, validate_uncut_pairs
 from native_excel_acceptance import check_reuse_note
 import native_capture as trial
-from xlsx_read import Cell, Sheet, address_parts, col_letter
 
 
 class UncutPairTests(unittest.TestCase):
