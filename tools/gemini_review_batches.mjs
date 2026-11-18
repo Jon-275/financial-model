@@ -1,5 +1,5 @@
 /** Prepare complete, bounded review inputs from the GitHub changed-file response. */
-export const patchLimit = 120_000;
+export const patchLimit = 40_000;
 
 function isReviewable(path) {
   return /\.(?:pyi?|[cm]?js|sh|bas|cls|frm|fragment)$/i.test(path) ||
