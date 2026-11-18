@@ -2,7 +2,7 @@
 
 The desktop workbook uses **Run market risk** to calculate the selected market paths and required stresses. The macro coordinates visible worksheet formulas. It does not contain tax, healthcare, withdrawal or account-access rules.
 
-With the annual account checks enabled, Excel for Mac completed the 100-pair example through age 95 in 107.218 seconds. All 233 outcomes and three funding histories matched the independent calculation. A 1,000-pair test through age 125 stopped at trial 250 when its balances still differed after a fresh calculation. The workbook kept the previously completed results and marked the refresh as failed. The maximum-horizon release check remains open. [Timing and recovery tests](native-risk-implementation.md)
+On the test Mac, the 100-pair example through age 95 completed in 63 seconds. The workbook produced all 233 outcomes, including 33 stress cases. Longer horizons and more paths take more time. [Desktop timing and verification](native-risk-implementation.md)
 
 ## Run and inspect
 
@@ -29,6 +29,12 @@ The runner ranks fixed paths by ending balance in today's dollars. Ties are reso
 The complete annual schedules for those three paths are captured before publication. The runner then replaces the primary results, their identifiers, the three full paths and the completed-run record. It keeps backups until the workbook confirms that the results are current. A publication error restores those backups and records failure. Ordinary cancellation before publication leaves them untouched.
 
 Assumption records must match before each capture and immediately before publication. Every captured value is checked for Excel errors. A path with failed calculation checks stops the run. An interrupted or failed run remains visibly unavailable to the report until a successful replacement run.
+
+### When an account balance fails a check
+
+Excel recalculates each trial it evaluates and checks 12 annual account balances against the opening accounts, transactions and returns. The saved result must agree with the annual ledger in both dollar views. The three ranked funding examples must also agree with their selected market paths.
+
+If a closing balance differs, a required check is missing or a changed path repeats the preceding positive ending balance, the runner recalculates that trial in year order. If the discrepancy persists, it stops before publishing new results. The message identifies the trial and the first balance or check that failed. Enter the trial number in **Risk_Trials B3** and look at columns N through Y on **Trial_Checks**. The appendix retains the worksheet formulas for inspection. [Checks and tests for maintainers](../tests/README.md)
 
 ## Workbook interface
 
@@ -68,5 +74,3 @@ The public builder uses `tools/native_bootstrap.py` to populate the synthetic ex
 The build recalculates the report and checks its completion status, number of captured rows and the three selected funding-path IDs. It preserves the original Excel package and transfers calculated values and chart data from the verification copy. To compare a built example with individual worksheet trials, run `python tests/native_capture_acceptance.py example.xlsx --codes 1,1001,2001,2101,2205`. Use `--codes all` to verify each captured trial. Excel users refresh their own plans with **Run market risk** on Summary.
 
 Completion checks also verify that each row has its expected trial number. The three stored funding paths must match the workbook's independently calculated low, median and high ranks. If a trial identifier or ranked path is changed manually, the Summary marks the batch incomplete. To test the integrity checks, run `python tests/native_integrity_acceptance.py`.
-
-During a refresh, Excel performs a full calculation before reading each trial it evaluates. A separate check then recalculates each annual account closing from its opening balance, transactions and return. This catches stale balances that can survive a full calculation. Ordinary edits continue to use Excel’s automatic recalculation. The runner compares each year's balance in both dollar views with the trial ledger. A flexible path with no spending cuts must match its fixed counterpart. A changed path that repeats the previous positive ending balance is recalculated and checked again. Each of the three ranked funding paths must also match the selected fixed path’s annual closing balances. **Trial_Checks** shows all 12 differences for each active year in columns N through Y. If any check is missing or differs, the runner resets the trial selector and calculates again. An unresolved mismatch stops the run before it replaces the saved results. The error gives the trial number. Enter that number in **Risk_Trials** cell B3 and review the first nonzero difference in **Trial_Checks**, columns N through Y. To check the saved no-cut pairs, run `python tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes pairs`.
