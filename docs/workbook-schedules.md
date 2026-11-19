@@ -10,7 +10,7 @@ Enter household figures on **Inputs** and read the plan on **Summary**. Print **
 
 Choose profiles for the working and retirement years on **Inputs** in rows 15 and 16. On **Asset_Allocation**, review the stock, bond, cash and real-asset weights for each taxable, traditional, Roth and HSA account. Edit the blue cells. Each account column must total 100%.
 
-**Investment assumptions used by the plan** shows each account's annual nominal return after fees. The portfolio figure weights the accounts by their opening balances. Interest and qualified dividends are included in the taxable return. Their yields also determine taxable income. Volatility and correlations determine how much the simulated returns vary together.
+**Investment assumptions used by the plan** shows each account’s expected return after fees and before inflation. The portfolio return weights each account by its opening balance. The taxable return includes interest and qualified dividends. Their yields also determine taxable income. Volatility sets how much returns vary. Correlations set how closely they move together.
 
 ## Income_Targeting
 
@@ -20,7 +20,7 @@ Use **Income_Targeting** to test a Roth conversion in one retirement year. In **
 
 ## Risk_Settings and Risk Results
 
-On **Risk_Settings**, B6 sets the opening balance that triggers a spending cut as a share of the planned balance. B7 sets the cut to the flexible budget, B8 sets the share of living costs you could change, and B10 shows the resulting cut to non-mortgage living costs. Mortgage payments, healthcare and scheduled bills remain due. The rule is checked each year.
+On **Risk_Settings**, B6 sets the trigger as a percentage of the base plan’s opening balance for that year. B8 is the share of living costs you could reduce. B7 sets how much to cut from that share. B10 shows the combined cut to non-mortgage living costs. Mortgage payments, healthcare and scheduled bills remain due. The rule is checked each year.
 
 Choose **Run market risk** on **Summary** after changing the plan. In **Risk Results**, read the fixed and flexible funding rates alongside the number of paths that needed spending cuts and the number of years those cuts lasted. The median includes flexible paths with no cuts. The early-loss tests show how sustained stock losses at retirement affect each spending policy. [Market risk guide](risk-analysis.md)
 
@@ -52,9 +52,9 @@ One owner's pre-tax traditional IRA and 401(k) savings share a balance and a set
 
 ## Checks and Report_Data
 
-**Checks** reconciles income, withdrawals, payments, deposits, tax due and account balances. It also checks Roth access, taxable cost basis, the Marketplace credit and HSA use. A year can reconcile and still have unpaid bills. A **Review** status points to a discrepancy or a funding calculation that needs attention.
+**Checks** reconciles income, withdrawals, payments, deposits, tax due and account balances. It also checks Roth access, taxable cost basis, the Marketplace credit and HSA use. The totals can agree even if bills went unpaid. A **Review** status flags a difference or a funding calculation to inspect.
 
-**Report_Data** supplies the annual values used on **Summary**, including the chart series in the selected dollar view. It includes the opening position and stops displaying figures after the plan horizon.
+**Report_Data** supplies the annual values used on **Summary**, including chart values in the selected dollar view. The figures run from the opening balance through the selected end age.
 
 ## Funding_Calc and Targeting_Calc
 
@@ -70,4 +70,4 @@ In either calculation table, filter **Calculation step** to **Selected draw** fo
 
 On **Risk_Trials**, enter a trial number in B3 to inspect its results. **Random_Numbers** shows how the seed produces repeatable draws. **Market_Paths** shows that trial's returns, inflation and spending cuts. The **Trial_** schedules apply the same account, healthcare, tax and cash-flow formulas as the base plan. **Risk_Data** uses all completed trials to calculate report statistics and checks the run against the current assumptions.
 
-On **Trial_Checks**, columns N–Y compare the recorded account balances with the amounts calculated from openings, transactions and returns. All twelve differences should be zero in an active year. If column J says **Review**, inspect those differences and the cash-flow status in **Trial_Cash_Flow** column AM for the same year. [How the runner checks results](macro-runner.md)
+On **Trial_Checks**, columns N–Y compare closing balances with the amounts calculated from opening balances, transactions and returns. All twelve differences should be zero in an active year. If column J says **Review**, inspect those differences and the cash-flow status in **Trial_Cash_Flow** column AM for the same year. [How the runner checks results](macro-runner.md)

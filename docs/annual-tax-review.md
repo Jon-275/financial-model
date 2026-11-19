@@ -1,6 +1,6 @@
 # Annual tax data review
 
-Review the workbook’s tax and benefit figures before the first release for each tax year, and whenever an agency publishes or revises a figure the model uses. Record the sources and effective years even if the workbook needs no changes.
+Check tax and benefit figures before the first release for each tax year and whenever an agency changes a figure the workbook uses. Record the date, source and effective year even if the figures stay the same.
 
 ## Check the published figures
 
@@ -9,13 +9,13 @@ Open **Tax_Tables** and use **Find a rate or limit** to reach each table. Check 
 | Check | Where to verify |
 | --- | --- |
 | Federal income tax brackets, deductions, capital gains rates and alternative minimum tax | [IRS Internal Revenue Bulletin](https://www.irs.gov/irb) |
-| Social Security wage limit | [Social Security Administration](https://www.ssa.gov/oact/cola/cbb.html) |
+| Social Security wage limit | [Social Security taxable wage limits by year](https://www.ssa.gov/oact/cola/cbb.html) |
 | California brackets, deductions, credits and disability insurance | [Franchise Tax Board](https://www.ftb.ca.gov/file/personal/tax-calculator-tables-rates.asp) · [Employment Development Department](https://edd.ca.gov/en/payroll_taxes/rates_and_withholding) |
 | IRA contribution and income limits, and required withdrawals | [IRS retirement contribution guidance](https://www.irs.gov/retirement-plans/plan-participant-employee/retirement-topics-contributions) · [IRS distribution guidance](https://www.irs.gov/publications/p590b) |
 | Marketplace credit percentages and the poverty guidelines used for the coverage year | [IRS Internal Revenue Bulletin](https://www.irs.gov/irb) · [HHS poverty guidelines](https://aspe.hhs.gov/topics/poverty-economic-mobility/poverty-guidelines) |
-| Medicare income surcharges and income thresholds | [Social Security Handbook](https://www.ssa.gov/OP_Home/handbook/handbook.25/handbook-2504.html) · [CMS newsroom for the year’s Medicare premiums fact sheet](https://www.cms.gov/newsroom) |
+| Medicare income surcharges and income thresholds | [How Social Security uses income](https://www.ssa.gov/OP_Home/handbook/handbook.25/handbook-2504.html) · [2026 Medicare premium tables](https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles) · [2027 Medicare premium tables](https://www.cms.gov/newsroom/fact-sheets/2027-medicare-parts-b-premiums-deductibles) |
 
-If an agency has yet to publish a value, record the estimate and how the model carries it forward. Keep published figures tied to the year they apply to.
+Use the agency table for the year you are reviewing. If a figure is not yet available, label it as an estimate and record how the model calculates it.
 
 ## Update the workbook source
 
@@ -29,6 +29,6 @@ If an agency has yet to publish a value, record the estimate and how the model c
 1. Build the updated workbook from the fictional template. [Build instructions](../tests/README.md#build-the-workbook)
 2. In LibreOffice Calc, recalculate cases before and after each changed figure takes effect. Compare the results with the published figures and the independent financial calculation. Include the base plan and a market trial with the plan’s assumed returns. [Financial and market checks](../tests/README.md#check-a-change)
 3. Verify the updated workbook in desktop Excel for Mac. Submit the source, updated test cases and rebuilt fictional workbook in one pull request. [Excel checks](../tests/README.md#verify-a-changed-workbook-in-excel)
-4. In the review record, list the review date, effective years, agency links, estimates, changes and test results. Link the merged pull request when the workbook changes. A review with unchanged figures still needs a dated record.
+4. Record the review date, effective years, agency links, estimates and test results. If the workbook changed, link the merged pull request.
 
 To restore a release, use a pull request to restore its matching source, test data and workbook together. Run the release checks on that set before publishing.

@@ -13,9 +13,9 @@ To inspect one trial, enter its number in **Risk_Trials** B3. Row 7 shows the se
 
 ## How Excel verifies a run
 
-Each random path has a fixed-spending result and a flexible-spending result. The two use the same returns and inflation. If every possible cut is zero and every opening balance meets its threshold, Excel can use the verified fixed amounts for the flexible result. Missing or uncertain evidence sends the flexible trial through a separate calculation.
+Each random path has a fixed-spending result and a flexible-spending result. The two use the same returns and inflation. Excel can reuse the fixed result when it verifies that the cut is zero and the opening balance meets the threshold in every year. Otherwise it calculates the flexible result separately.
 
-For each trial it calculates, Excel checks 12 closing values against the year's opening balances, transactions and returns. On **Trial_Checks**, N through Y should each show zero in active years. The saved nominal and inflation-adjusted balances must agree with the annual schedule. If a closing check fails, Excel recalculates the trial in year order. A persistent discrepancy stops publication. Use the trial number in the failure message to inspect that year. [Workbook schedules](workbook-schedules.md)
+For each trial it calculates, Excel checks 12 closing values against the year's opening balances, transactions and returns. On **Trial_Checks**, N through Y should each show zero in active years. The saved nominal and inflation-adjusted balances must agree with the annual schedule. If a closing check fails, Excel recalculates the trial in year order. If the figures still differ, Excel stops the run before it updates the report. Use the trial number in the message to inspect that year. [Workbook schedules](workbook-schedules.md)
 
 Excel ranks the fixed random paths by ending portfolio in today's dollars. It breaks ties by first shortfall age, largest unpaid balance and trial number. It selects complete funding histories at the 10th, 50th and 90th percentiles. At one pair, all three examples use the same path.
 
@@ -30,7 +30,7 @@ The six named ranges below belong to **Risk_Trials**. The funding ranges point t
 | Trial outcomes and annual balances | `RiskTrialCurrent` | `RiskTrialResults` | `RiskTrialIDs` |
 | Three ranked funding histories | `RiskPathCurrent` | `RiskPathResults` | `RiskPathTrials` |
 
-On **Risk_Data**, Z1 gives the report status. Z6 through Z11 hold the run state, completion time, assumptions, message, pair count and seed. Each primary record includes up to 126 annual balances in each dollar view. Each ranked funding history holds 38 fields per annual position, including the opening balances.
+On **Risk_Data**, Z1 gives the report status. Z6 through Z11 hold the run state, completion time, assumptions, message, pair count and seed. Each saved trial includes up to 126 annual balances in each dollar view. Each of the three funding examples stores 38 values per year, including the opening year.
 
 From the repository root, use these commands to compare representative saved trials with recalculated worksheets and check how the report handles incomplete results. They require the project dependencies and LibreOffice. Desktop Excel checks cover the macro itself, including refresh, cancellation and recovery. [Test instructions](../tests/README.md)
 
