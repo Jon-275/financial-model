@@ -43,10 +43,9 @@ Enable the workbook privacy check once per clone.
 git config --local core.hooksPath .githooks
 ```
 
-Store personal files outside the checkout or in the ignored `private/` folder. The template and shared workbook use fictional inputs and investment profiles. Use your GitHub private email for local commits and hosted merges. Replace clones made before the November 17, 2026 history cleanup. [History cleanup and clone replacement](docs/history-cleanup.md)
+Keep personal workbooks outside the checkout or in the ignored `private/` folder. Use fictional inputs in shared files and a GitHub noreply address for commits and merges. [Protect personal files](tests/README.md#protect-personal-files)
 
 ## Maintenance
 
 - [Annual tax data review](docs/annual-tax-review.md)
-- [Project plan](docs/model-improvement-plan.md)
-- [Historical plans and release notes](docs/archive/README.md)
+- [Release readiness and open work](docs/model-improvement-plan.md)

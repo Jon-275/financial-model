@@ -144,4 +144,4 @@ The workbook applies investment returns after deposits and withdrawals. The esti
 
 Use separate estimates for life insurance, pension survivor choices, the joint tax return for the year of death, the adjustment to cost basis at death and an HSA transfer after the owner’s death. The tax schedules also leave out qualified charitable distributions, medical-expense deductions, the federal senior deduction, state-law changes, California tax on HSA earnings and California’s separate treatment of certain municipal interest.
 
-See the Phase 2 release record for sources, assumptions and verification. [Phase 2 release record](release-notes/phase-2.md)
+For the annual cash flow, account-access and funding calculations, see the [workbook schedules](workbook-schedules.md).
