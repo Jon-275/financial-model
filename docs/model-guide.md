@@ -10,7 +10,7 @@
 
 To compare plans, save Summary as a PDF before changing an assumption. Run market risk again and compare the two reports. Each completed run replaces the last one.
 
-When sharing the workbook for others to use, send a fresh fictional copy. Your working file contains household inputs for all three scenarios and saved market results.
+When sharing the workbook, send a fresh copy with fictional figures and include a copy of the [license](../LICENSE). Your working file contains household inputs for all three scenarios and saved market results.
 
 Select any formula cell to read its calculation in the formula bar. You can edit scenario inputs, investment assumptions, the conversion comparison, risk settings and published tax values while the sheets are protected. To change a formula in your own copy, choose **Review → Unprotect Sheet**. No password is needed.
 

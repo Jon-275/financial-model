@@ -2,10 +2,7 @@
 
 Use Excel to see whether household income and accessible savings can pay your spending and taxes through the age you choose, up to 125. The examples use fictional figures. The model estimates US federal and California taxes for a couple filing jointly and, when selected, a surviving spouse filing as single. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
-| Edition | How to use it |
-| --- | --- |
-| Published workbook (`.xlsx`) | The macro-free edition uses a separate refresh process. [Download the published workbook](https://raw.githubusercontent.com/Jon-275/financial-model/b40af21ddaa65129bfe7ce180eb336243f5246f9/workbook/retirement-model.xlsx) · [Guide for this edition](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/model-guide.md) · [Refresh instructions](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/risk-analysis.md) |
-| Workbook for testing (`.xlsm`) | The next edition runs market scenarios in desktop Excel and prints a six-page plan. The steps below apply to this workbook. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Preview the example report (PDF)](docs/examples/retirement-plan-example.pdf) |
+The first release is a macro-enabled workbook for desktop Excel for Mac. [Download the retirement planner (.xlsm)](workbook/retirement-model.xlsm?raw=true) · [Preview the six-page example report (PDF)](docs/examples/retirement-plan-example.pdf)
 
 ## Use the macro-enabled workbook
 
@@ -20,32 +17,10 @@ Use Excel to see whether household income and accessible savings can pay your sp
 - **Market risk.** Read the success rate, balance range, spending cuts and funding examples together. [Market risk guide](docs/risk-analysis.md)
 - **Portfolio management.** Review tax gain and loss harvesting as part of managing a taxable account. [Portfolio guide](docs/portfolio-management.md)
 
-## Build the next edition
+## For maintainers
 
-Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path or set `SOFFICE_BIN` to its executable. From the repository root, run the following commands.
+To change the workbook, follow the [build and testing instructions](tests/README.md). Review tax figures annually and whenever a source agency updates them. [Annual tax review](docs/annual-tax-review.md)
 
-```sh
-python3 -m pip install -r tools/requirements.txt
-mkdir -p scratch
-build_dir=$(mktemp -d scratch/build.XXXXXXXX)
-bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsm"
-```
+## License
 
-The builder enters fictional inputs, calculates 1,000 paired market paths and 33 stress cases, and packages the reviewed VBA source into the workbook. Users run their own scenarios in desktop Excel. [Build and release checks](tests/README.md)
-
-## Contribute
-
-Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **Gemini Review** must pass, and all review threads must be resolved. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
-
-Enable the workbook privacy check once per clone.
-
-```sh
-git config --local core.hooksPath .githooks
-```
-
-Keep personal workbooks outside the checkout or in the ignored `private/` folder. Use fictional inputs in shared files and a GitHub noreply address for commits and merges. [Protect personal files](tests/README.md#protect-personal-files)
-
-## Maintenance
-
-- [Annual tax data review](docs/annual-tax-review.md)
-- [Release readiness and open work](docs/model-improvement-plan.md)
+The project’s original workbook, source code and documentation are licensed under the [Apache License, Version 2.0](LICENSE).
