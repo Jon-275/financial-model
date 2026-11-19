@@ -1,6 +1,6 @@
 # Release readiness
 
-The macro-enabled workbook is available for testing in desktop Excel for Mac. Users enter their assumptions, run market risk when ready and print the six-page Summary. The published macro-free workbook and its instructions are also available. [Downloads and first steps](../README.md)
+The macro-enabled workbook is available for testing in desktop Excel for Mac. Users enter their assumptions, run market risk when ready and print the six-page Summary. [Workbook and first steps](../README.md)
 
 ## Work before publication
 

@@ -15,8 +15,6 @@ Keep Excel’s calculation setting on **Automatic** while editing. Changes to th
 
 Excel calculates annual cash flows in the visible worksheets. When the workbook verifies that flexible spending would leave every year unchanged, both spending policies use the same amounts. Each policy still has its own result. The report updates after the entire run passes its checks. You can open, save or print the workbook without starting a run.
 
-The published `.xlsx` edition has its own [refresh instructions](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/risk-analysis.md).
-
 To compare spending policies, enter a fixed trial number in **Risk_Trials** cell B3, then enter its flexible partner. For random paths, add 1,000 to the fixed number. For early-loss tests 2001–2013, add 100. Both records are saved even when their outcomes match. Columns I and J show how many years spending was cut and the total reduction in today’s dollars. The seven inflation, longevity and medical tests use fixed spending. Enter 0 in B3 to return to the base plan.
 
 ## Read the Summary

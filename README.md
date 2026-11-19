@@ -2,10 +2,7 @@
 
 Use Excel to see whether household income and accessible savings can pay your spending and taxes through the age you choose, up to 125. The examples use fictional figures. The model estimates US federal and California taxes for a couple filing jointly and, when selected, a surviving spouse filing as single. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
-| Edition | How to use it |
-| --- | --- |
-| Published workbook (`.xlsx`) | The macro-free edition uses a separate refresh process. [Download the published workbook](https://raw.githubusercontent.com/Jon-275/financial-model/b40af21ddaa65129bfe7ce180eb336243f5246f9/workbook/retirement-model.xlsx) · [Guide for this edition](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/model-guide.md) · [Refresh instructions](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/risk-analysis.md) |
-| Workbook for testing (`.xlsm`) | The next edition runs market scenarios in desktop Excel and prints a six-page plan. The steps below apply to this workbook. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Preview the example report (PDF)](docs/examples/retirement-plan-example.pdf) |
+The retirement planner is available for testing in desktop Excel for Mac. [Download the workbook (.xlsm)](workbook/retirement-model.xlsm?raw=true) · [Preview the six-page example report (PDF)](docs/examples/retirement-plan-example.pdf)
 
 ## Use the macro-enabled workbook
 
@@ -20,9 +17,9 @@ Use Excel to see whether household income and accessible savings can pay your sp
 - **Market risk.** Read the success rate, balance range, spending cuts and funding examples together. [Market risk guide](docs/risk-analysis.md)
 - **Portfolio management.** Review tax gain and loss harvesting as part of managing a taxable account. [Portfolio guide](docs/portfolio-management.md)
 
-## Build the next edition
+## Build the workbook
 
-Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path or set `SOFFICE_BIN` to its executable. From the repository root, run the following commands.
+Maintainers use `workbook/build-template.xlsx` to build the planner. Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path or set `SOFFICE_BIN` to its executable. From the repository root, run the following commands.
 
 ```sh
 python3 -m pip install -r tools/requirements.txt
