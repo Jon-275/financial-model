@@ -17,32 +17,9 @@ The first release is a macro-enabled workbook for desktop Excel for Mac. [Downlo
 - **Market risk.** Read the success rate, balance range, spending cuts and funding examples together. [Market risk guide](docs/risk-analysis.md)
 - **Portfolio management.** Review tax gain and loss harvesting as part of managing a taxable account. [Portfolio guide](docs/portfolio-management.md)
 
-## Build the workbook
+## For maintainers
 
-Maintainers use `workbook/build-template.xlsx` to build the planner. Use Python 3.11 or later and LibreOffice Calc. Put `soffice` on your path or set `SOFFICE_BIN` to its executable. From the repository root, run the following commands.
-
-```sh
-python3 -m pip install -r tools/requirements.txt
-mkdir -p scratch
-build_dir=$(mktemp -d scratch/build.XXXXXXXX)
-bash tools/build_model.sh workbook/build-template.xlsx "$build_dir/retirement-model.xlsm"
-```
-
-The builder enters fictional inputs, calculates 1,000 paired market paths and 33 stress cases, and packages the reviewed VBA source into the workbook. Users run their own scenarios in desktop Excel. [Build and release checks](tests/README.md)
-
-## Contribute
-
-Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **Gemini Review** must pass, and all review threads must be resolved. [Test and release guide](tests/README.md) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
-
-Enable the workbook privacy check once per clone.
-
-```sh
-git config --local core.hooksPath .githooks
-```
-
-Keep personal workbooks outside the checkout or in the ignored `private/` folder. Use fictional inputs in shared files and a GitHub noreply address for commits and merges. [Protect personal files](tests/README.md#protect-personal-files)
-
-Review the tax figures annually and whenever a source agency updates them. [Annual tax review](docs/annual-tax-review.md)
+To change the workbook, follow the [build and testing instructions](tests/README.md). Review tax figures annually and whenever a source agency updates them. [Annual tax review](docs/annual-tax-review.md)
 
 ## License
 

@@ -21,14 +21,14 @@ If an agency has yet to publish a value, record the estimate and how the model c
 
 - Update federal, California and payroll figures at their source. Check the formulas when a rate changes how or when the tax applies. [Published tax data](../tools/published_tax.py) · [Tax formulas](../tools/tax_policy.py)
 - Update IRA limits in the contribution calculations. Update Marketplace figures and coverage years in the healthcare calculations. [Roth contributions](../tools/roth_contributions.py) · [Healthcare](../tools/healthcare.py)
-- Check the Medicare surcharge and required withdrawal tables in `workbook/build-template.xlsx`. If the template changes, run the content and privacy checks before approving its checksum. [Release file checks](../tests/README.md#prepare-the-release-file)
+- Check the Medicare surcharge and required withdrawal tables in `workbook/build-template.xlsx`. If the template changes, run the content and privacy checks before approving its checksum. [Workbook privacy checks](../tests/README.md#share-an-updated-workbook)
 - Apply the same effective years in the independent risk calculation. If **Tax_Tables** moves a figure, update the workbook reader and its tests. [Independent tax calculation](../tools/risk_engine/tax.py) · [Workbook reader](../tools/risk_engine/scenario.py)
 
 ## Verify and record the release
 
-1. Build a candidate from the fictional template. [Build instructions](../README.md)
-2. In LibreOffice Calc, recalculate cases before and after each changed figure takes effect. Compare the results with the published figures and the independent financial calculation. Include the base plan and a market trial with the plan’s assumed returns. [Financial and market checks](../tests/README.md#recalculate-workbook-scenarios)
-3. Complete the release check in desktop Excel for Mac. Submit the source, updated test cases and rebuilt fictional workbook in one pull request. [Excel release check](../tests/README.md#microsoft-excel-release-check)
+1. Build the updated workbook from the fictional template. [Build instructions](../tests/README.md#build-the-workbook)
+2. In LibreOffice Calc, recalculate cases before and after each changed figure takes effect. Compare the results with the published figures and the independent financial calculation. Include the base plan and a market trial with the plan’s assumed returns. [Financial and market checks](../tests/README.md#check-a-change)
+3. Verify the updated workbook in desktop Excel for Mac. Submit the source, updated test cases and rebuilt fictional workbook in one pull request. [Excel checks](../tests/README.md#verify-a-changed-workbook-in-excel)
 4. In the review record, list the review date, effective years, agency links, estimates, changes and test results. Link the merged pull request when the workbook changes. A review with unchanged figures still needs a dated record.
 
 To restore a release, use a pull request to restore its matching source, test data and workbook together. Run the release checks on that set before publishing.
