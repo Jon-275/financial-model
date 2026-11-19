@@ -2,9 +2,9 @@
 
 ## Run your first plan
 
-1. **Save a private copy.** Open the [macro-enabled workbook](../workbook/retirement-model.xlsm) in desktop Excel for Mac. Keep the `.xlsm` format so the Run button works. On **Start Here**, choose **Open Inputs**.
-2. **Pick a scenario.** On **Inputs**, select a scenario in **B4**. Edit the highlighted column. Use D for the example, E for later retirement or F for 10% lower retirement spending. **Jump to** takes you to each group of inputs.
-3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Optional settings are visible below the main assumptions.
+1. **Save a private copy.** Download the planner and open it in desktop Excel for Mac. Keep the `.xlsm` format so the Run button works. On **Start Here**, choose **Open Inputs**. [Download the workbook (.xlsm)](../workbook/retirement-model.xlsm?raw=true)
+2. **Pick a scenario.** On **Inputs**, select a scenario in **B4**. Edit the highlighted column. Column D holds the example, E compares a later retirement and F compares spending 10% less in retirement. **Jump to** takes you to each group of inputs.
+3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. In **Inputs B130**, enter the year your starting ages and balances apply to. The forecast begins the following year.
 4. **Review Summary.** With Excel set to Automatic calculation, the base projection updates as you edit. Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
 5. **Run market risk when you’re ready.** You can make several edits before running the scenarios. On **Risk_Settings**, use 100 paired paths for a quick comparison or 1,000 for the final report. In desktop Excel with macros enabled, select **Run market risk** on **Summary** to start the full calculation. Print when the status says **Risk results are current**. [Risk instructions](risk-analysis.md#run-the-analysis)
 
@@ -14,13 +14,13 @@ When sharing the workbook, send a fresh copy with fictional figures and include 
 
 Select any formula cell to read its calculation in the formula bar. You can edit scenario inputs, investment assumptions, the conversion comparison, risk settings and published tax values while the sheets are protected. To change a formula in your own copy, choose **Review → Unprotect Sheet**. No password is needed.
 
-Set the year your starting ages and balances apply to in **Inputs B130**. The first full forecast year is the following year.
-
 ## Enter income, spending and savings
 
-- **Pay and other income.** Enter wages before taxes and deductions. Enter the full annual raise, including inflation. A 5% raise takes $80,000 to $84,000 in the first projected year. Use row 52 for other taxable income and rows 86–88 for the share you can spend and the ages you receive it. The full amount counts as taxable income during those years. Use 0 for the starting age to begin in the first projected year. Use the same start and end age for a one-time payment.
+- **Pay and other income.** Enter wages before taxes and deductions. Enter the full annual raise, including inflation. A 5% raise takes $80,000 to $84,000 in the first projected year. Use row 52 for other taxable income and rows 86–88 for the share you can spend and the ages you receive it. The full amount counts as taxable income during those years. Enter 0 to start in the first projected year, or use the same start and end age for a one-time payment.
 - **Interest paid in cash.** Use rows 46 and 89 for outside tax-exempt interest and its spendable share. Count that interest once across your investment returns and outside income.
-- **Spending.** Enter living costs in today’s dollars. The model adjusts those costs each year by the inflation rate in row 14. Include working-year healthcare in current spending and enter retirement healthcare separately. Include mortgage principal and interest in spending and repeat that payment in row 38 so the model can hold it fixed and remove it after the last payment. Keep property tax and insurance in ongoing spending. For a retirement-only projection, you can leave annual pay and current spending blank. If the projection ends before retirement, you can leave retirement spending blank. Enter zero when spending in a modeled phase is zero. The market tests also project to ages 100 and 105. Enter retirement spending before running them if either test reaches retirement.
+- **Living costs.** Enter spending in today’s dollars. Row 14 sets annual inflation. Include working-year healthcare in current spending and enter retirement healthcare separately.
+- **Mortgage.** Include principal and interest in spending and enter the same payment in row 38. This keeps the payment fixed until the mortgage ends. Keep property tax and insurance in ongoing spending.
+- **Blank or zero?** Leave pay and current spending blank if the plan starts in retirement. Leave retirement spending blank if the plan ends before retirement. Enter zero for a period you’ve included with no spending. The age-100 and age-105 market tests need retirement spending if they reach retirement.
 - **One-time bills.** Enter the calendar year and cost in today’s dollars in rows 75–82. Bills in the same year are added together. The base plan and each market trial adjust the amount for inflation through the year it is due. A flexible spending cut never reduces a scheduled bill.
 - **Long-term care.** Enter the starting age, annual cost and number of years in rows 58–60. The model adds one period of care to healthcare costs and adjusts the cost for inflation. Use 999 as the starting age to leave it out.
 - **Investment fees.** Enter the annual fee in B131. Use zero if the returns already include the fee. The model applies the fee after investment growth.
@@ -35,34 +35,9 @@ Set the year your starting ages and balances apply to in **Inputs B130**. The fi
 | Rows 93–96 | Enter each owner’s first workplace Roth tax year and the age their plan allows withdrawals. Use 0 for an unknown tax year. The age displays **Access unconfirmed** until you enter the confirmed plan age. Enter 126 to restore that setting. |
 | Rows 26 and 97 | Enter one owner’s pre-tax traditional IRA and 401(k) balance. Select that owner for withdrawal rules, required distributions and the last conversion age. Conversions go into the owner’s Roth IRA. |
 
-The opening Roth fields support one account type and apply the same owner split to the balance and the amount available today. Use a separate estimate for opening savings that mix Roth IRA and workplace Roth balances. The workbook uses one traditional balance. Separately inherited accounts need their own estimate.
+Choose one type of Roth account for the opening balance. The workbook uses the same owner shares for the total and for the amount available to withdraw today. Make a separate estimate if you start with both Roth IRA and workplace Roth savings, or have separately inherited accounts.
 
-The Roth IRA savings goal rises with inflation. Funding uses cash left after taxes and required spending and is limited by wages, each person’s IRA limit and the income rules for direct contributions. The model assumes these are the only IRA contributions and uses its own tax schedules to estimate income. Calculate backdoor Roth contributions and their tax separately.
-
-## Read the results
-
-- **Summary** shows whether the scenario covers its costs through the end age. A shortfall means at least one cent of spending or taxes goes unpaid. The six-page report includes the outlook, retirement cash flow, market risk and decisions, inflation and longevity tests, and two pages that record your inputs.
-- **Planning Metrics** groups the figures behind the report, including the savings target, accessible balances, funding, taxes and healthcare. Open the tab next to **Summary** or use its **Planning metrics** link. Dollar figures are labeled with their units.
-- **Asset_Allocation**, **Income_Targeting**, **Risk_Settings** and **Tax_Tables** come before Appendix. Use them to review investment assumptions, compare Roth conversions, choose market tests and check tax rates.
-- **Appendix** links to every supporting schedule. The first two detail tabs are **Annual Detail** and **Risk Results**. Both follow the dollar view on Summary.
-- **Annual Detail** starts with your opening balance and shows cash flow and savings through your selected end age. **Risk Results** shows the individual market tests and the range of balances at each age.
-- **Cash_Flow** shows tax, spending and withdrawals by year. Use the first shortfall year on Summary to find the unpaid amounts.
-- **Roth_Access** shows what each person can withdraw. The early retirement amount on Summary shows the brokerage and Roth savings the model can draw from in the first retirement year.
-- **Checks** compares cash, tax and account totals. A year can reconcile and still have unpaid bills. **Conversion Detail** shows the results for each conversion amount. **Targeting_Calc** and **Funding_Calc** show the steps behind the results. **Report_Data** holds the annual values used in Summary.
-
-The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. **Spending benchmark before income** on Planning Metrics divides the living and healthcare budget by the withdrawal rate in row 41. The annual funding result follows benefit timing, taxes and accessible accounts to determine whether the plan pays its bills.
-
-The example starts Social Security at age 67. Its annual benefit is $40,000 at opening-year prices. **Cash_Flow** shows the sources separately. [How cash pays the bills](workbook-schedules.md#cash_flow-and-projection)
-
-### Print your plan
-
-Choose a **Dollar view** on the right side of **Summary** before you print.
-
-- **Today’s dollars** show what the amounts can buy at the prices in your opening year. Use this view to compare future costs with your current budget.
-- **Future dollars** show the amounts you expect to pay or receive in each projected year. A $42,000 living budget becomes $43,050 after one year at 2.5% inflation. The two views show the same budget at different price levels.
-
-Select **Summary** in desktop Excel, then choose **File → Print → Active Sheets**. The six pages include the results, stress tests and both decision records. **View input decisions** on Inputs jumps to those records on Summary. The record includes account-access years and any unconfirmed workplace Roth access. Print **Annual Detail** separately for the full timeline in the same dollar view. Check the scenario, opening year, dollar view and risk run status before saving a PDF with personal figures. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
-
+The Roth IRA savings goal rises with inflation. Contributions come from cash left after taxes and required spending. Wages, each person’s IRA limit and the income rules for direct contributions can reduce the amount saved. The model assumes these are the only IRA contributions and uses its own tax schedules to estimate income. Calculate backdoor Roth contributions and their tax separately.
 
 ## Enter healthcare costs
 
@@ -86,6 +61,31 @@ For the Medicare income entries, add federal adjusted gross income and tax-exemp
 
 Use **Inputs B132** for a separate medical inflation rate, or leave it blank to use general inflation. **Healthcare** shows yearly premiums, credits and HSA payments. **Cash_Flow** uses those amounts to show what remains to pay.
 
+## Read the results
+
+Start on **Summary**. A shortfall means at least one cent of spending or taxes went unpaid in the year it was due. The six-page report includes your results and two pages of input and spending decisions.
+
+| What do you want to know? | Where to look |
+| --- | --- |
+| How much can I use in early retirement? | **Summary** shows the brokerage and Roth savings available in the first retirement year. **Roth_Access** shows what each person can withdraw. |
+| When does money run short? | Find the first shortfall on **Summary**. Open **Cash_Flow** for that year’s income, withdrawals, taxes and unpaid bills. |
+| What drives the result? | **Planning Metrics** shows the savings target, accessible balances, taxes and healthcare. Before **Appendix**, use **Asset_Allocation**, **Income_Targeting**, **Risk_Settings** and **Tax_Tables** to review the assumptions. |
+| How does the plan change over time? | The first two tabs after **Appendix** are **Annual Detail** and **Risk Results**. They show the annual cash flow, market tests and range of balances in the dollar view selected on **Summary**. |
+| How can I check a calculation? | **Checks** compares cash, taxes and balances. The totals can agree even when bills go unpaid. **Conversion Detail** lists conversion results, **Targeting_Calc** and **Funding_Calc** show the calculation steps, and **Report_Data** supplies the figures for **Summary**. |
+
+The ending portfolio can include workplace Roth savings the plan cannot draw by the end age. Summary shows that amount separately. **Spending benchmark before income** on Planning Metrics divides the living and healthcare budget by the withdrawal rate in row 41. To see whether you can pay each year’s bills, use the funding result. It accounts for when benefits start, taxes come due and savings become available.
+
+The example starts Social Security at age 67. Its annual benefit is $40,000 at opening-year prices. **Cash_Flow** shows the sources separately. [How cash pays the bills](workbook-schedules.md#cash_flow-and-projection)
+
+### Print your plan
+
+Choose a **Dollar view** on the right side of **Summary** before you print.
+
+- **Today’s dollars** show what the amounts can buy at the prices in your opening year. Use this view to compare future costs with your current budget.
+- **Future dollars** show the amounts you expect to pay or receive in each projected year. A $42,000 living budget becomes $43,050 after one year at 2.5% inflation. The two views show the same budget at different price levels.
+
+Select **Summary**, then choose **File → Print → Active Sheets**. The six pages include results, stress tests and both decision records. On **Inputs**, **View input decisions** opens the record of account-access years and unconfirmed workplace Roth access. Print **Annual Detail** separately for the full timeline. Before saving a personal PDF, check the scenario, opening year, dollar view and risk status. [Excel print instructions](https://support.microsoft.com/en-us/excel/print-a-sheet-or-workbook)
+
 ## Compare Roth conversions and market risk
 
 - **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Start with a zero conversion, then test a larger amount in that year’s dollars. Compare how much can convert, the withdrawals needed for bills, and the change in tax and healthcare costs. Select **Open conversion detail** for the full table. Apply a conversion on **Inputs** to see its effect over the full plan. [Conversion comparison](workbook-schedules.md#income_targeting)
@@ -96,7 +96,7 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 
 ### Withdrawals and taxes
 
-Cash pays current and unpaid prior-year taxes first, then prior unpaid spending, then current required costs. Roth IRA savings use the cash left over. Unpaid tax and spending carry forward and reduce after-tax net resources. The model assumes zero financing interest on unpaid spending.
+Cash pays taxes first, including prior years’ unpaid tax. It then pays overdue spending and current bills. Remaining cash can fund Roth IRA contributions. Unpaid taxes and bills carry forward and reduce what the household has left after tax. The model assumes zero financing interest on unpaid spending.
 
 On **Cash_Flow**, columns AR–AW separate the opening unpaid bills, repayments, current payments and newly unpaid costs. **Cumulative newly unpaid spending** counts each new bill once. The funding result records the first shortfall even if later income repays it.
 
@@ -142,6 +142,10 @@ The workbook applies investment returns after deposits and withdrawals. The esti
 
 ### Items to estimate separately
 
-Use separate estimates for life insurance, pension survivor choices, the joint tax return for the year of death, the adjustment to cost basis at death and an HSA transfer after the owner’s death. The tax schedules also leave out qualified charitable distributions, medical-expense deductions, the federal senior deduction, state-law changes, California tax on HSA earnings and California’s separate treatment of certain municipal interest.
+The workbook leaves the following items for you to estimate separately.
+
+- **Survivor planning.** Life insurance, pension survivor choices, the joint tax return for the year of death, changes to cost basis at death and the transfer of a health savings account after its owner dies.
+- **Federal taxes.** Qualified charitable distributions, medical-expense deductions and the temporary enhanced senior deduction.
+- **State taxes.** Changes in state law, California tax on HSA earnings and California’s treatment of certain municipal interest.
 
 For the annual cash flow, account-access and funding calculations, see the [workbook schedules](workbook-schedules.md).

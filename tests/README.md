@@ -1,6 +1,6 @@
 # Workbook checks for maintainers
 
-Use this guide when changing the planner or preparing a new workbook to share. To enter household figures and run a plan, start with the [workbook user guide](../docs/model-guide.md#run-your-first-plan).
+Use these checks when changing the planner or preparing a workbook to share. For help entering household figures, see the [first-use guide](../docs/model-guide.md#run-your-first-plan).
 
 ## Set up a working copy
 
@@ -37,13 +37,13 @@ Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **
 
 ## Verify a changed workbook in Excel
 
-1. Open a disposable copy in desktop Excel for Mac. Confirm it opens without a repair prompt. Change an input and the plan end age. Check that **Summary** updates, **Annual Detail** stops at the selected age and the old market results are marked out of date.
+1. Open a test copy in desktop Excel for Mac. It should open without a repair prompt. Change an input and the plan end age. Check that **Summary** updates, **Annual Detail** ends at the selected age and the workbook marks the old market results out of date.
 2. On **Summary**, choose **Run market risk**. Test **Cancel**, then run again and save when the status says **Risk results are current**. For changes to the market calculations, compare the saved Excel results with an independent reference that uses the same fictional assumptions and seed. [Market result comparison](native_excel_acceptance.py)
 3. Switch between today’s and future dollars. Preview **Summary** on Letter and A4. Check all six pages, including the two pages of input and spending decisions. Record the Excel version, what you tested and any checks still open in the pull request. [Print instructions](../docs/model-guide.md#print-your-plan)
 
 ## Share an updated workbook
 
-Use the unedited fictional workbook for distribution. Set `workbook` to the new file. Check its inputs and properties, then verify the embedded VBA and calculate the two checksums for the release.
+Share a fresh workbook with fictional inputs. Set `workbook` to that file. Check its inputs and file properties, then run the command below to verify the VBA code and calculate the two release checksums.
 
 ```sh
 PYTHONPATH=tools python3 - "$workbook" <<'PY'

@@ -1,8 +1,8 @@
 # Retirement planner
 
-Use Excel to see whether household income and accessible savings can pay your spending and taxes through the age you choose, up to 125. The examples use fictional figures. The model estimates US federal and California taxes for a couple filing jointly and, when selected, a surviving spouse filing as single. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
+This model is for educational purposes. Use it to explore whether your income and the savings you can withdraw will cover spending and taxes through the age you choose, up to 125. The examples use fictional figures. The model estimates US federal and California taxes for a couple filing jointly and, when selected, a surviving spouse filing as single. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
-The first release is a macro-enabled workbook for desktop Excel for Mac. [Download the retirement planner (.xlsm)](workbook/retirement-model.xlsm?raw=true) · [Preview the six-page example report (PDF)](docs/examples/retirement-plan-example.pdf)
+The first release is a macro-enabled workbook for desktop Excel for Mac. [Download the retirement planner (.xlsm)](workbook/retirement-model.xlsm?raw=true)
 
 ## Use the macro-enabled workbook
 
