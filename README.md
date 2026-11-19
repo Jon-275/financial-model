@@ -1,12 +1,18 @@
 # Retirement planner
 
-Use Excel to see whether your household can pay its spending and taxes through the age you choose, up to 125. The published workbook includes a fictional household. Save a private copy before entering your own figures. [Download the current workbook](https://raw.githubusercontent.com/Jon-275/financial-model/b40af21ddaa65129bfe7ce180eb336243f5246f9/workbook/retirement-model.xlsx)
+Use Excel to see whether household income and accessible savings can pay your spending and taxes through the age you choose, up to 125. The examples use fictional figures. The model estimates US federal and California taxes for a couple filing jointly and, when selected, a surviving spouse filing as single. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
-1. Open **Start Here** and save a private copy. Choose **Open Inputs**, select a scenario and enter your ages, income, savings and spending.
-2. Open **Summary**. The headline tells you whether the base plan covers its costs. If it falls short, the report gives the first age and year that bills go unpaid.
-3. Review the investment mix, spending policy and market results. Use the dollar selector on **Summary** to switch between today's purchasing power and projected amounts. Print **Summary** to keep a record of the report and your choices. [Model guide](docs/model-guide.md)
+| Edition | How to use it |
+| --- | --- |
+| Published workbook (`.xlsx`) | The macro-free edition uses a separate refresh process. [Download the published workbook](https://raw.githubusercontent.com/Jon-275/financial-model/b40af21ddaa65129bfe7ce180eb336243f5246f9/workbook/retirement-model.xlsx) · [Guide for this edition](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/model-guide.md) · [Refresh instructions](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/risk-analysis.md) |
+| Workbook for testing (`.xlsm`) | The next edition runs market scenarios in desktop Excel and prints a six-page plan. The steps below apply to this workbook. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Preview the example report (PDF)](docs/examples/retirement-plan-example.pdf) |
 
-The next edition adds **Run market risk** in desktop Excel and a six-page Summary with stress tests and funding examples. The current download uses the earlier risk refresh process. Release testing uses Excel for Mac. [Download the workbook for testing](workbook/retirement-model.xlsm) · [Preview the six-page example report (PDF)](docs/examples/retirement-plan-example.pdf) · [Implementation plan](docs/model-improvement-plan.md)
+## Use the macro-enabled workbook
+
+1. Open the `.xlsm` file in desktop Excel for Mac. Save a private copy in the same format. On **Start Here**, choose **Open Inputs**, select a scenario and enter your household figures.
+2. Open **Summary** to see whether the base plan covers its costs. With Excel set to Automatic, the projection updates as you edit. If bills go unpaid, the report shows the first age and year this happens.
+3. Review the investment mix and spending assumptions. When you’re ready, choose **Run market risk** on **Summary** with macros enabled. You can make all your edits before starting this calculation.
+4. When Summary says **Risk results are current**, choose today’s or future dollars and print **Summary**. The six pages include your input and spending decisions. [First-use guide](docs/model-guide.md#run-your-first-plan) · [How to read the market results](docs/risk-analysis.md#read-the-summary)
 
 ## Understand the results
 
@@ -37,11 +43,9 @@ Enable the workbook privacy check once per clone.
 git config --local core.hooksPath .githooks
 ```
 
-Store personal files outside the checkout or in the ignored `private/` folder. The template and shared workbook use fictional inputs and investment profiles. Use your GitHub private email for local commits and hosted merges. Replace clones made before the November 17, 2026 history cleanup. [History cleanup and clone replacement](docs/history-cleanup.md)
+Keep personal workbooks outside the checkout or in the ignored `private/` folder. Use fictional inputs in shared files and a GitHub noreply address for commits and merges. [Protect personal files](tests/README.md#protect-personal-files)
 
 ## Maintenance
 
 - [Annual tax data review](docs/annual-tax-review.md)
-- [Project plan](docs/model-improvement-plan.md)
-- [Published financial corrections](docs/release-notes/financial-boundaries.md) and [workbook layout history](docs/release-notes/workbook-layout.md)
-- Earlier releases cover [Phase 3](docs/release-notes/phase-3.md), [Phase 2](docs/release-notes/phase-2.md) and [Phase 1](docs/release-notes/phase-1.md).
+- [Release readiness and open work](docs/model-improvement-plan.md)

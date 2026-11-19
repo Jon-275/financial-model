@@ -1,10 +1,10 @@
 # Annual tax data review
 
-Review the tax data each year before publishing the workbook for the new tax year. Review it again when an agency publishes or revises figures the model uses. Record the review even when the figures stay the same.
+Review the workbook’s tax and benefit figures before the first release for each tax year, and whenever an agency publishes or revises a figure the model uses. Record the sources and effective years even if the workbook needs no changes.
 
 ## Check the published figures
 
-Start on **Tax_Tables**, before **Appendix**. Use the links under **Find a rate or limit** to reach the federal, California, payroll, Medicare and Marketplace tables. The notes name the sources, the years the figures apply to, and how the model estimates later years. Confirm each figure against the agency release for the correct tax, payroll or coverage year.
+Open **Tax_Tables** and use **Find a rate or limit** to reach each table. Check the figure and its effective tax, payroll or coverage year against the agency release. The workbook notes identify the source and explain estimates for later years.
 
 | Check | Where to verify |
 | --- | --- |
@@ -19,16 +19,16 @@ If an agency has yet to publish a value, record the estimate and how the model c
 
 ## Update the workbook source
 
-- Update federal, California and payroll values in [published tax data](../tools/published_tax.py). Check [tax formulas](../tools/tax_policy.py) when an effective year or calculation changes.
-- Update IRA limits in [Roth contributions](../tools/roth_contributions.py). Update Marketplace figures and coverage-year logic in [healthcare](../tools/healthcare.py).
-- Check any affected values in `workbook/build-template.xlsx`, including the Medicare surcharge and required withdrawal tables. Follow the [template privacy check](../tests/README.md#prepare-the-release-file) if the template changes.
-- Check the [risk engine’s tax rules](../tools/risk_engine/tax.py) for matching year boundaries. If the **Tax_Tables** layout changes, update the [workbook reader](../tools/risk_engine/scenario.py) and its tests.
+- Update federal, California and payroll figures at their source. Check the formulas when a rate changes how or when the tax applies. [Published tax data](../tools/published_tax.py) · [Tax formulas](../tools/tax_policy.py)
+- Update IRA limits in the contribution calculations. Update Marketplace figures and coverage years in the healthcare calculations. [Roth contributions](../tools/roth_contributions.py) · [Healthcare](../tools/healthcare.py)
+- Check the Medicare surcharge and required withdrawal tables in `workbook/build-template.xlsx`. If the template changes, run the content and privacy checks before approving its checksum. [Release file checks](../tests/README.md#prepare-the-release-file)
+- Apply the same effective years in the independent risk calculation. If **Tax_Tables** moves a figure, update the workbook reader and its tests. [Independent tax calculation](../tools/risk_engine/tax.py) · [Workbook reader](../tools/risk_engine/scenario.py)
 
 ## Verify and record the release
 
-1. [Build a candidate workbook](../README.md#build-the-next-edition) with the fictional scenario.
-2. Run the [workbook and risk tests](../tests/README.md) against the candidate. Exercise the years before and after each changed figure takes effect. Check the workbook against the risk report with returns set to the plan assumptions.
-3. Complete the [desktop Excel release check](../tests/README.md#microsoft-excel-release-check) and open a PR with the source changes, fixtures and rebuilt workbook.
-4. Record the review date, the years checked, the agency links, any values or estimates that changed, and the checks that passed. Link the merged PR from the release record. [Current release record](release-notes/workbook-layout.md)
+1. Build a candidate from the fictional template. [Build instructions](../README.md)
+2. In LibreOffice Calc, recalculate cases before and after each changed figure takes effect. Compare the results with the published figures and the independent financial calculation. Include the base plan and a market trial with the plan’s assumed returns. [Financial and market checks](../tests/README.md#recalculate-workbook-scenarios)
+3. Complete the release check in desktop Excel for Mac. Submit the source, updated test cases and rebuilt fictional workbook in one pull request. [Excel release check](../tests/README.md#microsoft-excel-release-check)
+4. In the review record, list the review date, effective years, agency links, estimates, changes and test results. Link the merged pull request when the workbook changes. A review with unchanged figures still needs a dated record.
 
-If a release needs to be restored, use a PR to restore the matching source, test data and workbook from the last verified release.
+To restore a release, use a pull request to restore its matching source, test data and workbook together. Run the release checks on that set before publishing.

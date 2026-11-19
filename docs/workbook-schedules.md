@@ -1,92 +1,73 @@
 # Workbook calculations and decision tools
 
-The withdrawal and conversion calculation sheets link their source values in columns BD onward. These visible links let the trial rows reuse formulas and reduce file size. Clear the calculation table's filter to inspect all source rows. The annual model retains capacity through age 125.
-
-Use **Inputs** for household decisions and **Summary** to read and print the plan. The tabs before **Appendix** cover the results, investment assumptions, Roth conversion choices, market settings and tax tables. **Annual Detail** and **Risk Results** follow the divider. They show the yearly cash flows and market paths behind the report, in the dollar view selected on Summary. The appendix index links to each supporting table.
+Enter household figures on **Inputs** and read the plan on **Summary**. Print **Summary** alone for the six-page report, including your input and spending decisions. Before **Appendix**, you can review **Planning Metrics**, investment assumptions, Roth conversions, market settings and tax tables. The divider links to the supporting schedules. [Model guide](model-guide.md)
 
 ## Planning Metrics
 
-Open **Planning Metrics** next to **Summary** for the savings target, balances, shortfall, taxes and healthcare figures behind the report. Read the dollar units beside each figure. Use **Annual Detail** or **Cash_Flow** to trace a figure to a specific year.
-
-## Cash_Flow and Projection
-
-**Cash_Flow** shows future dollars for each year. Select **Open income sources** to see pay after pre-tax 401(k) and HSA contributions, Social Security, the spendable share of other income, and the cash share of outside tax-exempt interest. Add the Marketplace premium credit to those four sources to get **Cash income**. Summary counts the share of that income used to pay bills and taxes. Withdrawals and HSA payments are shown under savings used.
-
-1. The HSA pays eligible healthcare costs up to the available HSA balance.
-2. Cash income and available withdrawals pay current taxes and any tax carried in from the prior year. The remaining cash pays the year’s bills.
-3. Any cash left can fund eligible Roth IRA savings during working years. Remaining cash goes to the taxable account. Required retirement distributions can also leave cash to reinvest.
-4. The model carries unpaid tax and required spending into the next year. Cash pays tax, prior unpaid spending and current required costs in that order. **Projection** applies investment returns to the balances after those transactions.
-
-Columns AR–AW on **Cash_Flow** show the spending obligation roll-forward. Required spending includes the opening unpaid bills. The cumulative figure counts current bills left unpaid in their due year. It stays recorded after repayment. For example, $500 unpaid in year one and $1,000 of new bills unpaid in year two produce $1,500 of missed payments, even if the first $500 was repaid. The ending obligation shows what is still owed. The model applies zero financing interest and deducts outstanding spending and tax from after-tax net resources.
-
-The first page of **Summary** shows the earliest year with at least one cent of unpaid spending or tax. Look up that year on **Cash_Flow** to see which bills were unpaid and what money was available.
-
-When a withdrawal reaches an account's available balance, the model withdraws that exact amount. A full brokerage sale removes the cost basis of the investments sold. If cash is deposited later that year, the new deposit starts its own cost basis.
-
-On **Projection**, column CE shows how much taxable cost basis a sale removes. Column CF adds new deposits and reinvested income on the share of the opening investments still held. The annual tax estimate uses opening balances to estimate interest and dividends. The model applies annual total returns after withdrawals and deposits.
-
-## Roth_Access
-
-Choose one account type for the combined opening Roth balance. It can be a **Roth IRA** or a **workplace Roth**, such as a Roth 401(k). Use separate estimates if your household starts with both. The schedule tracks the two types separately as the plan adds Roth IRA contributions or conversions. For Roth IRAs, it tracks contributions, conversion amounts that become available over time, and the value of the account. For workplace Roth it uses each owner’s first contribution year and the age the plan permits withdrawals. The model uses age 60 for age 59½ because it runs in whole years. [IRS Roth account comparison](https://www.irs.gov/retirement-plans/ten-differences-between-a-roth-ira-and-a-designated-roth-account)
-
-The traditional balance on **Inputs** holds one owner’s pre-tax IRA and 401(k) money. The model uses one set of access and required-distribution assumptions for that balance. Plan-specific withdrawal rules, after-tax IRA basis, and separate owners need their own estimates. Use **Projection** and **Cash_Flow** to inspect traditional withdrawals. [IRS required distribution rules](https://www.irs.gov/retirement-plans/retirement-plan-and-ira-required-minimum-distributions-faqs)
-
-## Healthcare
-
-The household budget option uses the amounts entered before and after Medicare and allocates them by person. Detailed coverage uses each person’s premiums, out-of-pocket costs, Medicare start age and coverage type. It adds long-term care and estimates the applicable Medicare income surcharge using income from two years earlier. The Marketplace credit uses eligible premiums, the benchmark quote, household size and income after the modeled withdrawals or conversion. The HSA pays eligible expenses up to its available balance. The rest goes into the cash-flow calculation. [Healthcare inputs](model-guide.md#enter-healthcare-costs) · [IRS premium tax credit](https://www.irs.gov/credits-deductions/premium-tax-credit-ptc-overview) · [Social Security’s Medicare income rules](https://secure.ssa.gov/apps10/poms.nsf/lnx/0601101010)
-
-Negative income can result from investment losses. It does not trigger a Medicare income surcharge. The model keeps the actual income for tax calculations and returns zero surcharge below the income brackets. [Social Security surcharge rule](https://www.ssa.gov/OP_Home/cfr20/418/418-1101.htm)
+**Planning Metrics**, next to **Summary**, shows the savings target, accessible balances, funding, taxes and healthcare. **Annual Detail** is the first tab after **Appendix**. It shows the opening position and each year through the selected end age, up to 125. It follows the dollar view on Summary and can be printed separately.
 
 ## Asset_Allocation
 
-Start with the investments you expect to hold in taxable, pre-tax, Roth and HSA accounts. Choose the working and retirement profiles on **Inputs**, then inspect the stock, bond, cash and real-asset weights on **Asset_Allocation**. Edit the blue cells and make each account column total 100%. The selected profile checks flag a missing or invalid mix before the projection runs.
+Choose profiles for the working and retirement years on **Inputs** in rows 15 and 16. On **Asset_Allocation**, review the stock, bond, cash and real-asset weights for each taxable, traditional, Roth and HSA account. Edit the blue cells. Each account column must total 100%.
 
-**Investment assumptions used by the plan** shows the annual return for each account after the investment fee, before inflation. The portfolio return weights these account returns by their opening balances. Interest and qualified dividends are part of the taxable account return. The workbook uses their yields to calculate tax. Volatility and how assets move together affect the market simulations. Use these assumptions to explore how a different mix changes the plan’s funding result and balance range.
+**Investment assumptions used by the plan** shows each account's annual nominal return after fees. The portfolio figure weights the accounts by their opening balances. Interest and qualified dividends are included in the taxable return. Their yields also determine taxable income. Volatility and correlations determine how much the simulated returns vary together.
 
 ## Income_Targeting
 
-Set **Retirement age to compare** to 0 for the first retirement year or choose a later age. In **Conversion to test**, enter 0 to compare no conversion or enter an amount in that year’s dollars. Use **Funding result** to see if both cases pay their required costs. When both are funded, compare total withdrawals and the change in tax and net healthcare. A conversion can increase income and reduce the Marketplace credit for that year.
+Use **Income_Targeting** to test a Roth conversion in one retirement year. In **Retirement age to compare**, enter 0 for the first retirement year or choose a later age. Enter the **Conversion to test** in that year's dollars. Compare the result with a zero conversion. Look at funded costs, withdrawals, taxes and healthcare together.
 
-Select **Open conversion detail** to see one row per tested amount, including where costs rise or bills go unpaid. The charts on **Income_Targeting** use that table. The display limit controls the range shown in the detail table. The comparison at the top uses the amount entered in **Conversion to test**.
-
-The comparison starts from the active scenario’s balances and rules for one year. Enter the planned conversion on **Inputs** to see how it affects later balances, taxes and Medicare surcharges over the full timeline.
+**Open conversion detail** shows the results for a range of conversion amounts. The display limit controls that range. To see the effect on later balances and Medicare costs, enter your planned conversion on **Inputs** and review **Summary**.
 
 ## Risk_Settings and Risk Results
 
-List the living costs you could reduce, then decide how much you would cut from those costs and when you would act. The trigger compares the opening balance in a simulated year with the balance for that year in the base plan. Multiply the flexible share by the cut to that share to see the reduction to non-mortgage living costs. Mortgage, healthcare and one-time bills remain in required costs. Tax follows the revised withdrawals.
+On **Risk_Settings**, B6 sets the opening balance that triggers a spending cut as a share of the planned balance. B7 sets the cut to the flexible budget, B8 sets the share of living costs you could change, and B10 shows the resulting cut to non-mortgage living costs. Mortgage payments, healthcare and scheduled bills remain due. The rule is checked each year.
 
-Read the success rate and number of paths with spending cuts together. The rule tests the balance each year, so a cut can recur for several years. The median years with cuts includes paths with no cuts. Check the early stock tests for the age of the first unpaid costs and whether the cut changes it. Choose **Run market risk** on Summary after editing the plan. The macro runs the visible worksheet engine and refreshes the report after a complete batch. It does not start when you open, save or print. [Market risk guide](risk-analysis.md)
-
-## Funding_Paths and the trial schedules
-
-**Funding_Paths** shows the annual cash flow for the low, median and high fixed-spending paths from Summary. Follow one path from income and bills through withdrawals, closing balances and unpaid costs. Amounts follow the dollar view on Summary and use that path’s price index. To trace a figure to the saved run, open **Funding_Path_Data** and match the trial number and year. The source values use each year’s prices.
-
-**Risk_Trials** records the requested market paths and stress cases. Choose a trial number there to inspect its returns and prices on **Market_Paths** and its annual calculations on the **Trial_** schedules. These schedules are another instance of the base annual compiler. They apply the same tax, healthcare, account-access and obligation rules. Their raw calculations use the selected path’s future dollars. **Random_Numbers** shows the seed and integer random-number calculation.
-
-On **Trial_Checks**, columns N–Y compare each year’s recorded closing balances with amounts calculated again from the opening balances, contributions, withdrawals, conversions and market returns. Each difference should be zero. The checks cover brokerage, traditional, HSA and Roth accounts, taxable cost basis and the whole portfolio in both dollar views.
-
-If column J shows **Review**, look across N–Y for a difference or a formula error. If all twelve balances agree, check the cash-flow status in column AM of **Trial_Cash_Flow** for the same year.
-
-**Risk_Data** derives report statistics from the captured trial results and compares the active assumptions with the completed run. A failed or incomplete run cannot supply a current report. The report’s real and nominal balance percentiles are calculated separately, so future-dollar bands remain correct when inflation varies across paths.
-
-Read a success rate as the percentage of paths that paid all required costs. Ages and trial numbers are whole numbers. A price index of 1.25 means that $100 at the start of the plan has the same buying power as $125 in that year.
+Choose **Run market risk** on **Summary** after changing the plan. In **Risk Results**, read the fixed and flexible funding rates alongside the number of paths that needed spending cuts and the number of years those cuts lasted. The median includes flexible paths with no cuts. The early-loss tests show how sustained stock losses at retirement affect each spending policy. [Market risk guide](risk-analysis.md)
 
 ## Tax_Tables
 
-Use the links on the sheet to find federal, California, payroll, Medicare and Marketplace amounts. The tables identify the years used by the model. The projection uses published amounts for their applicable years and estimates later values according to the documented rules. Federal and California income taxes use separate rates, deductions and loss balances. The model estimates U.S. federal and California taxes for the scenario. [Tax assumptions](model-guide.md#tax-rates-and-healthcare-credits) · [Annual tax data review](annual-tax-review.md)
+**Tax_Tables** identifies the years and values used for U.S. federal tax, California tax, payroll contributions, Medicare and Marketplace coverage. Federal and California calculations use separate rates, deductions and capital-loss balances. Review each section's year before updating a value. The federal estimate includes the additional standard deduction at age 65. The temporary enhanced senior deduction is listed for reference and excluded from the estimate. [Tax assumptions](model-guide.md#tax-rates-and-healthcare-credits) · [Annual tax data review](annual-tax-review.md)
 
-The federal estimate uses the additional standard deduction at age 65. The separate temporary enhanced senior deduction is listed in Tax_Tables as a reference. Eligible households can have lower federal tax than the model estimates for 2026–2028. [IRS enhanced senior deduction](https://www.irs.gov/newsroom/check-your-eligibility-for-the-new-enhanced-deduction-for-seniors)
+## Cash_Flow and Projection
+
+**Cash_Flow** shows each year's future dollars. **Open income sources** separates pay after pre-tax contributions, Social Security, spendable other taxable income and cash received from outside tax-exempt interest. The model adds the Marketplace premium credit to those sources. HSA payments and withdrawals from savings appear separately.
+
+1. The HSA pays eligible healthcare costs up to its available balance.
+2. Cash income and available withdrawals pay taxes due, including prior unpaid tax, then prior unpaid spending and current bills.
+3. During working years, remaining cash can fund eligible Roth IRA savings. Any cash left goes into taxable savings.
+
+To investigate a shortfall on Summary, find that year on **Cash_Flow**. Columns AR–AW show prior unpaid spending, repayments, current bills paid and newly unpaid amounts. An amount unpaid in its due year still counts as a shortfall after repayment. Outstanding bills carry forward without financing interest.
+
+**Projection** applies annual returns after deposits and withdrawals. Column CE shows the taxable cost basis removed by a sale. Column CF adds new deposits and reinvested income on the investments still held. After a full sale, a new deposit starts with its own cost basis.
+
+## Roth_Access
+
+**Roth_Access** tracks IRA and workplace Roth balances separately for each owner. Select one account type for the combined opening Roth balance on **Inputs**. Use separate estimates if the household starts with both types. For a Roth IRA, the schedule distinguishes contributions, conversion principal and earnings. For a workplace Roth, it uses the owner's first contribution year and the age the employer plan permits withdrawals. The model uses age 60 for the age-59½ rule because it projects whole years.
+
+One owner's pre-tax traditional IRA and 401(k) savings share a balance and a set of withdrawal rules. Inspect traditional withdrawals on **Projection** and **Cash_Flow**. [Retirement account inputs](model-guide.md#enter-retirement-account-details)
+
+## Healthcare
+
+**Healthcare** uses either the household budgets for the years before and after Medicare or the costs entered for each person. The detailed schedule uses coverage, premiums, out-of-pocket costs and Medicare enrollment age. It calculates any Marketplace premium credit using income after withdrawals or conversion. It also accounts for long-term care and estimates Medicare income surcharges using income from two years earlier. Check this sheet if a coverage or income entry needs review. [Healthcare inputs](model-guide.md#enter-healthcare-costs)
 
 ## Checks and Report_Data
 
-**Checks** compares income and withdrawals with cash payments and deposits, tax due with paid and unpaid tax, and account balances with transfers and withdrawals. It also checks Roth access, negative balances, the Marketplace credit, eligible HSA costs and taxable cost basis. **Review** means a difference exceeds one cent or the funding calculation flagged the year. The checks can balance in a year with unpaid bills because the model records the unpaid amounts.
+**Checks** reconciles income, withdrawals, payments, deposits, tax due and account balances. It also checks Roth access, taxable cost basis, the Marketplace credit and HSA use. A year can reconcile and still have unpaid bills. A **Review** status points to a discrepancy or a funding calculation that needs attention.
 
-**Report_Data** has one row per modeled year, including the opening row. The cash-flow and portfolio source amounts use opening-year dollars. The chart values follow the dollar view on **Summary**. The annual schedules and report tables shade only rows with data. Change the end age on **Inputs** to extend or shorten the projection.
+**Report_Data** supplies the annual values used on **Summary**, including the chart series in the selected dollar view. It includes the opening position and stops displaying figures after the plan horizon.
 
 ## Funding_Calc and Targeting_Calc
 
-**Funding_Calc** tries different withdrawals to find where cash can cover spending and taxes. Each evaluated trial recalculates the taxes and any Marketplace credit. The solver tests credit thresholds when eligible coverage applies. It also tests withdrawals without a planned conversion if the original plan cannot fund it. When the solver finds a range to search, it narrows the draw amount within that range.
+**Funding_Calc** tests withdrawals against spending, taxes and any Marketplace credit. It checks credit thresholds when they apply. If the plan cannot cover a requested conversion, it also tests withdrawals without the conversion. **Cash_Flow** uses the selected draw.
 
-**Targeting_Calc** uses the same funding calculation for each conversion request in the selected year. The comparison holds the starting balances and required bills fixed. The **Conversion request** column identifies the amount being tested. Read **Income_Targeting** for the selected-year comparison and **Conversion Detail** for the full range.
+**Targeting_Calc** repeats the funding calculation for each proposed conversion in the year selected on **Income_Targeting**. Each test starts with the same balances and bills. **Conversion Detail** shows the outcomes by amount.
 
-Both tabs show the year, age, and calculation step. **Skipped** identifies a trial slot the solver did not need. Use the **Calculation step** filter to clear **Skipped**, or select **Selected draw** to see just the final draws. Use the filter to change which rows are visible and keep the rows in calculation order. The final funding status shows whether the draw covers the year’s costs. **Cash_Flow** uses the selected draw from **Funding_Calc**.
+In either calculation table, filter **Calculation step** to **Selected draw** for the final withdrawal, or exclude **Skipped** to see only the steps used. Keep the rows in calculation order. Columns BD onward link to the calculation inputs.
+
+## Funding_Paths and the trial schedules
+
+**Funding_Paths** follows the low, median and high fixed-spending examples from income and bills through withdrawals, ending balances and unpaid costs. It uses Summary's dollar view. In **Funding_Path_Data**, match the trial number and year to see the saved values in that year's dollars.
+
+On **Risk_Trials**, enter a trial number in B3 to inspect its results. **Random_Numbers** shows how the seed produces repeatable draws. **Market_Paths** shows that trial's returns, inflation and spending cuts. The **Trial_** schedules apply the same account, healthcare, tax and cash-flow formulas as the base plan. **Risk_Data** uses all completed trials to calculate report statistics and checks the run against the current assumptions.
+
+On **Trial_Checks**, columns N–Y compare the recorded account balances with the amounts calculated from openings, transactions and returns. All twelve differences should be zero in an active year. If column J says **Review**, inspect those differences and the cash-flow status in **Trial_Cash_Flow** column AM for the same year. [How the runner checks results](macro-runner.md)

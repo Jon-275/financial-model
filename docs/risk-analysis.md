@@ -6,8 +6,8 @@ Market risk tests whether income and accessible savings pay the plan’s spendin
 
 1. Save a private copy of the macro-enabled `.xlsm` workbook before entering personal figures. Use desktop Excel and follow your organization’s macro rules. Excel for the web cannot run VBA. The workbook does not require a global change to macro security. [Microsoft compatibility guidance](https://support.microsoft.com/en-us/excel/work-with-vba-macros-in-excel-for-the-web)
 2. Complete **Inputs** and review the base funding result on **Summary**. Resolve missing inputs and calculation messages first.
-3. Review the portfolio mix on **Asset_Allocation**. On **Risk_Settings**, enter how much spending you could cut and review the inflation assumptions. Use 100 paired market paths while editing and 1,000 for the final report. Keep the same seed when comparing plans. Both run sizes include all 33 stress cases.
-4. Choose **Run market risk** beside Summary’s navigation. The run shows progress and supports cancellation. Wait for the results to be marked current.
+3. Review the portfolio mix on **Asset_Allocation**. On **Risk_Settings**, enter how much spending you could cut and review the inflation assumptions. Choose 1 to 1,000 paired paths. Use 100 pairs for a quick comparison (233 outcomes) or 1,000 for the final report (2,033 outcomes). Each pair tests fixed and flexible spending. Both run sizes include 33 additional stress cases. Keep the same seed when comparing plans.
+4. Choose **Run market risk** beside Summary’s navigation. Excel shows progress in the status bar. Wait for **Risk results are current** before printing. If the run fails, read the message on **Risk_Settings** in A44, correct the issue and run again.
 5. Read Summary’s market paths, spending flexibility and inflation, longevity and medical tests. Open **Risk Results** for more detail or **Funding_Paths** for the annual cash flows of the three selected market paths.
 6. Choose the dollar view, then print **Summary** or save it as a PDF.
 
@@ -15,13 +15,13 @@ Keep Excel’s calculation setting on **Automatic** while editing. Changes to th
 
 Excel calculates annual cash flows in the visible worksheets. When the workbook verifies that flexible spending would leave every year unchanged, both spending policies use the same amounts. Each policy still has its own result. The report updates after the entire run passes its checks. You can open, save or print the workbook without starting a run.
 
-Earlier `.xlsx` releases used the local Python runner. Use the documentation from the matching release for those files.
+The published `.xlsx` edition has its own [refresh instructions](https://github.com/Jon-275/financial-model/blob/b40af21ddaa65129bfe7ce180eb336243f5246f9/docs/risk-analysis.md).
 
-To compare spending policies, enter a fixed trial number in **Risk_Trials** cell B3, then enter its flexible partner. For random paths, add 1,000 to the fixed number. For early-loss tests 2001–2013, add 100. Both records are saved even when their outcomes match. Columns I and J show how many years spending was cut and the total reduction in today’s dollars. The seven inflation, longevity and medical tests use fixed spending.
+To compare spending policies, enter a fixed trial number in **Risk_Trials** cell B3, then enter its flexible partner. For random paths, add 1,000 to the fixed number. For early-loss tests 2001–2013, add 100. Both records are saved even when their outcomes match. Columns I and J show how many years spending was cut and the total reduction in today’s dollars. The seven inflation, longevity and medical tests use fixed spending. Enter 0 in B3 to return to the base plan.
 
 ## Read the Summary
 
-- **Success rate.** The percentage and count of simulated paths that paid every year’s required spending and taxes through the selected end age. At least one cent unpaid in any modeled year makes a path unsuccessful, including an amount repaid later. The rate depends on the entered assumptions and the sampled paths.
+- **Success rate.** The headline counts fixed-spending random paths that paid every year’s required spending and taxes through the selected end age. Flexible-spending paths and stress tests have their own results. At least one cent unpaid in any modeled year makes a path unsuccessful, including an amount repaid later. The rate depends on the entered assumptions and the sampled paths.
 - **Middle 80% of simulated balances.** Each age has its own 10th and 90th percentile. Those values can belong to different paths. The line shows the median at each age. Balances are before estimated tax on traditional savings.
 - **Low, median and high funding examples.** Three complete fixed-spending paths near the 10th, 50th and 90th percentiles of ending balances in today’s dollars. Their identities stay the same when the dollar view changes. A positive ending portfolio can coexist with an earlier shortfall when money was unavailable to pay that year’s costs.
 - **First shortfall.** The age and outstanding amount in the first year with unpaid costs. **Risk Results** separates unpaid spending and tax and shows the income, HSA payments and account withdrawals available and used that year. Outstanding bills carry forward with zero financing interest.

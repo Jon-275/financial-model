@@ -1,69 +1,60 @@
 # Test and release guide
 
-Run commands from the repository root. Use Python 3.11 or later, Node.js, and LibreOffice Calc with `soffice` on your path. For a different LibreOffice path, add `--soffice /path/to/soffice` to the scenario test command.
+Households can enter a plan, run market risk and print the report in desktop Excel. Maintainers use Python 3.11 or later, Node.js and LibreOffice Calc to build and test the workbook. The desktop release check uses Excel for Mac. Run commands from the repository root with `soffice` on your path. [User guide](../docs/model-guide.md) · [Build instructions](../README.md)
+
+## Protect personal files
+
+Keep household workbooks outside the checkout or under the ignored `private/` folder. Contribute from a clone of the current repository. If an older checkout contains private files or commits, save your work privately, start with a fresh clone and copy across only the source changes you have reviewed.
+
+In GitHub **Settings → Emails**, copy your noreply address. Set it locally with `git config --local user.email "ADDRESS"`, using the address you copied. Enable the privacy hook, check the configured address and confirm that both tracked workbooks pass the audit.
 
 ```sh
-python3 -m pip install -r tools/requirements.txt
+git config --local core.hooksPath .githooks
+git config --local user.email
+python3 -S -B tools/check_workbook_commit.py --tracked
 ```
 
 ## Run the checks locally
 
+Set `candidate` to the fictional workbook you want to test. The tracked file is the default below. The privacy check above always reads the Git index.
+
 ```sh
-python3 tests/model_acceptance.py --release workbook/retirement-model.xlsm
-PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_privacy.py'
-PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
-PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_report_structure.py'
-PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_native_*.py'
-PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_macro_runner_contract.py'
-PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_workbook_protection.py'
-python3 tests/input_validation_acceptance.py
-python3 tests/phase_readiness_acceptance.py workbook/retirement-model.xlsm
-python3 tests/workbook_protection_acceptance.py workbook/retirement-model.xlsm
-python3 tests/native_integrity_acceptance.py
-python3 tests/report_formula_acceptance.py
-python3 -m unittest discover -s tests -p 'test_xlsx_fixtures.py'
+candidate=workbook/retirement-model.xlsm
+python3 -m pip install -r tools/requirements.txt
+python3 tests/model_acceptance.py --release "$candidate"
+RISK_TEST_WORKBOOK="$candidate" PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_*.py'
 node --test tests/gemini_review.test.mjs
+python3 tests/workbook_protection_acceptance.py "$candidate"
+python3 tests/native_order_acceptance.py "$candidate"
 ```
 
-The release check compares saved cash, taxes, withdrawals and account balances. It also checks the print areas, charts, tab order, worksheet visibility, row shading, solver filters and workbook metadata. The risk tests check the simulator against the workbook. Report tests cover page order, account-access decisions, merged cells and the links to funding details. They recalculate 28 amounts in both dollar views and eight statements about Social Security and survivor timing. The Start Here checks verify its instructions and links against the published guide. Protection tests check which inputs can be edited and whether formulas remain visible. The Node tests cover when Gemini should pass or fail a pull request.
-
-These instructions cover the macro-enabled edition in development. Run the release, scenario and capture checks against your build until the new workbook is published. Set `RISK_TEST_WORKBOOK` to check a specific candidate.
-
-```sh
-candidate=/absolute/path/to/retirement-model.xlsm
-RISK_TEST_WORKBOOK="$candidate" PYTHONPATH=tools python3 -m unittest discover -s tests -p 'test_risk_*.py'
-```
+These checks cover cash, tax, withdrawals, account balances, printed pages, charts, input protection and the calculation order used to recover a market trial. GitHub also checks the public VBA against its embedded copy and runs the standalone test scripts without a custom Python import path. [Workbook checks workflow](../.github/workflows/workbook-checks.yml)
 
 ## Recalculate workbook scenarios
 
-```sh
-python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsm \
-  tests/phase2-fixtures.json --compact --ledger
-python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsm \
-  tests/phase3-fixtures.json --compact --ledger
-```
-
-Each case runs on a temporary copy in LibreOffice. For a completed native run, the runner first checks every saved assumption record against the full value. It uses one short key for those repeated comparisons in the temporary copies. All financial values, formula checks and stale-input comparisons remain in the tests. The runner applies test inputs, clears saved formula results, and checks the recalculated values. Cases use fictional inputs. The Phase 2 file includes the earlier tests for the current workbook. The Phase 3 case checks that required spending can go unpaid in a year even when all taxes are paid.
-
-Use `--case NAME` to run one case, `--jobs 1` if the machine runs low on memory, or `--keep DIRECTORY` to inspect the test copies. The `--compact` option trims inactive calculation rows in temporary copies. For a release, also run representative cases on a full-size copy by omitting `--compact`.
-
-Run `python3 tests/aca_inflation_acceptance.py workbook/retirement-model.xlsm` to check Marketplace coverage when inflation changes each year. It tests plans starting in 2026, 2027 and 2030, compares the workbook and Python results with expected one- and two-person guidelines, and checks a case near the credit cutoff.
-
-Run `python3 tests/survivor_floor_acceptance.py workbook/retirement-model.xlsm` to check the medical reserve after one spouse dies. It verifies the survivor’s medical costs with and without Social Security income.
-
-Run `python3 tests/one_time_expense_acceptance.py workbook/retirement-model.xlsm` to check scheduled bills in the base plan and both market spending policies. It checks bills that share a year, prices in a survivor year, the saved trial results and the refresh message after an amount changes.
-
-The phase-readiness test checks which pay and spending fields a plan needs. It also checks when the longer market tests require a retirement budget beyond the selected end age.
-
-Independently recalculate sampled workbook trials and compare the saved results. The command below covers a fixed path, its flexible-spending partner and the combined stress. For release testing, run every code on a three-pair example with `--codes all`. Test interactive refresh and cancellation in Excel for Mac.
+Run the following in LibreOffice Calc. The scenario tests make temporary copies, enter fictional inputs, clear cached results and recalculate the formulas.
 
 ```sh
-python3 tests/native_flexible_policy_acceptance.py workbook/retirement-model.xlsm
-python3 tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes pairs
-python3 tests/native_capture_acceptance.py workbook/retirement-model.xlsm --codes 1,1001,2205
+python3 tests/input_validation_acceptance.py
+python3 tests/phase_readiness_acceptance.py "$candidate"
+python3 tests/aca_inflation_acceptance.py "$candidate"
+python3 tests/survivor_floor_acceptance.py "$candidate"
+python3 tests/one_time_expense_acceptance.py "$candidate"
+python3 tests/xlsx_acceptance.py "$candidate" tests/phase2-fixtures.json --compact --ledger
+python3 tests/xlsx_acceptance.py "$candidate" tests/phase3-fixtures.json --compact --ledger
+python3 tests/report_formula_acceptance.py
+python3 tests/native_integrity_acceptance.py
+python3 tests/native_closing_acceptance.py "$candidate"
+python3 tests/native_flexible_policy_acceptance.py "$candidate"
+python3 tests/native_capture_acceptance.py "$candidate" --codes pairs
+python3 tests/native_capture_acceptance.py "$candidate" --codes 1,1001,2205
 ```
 
-When changing the Phase 2 cases, generate a candidate file in scratch and compare it before updating the tracked copy.
+The financial cases cover spending, payroll, account access, Marketplace credits under variable inflation, survivor costs and scheduled bills. The market checks compare saved outcomes with worksheet trials and test the annual account balances, spending cuts and handling of stale results. On a three-pair test workbook with a completed run, use `--codes all` to compare every trial.
+
+Use `xlsx_acceptance.py --case NAME` to select a case, `--jobs 1` to limit memory use, `--keep DIRECTORY` to inspect the test copies, or `--soffice /path/to/soffice` to select Calc. The compact tests trim inactive rows in those copies. For a release, also run representative cases without `--compact` to check the full workbook.
+
+If you change the financial fixtures, compare the generated cases before updating the tracked file.
 
 ```sh
 mkdir -p scratch
@@ -73,59 +64,51 @@ diff -u tests/phase2-fixtures.json scratch/phase2-fixtures.json
 
 ## Pull request checks
 
-GitHub requires **Workbook checks**, **Greptile Review** and **Gemini Review** before merging into `main`. It also requires all review threads to be resolved. Workbook checks run on PRs and after changes merge. They include release and privacy checks, simulator and review tests, representative recalculation cases, and direct comparisons between saved market results and the visible trial formulas. [Workbook workflow](../.github/workflows/workbook-checks.yml) · [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
+Before merging to `main`, **Workbook checks**, **Greptile Review** and **Gemini Review** must pass on the latest commit. Resolve every review thread, including findings from a passing review. Fix the issue or explain why the finding does not apply. The workbook checks also run after a merge. [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
-Gemini posts each finding on the relevant line of a ready PR. Fix the issue or explain why the finding does not apply, then resolve the thread. Critical or high-severity findings and incomplete reviews fail the required check. Address every open thread before merging, including findings from a review that passed. Gemini checks changed source, including Excel VBA modules and test fragments, hooks, dependency pins and workflows. A change limited to workbooks, PDFs, Markdown or data fixtures sends no content to Gemini. Workbook checks cover the Excel files and their privacy requirements. Source code and any literals committed to it are sent to the reviewer. Keep personal data and credentials out of source files.
-
-Small changes are reviewed together. On larger PRs, Gemini reviews every source hunk in batches of up to 40,000 characters. Each request has up to four minutes within a shared 25-minute limit. The workflow log records the batch number and elapsed time. A final review compares notes across batches for problems between files. A complete note can exceed the requested 2,400-character length if it still fits the cross-file review. If a note is missing, blank or too long to combine, the reviewer repeats that batch once and retains findings from both responses. The required check fails if the retry also lacks a usable note. The PR receives one required status for its current commit. Missing patches, incomplete responses and failed review passes prevent that status from passing.
-
-**Run Gemini reviewer** is the GitHub Actions job. **Gemini Review** is the result it posts on the PR commit and the check GitHub requires. A title or description edit can create a skipped job entry. Changing the PR base to `main` starts a review.
-
-A maintainer can retry a review from **Actions → Gemini 4 Hydrogen PR Review → Run workflow**. Select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
+**Run Gemini reviewer** is the Actions job that posts the required **Gemini Review** status. A title or description edit can leave a skipped job entry. Check the status on the current commit. Gemini reviews changed source files, which can include VBA, hooks and workflows. Documentation, workbook, PDF and data-only changes send no content to Gemini. Keep personal data and credentials out of source. If a review needs a retry, open **Actions → Gemini 4 Hydrogen PR Review → Run workflow**, select `main` and enter the PR number. [Gemini workflow](../.github/workflows/gemini-review.yml)
 
 ## Where to update the workbook
 
-- **Report layout and navigation.** The report generator defines the decision tabs and appendix index. The layout code sets the print areas, links, row shading and solver filters. [Report generation](../tools/plan_report.py) · [Report layout](../tools/report_layout.py) · [Workbook tab order](../tools/workbook_layout.py)
-- **Annual figures and conversion calculations.** Report data supplies the chart and annual cash figures. The same withdrawal solver serves the base projection and conversion comparison. The comparison writes the detailed results to **Conversion Detail**, and workbook packaging points its charts to that table. [Report data](../tools/dashboard.py) · [Withdrawal solver](../tools/funding_search.py) · [Conversion comparison](../tools/targeting.py) · [Workbook packaging](../tools/package_model.py)
-- **Market runs.** The VBA module chooses each trial and saves its results. The visible annual sheets calculate its cash flows and tax. `Risk_Trials` stores the market outcomes and stress cases, `Funding_Path_Data` holds three complete funding histories, and `Risk_Data` feeds the report. The Python builder independently prepares the fictional example. [Runner source](../tools/vba/RunMarketRisk.bas) · [Runner and workbook interface](../docs/macro-runner.md) · [Public build](../tools/build_model.sh)
+- **Report and navigation.** Edit the page content, print areas, sheet order and links in the report generators. [Report pages](../tools/plan_report.py) · [Layout](../tools/report_layout.py) · [Tab order](../tools/workbook_layout.py)
+- **Annual balances and Roth conversions.** The projection and the conversion comparison share a withdrawal solver. The comparison writes its detailed results to **Conversion Detail**. [Report data](../tools/dashboard.py) · [Withdrawal solver](../tools/funding_search.py) · [Conversion comparison](../tools/targeting.py) · [Workbook packaging](../tools/package_model.py)
+- **Market risk.** The VBA runner selects the trials. The visible worksheets calculate them. **Risk_Trials** stores the outcomes, **Funding_Path_Data** stores three funding histories and **Risk_Data** feeds the report. The builder independently calculates the fictional example. [VBA runner](../tools/vba/RunMarketRisk.bas) · [Runner guide](../docs/macro-runner.md) · [Build script](../tools/build_model.sh)
 
 ## Microsoft Excel release check
 
-Run this release check in Excel for Mac. Set the path below to the candidate workbook. The commands create a test copy with cleared formula results. Keep the clean fictional candidate for sharing. [Build instructions](../README.md#build-the-next-edition)
+Use disposable copies in desktop Excel for Mac. Keep the unedited fictional candidate for publication. Create a copy with cleared formula results for the first two steps.
 
 ```sh
-candidate=/absolute/path/to/retirement-model.xlsm
 mkdir -p scratch
 excel_check=$(mktemp -d "$PWD/scratch/excel-check.XXXXXXXX")
 python3 tools/workbook_recalc.py "$candidate" "$excel_check/retirement-model.xlsm"
 ```
 
-1. Open the copy and check for a repair prompt. Press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Microsoft Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
-2. Verify the saved copy with the command below. On a second copy, change the end age. Check that the projection, balance chart, and shaded rows stop at that age. Refresh market risk for the new end age and check the last row on **Risk Results**.
-3. Verify that the fictional example opens with the success rate, shaded range, and funding examples already visible on **Summary**. On a test copy, change an active assumption and check that the figures and chart range clear. Restore the assumption and check that they return. Run market risk and confirm the results stay in the same workbook. Check progress, cancellation and a successful run after cancellation. Verify that failed or incomplete runs remain unavailable to the report. [Risk refresh instructions](../docs/risk-analysis.md#run-the-analysis)
-4. Open **Income_Targeting** and change the comparison age or conversion amount. Verify the selected-year results and the link to **Conversion Detail**. Check that the charts and detail table update with the selected year. On **Funding_Calc** and **Targeting_Calc**, filter **Calculation step** to **Selected draw**. Compare the annual withdrawal by account with **Cash_Flow** and a tested conversion with its row on **Conversion Detail**. Clear the filters before using the copy for other checks.
-5. Open **Planning Metrics** from **Summary**. Check the section headings, dollar units and links back to the report and annual detail. Select **Summary** and open print preview. With **Active Sheets** selected, verify that Letter and A4 each show four results pages followed by two decision pages. Page 4 must include all seven inflation, longevity and medical stresses. Preview **Annual Detail** separately. Check both dollar views, repeating headers and the last age. With variable inflation enabled, compare representative amounts with that path’s prices and chart bands with the separately calculated nominal percentiles. Save a PDF and inspect all six pages. [Print setup](../docs/model-guide.md#print-your-plan)
-6. Record the Excel versions, checks run, results and any pending platform checks. [Current release record](../docs/release-notes/workbook-layout.md)
+1. Open the copy and confirm it opens without a repair prompt. Press **Control+Option+Shift+F9** to rebuild dependencies and recalculate. Save the copy. [Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
+2. Run `python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsm"`. In a separate copy, change the end age. Confirm that the projection, balance chart and shading stop at the selected age. Run market risk and check the last year on **Risk Results**.
+3. On a fresh copy, confirm **Summary** opens with the success rate, balance range and funding examples. Change an active assumption and check that stale figures clear. Restore the assumption and check that they return. Use **Run market risk**, wait for the results to be current and save. Check progress, cancellation, a successful retry and the report status after an incomplete run. Record whether cancellation was tested with the actual button or through its procedure. [Risk instructions](../docs/risk-analysis.md#run-the-analysis)
+4. On **Income_Targeting**, change the age or conversion amount. Trace the updated chart to **Conversion Detail**. On **Funding_Calc** and **Targeting_Calc**, filter **Calculation step** to **Selected draw**. Check the withdrawal against **Cash_Flow** and the conversion against its detail row, then clear the filters.
+5. Open **Planning Metrics** from **Summary** and follow its links to the report and annual detail. Switch between today’s and future dollars. Check **Annual Detail** through the last age, the funding examples against their own price paths and the balance band against the nominal percentiles in the future-dollar view.
+6. Print **Summary** with **Active Sheets** on Letter and A4. Verify four results pages followed by two decision pages. Page four should show all seven inflation, longevity and medical stresses. Check legends, units and page breaks on both sizes. Preview **Annual Detail** separately and check that headings repeat. Record the candidate revision, Excel version, results and any outstanding checks in the release PR. [Print instructions](../docs/model-guide.md#print-your-plan)
+
+### Compare the saved market results
+
+Run the fictional example in Excel with seed 2026. Save a copy after each run. Compare it with the independent reference using the same financial assumptions. The check compares each outcome and all three ranked funding histories. For a smaller run, it finds the reference histories for that run’s own low, median and high paths.
 
 ```sh
-python3 tests/model_acceptance.py "$excel_check/retirement-model.xlsm"
+python3 tests/native_excel_acceptance.py "$candidate" scratch/example-100-mac.xlsm --expect-reused 46
+python3 tests/native_excel_acceptance.py "$candidate" scratch/example-1000-mac.xlsm --expect-reused 515
 ```
 
-Compare an Excel-saved run with the independently prepared example, using the same assumptions and seed. If the Excel run uses fewer pairs, the check ranks that smaller group and recalculates its low, middle and high funding histories. It checks every annual funding field in all three examples and reports mismatches by trial and field without printing household amounts.
+The expected counts check that Excel reused the fixed result when the flexible policy made no change. Record the path count, Excel version, elapsed time and completion message. Use a fresh copy for each timing.
 
-```sh
-python3 tests/native_excel_acceptance.py "$candidate" "$excel_check/retirement-model.xlsm"
-```
-
-For this fictional example and seed 2026, compare a fresh desktop run with the saved example using `--expect-reused 46` for 100 pairs or `--expect-reused 515` for 1,000 pairs. This also catches a change that preserves the financial results but quietly recalculates every flexible path. Use fresh, separate copies when timing two versions. Record the path count, Excel version, elapsed run time and the completion message on Risk_Settings.
-
-To test cancellation, select a trial on **Risk_Trials** in a fictional workbook with a completed run. Save a baseline copy, run market risk on a second copy, cancel it, then save that copy. The check verifies the original selection, active financial figures, saved run date and all stored results. It also checks that withdrawal-search formulas remain in place and that rows beyond the selected trial’s last year display no values. The same command checks a recovery exercise that restores the original completed run.
+To check cancellation or recovery, select a trial on **Risk_Trials** in a workbook with a completed run and save a baseline copy. Run the exercise on a second copy and save it. The check compares the selected trial, active figures, run date and all previous results. It also checks that the withdrawal formulas remain and that unused years are blank.
 
 ```sh
 python3 tests/native_excel_acceptance.py scratch/before-recovery.xlsm scratch/after-recovery.xlsm --check-restoration
 ```
 
-If an Excel test procedure writes its verdict to a worksheet, add `--expect-pass 'Recovery!A2'` with that sheet and cell. This verifies the desktop test ran successfully as well as checking the final saved state.
+For a test that records its verdict on a worksheet, add `--expect-pass 'Recovery!A2'` using the actual sheet and cell.
 
 ### Reproduce the age-125 comparison
 
@@ -152,15 +135,13 @@ python3 tools/native_bootstrap.py "$capacity/capacity.xlsx" "$capacity/reference
 python3 tests/native_excel_acceptance.py "$capacity/reference.xlsx" /path/to/age-125-mac-run.xlsm --expect-reused 501
 ```
 
-The comparison covers all 2,033 outcomes, the three path rankings, their annual balances and their complete funding histories. The current fixture compares 588,054 fields. Record the Excel runtime separately from the reference build time.
+The comparison covers all 2,033 outcomes, the three path rankings, their annual balances and their complete funding histories. Record the Excel runtime separately from the reference build time.
 
 ### Prepare the release file
 
-Before publishing, confirm that the candidate came from the synthetic build template, contains the exact published VBA source, and holds 1,000 fixed paths, 1,000 paired flexible paths and all 33 stresses for the fictional plan. The content audit checks household inputs, the fixed text on Start Here, investment profiles, stored text and file metadata. These checks run before the file checksum is approved. The template also requires empty formula and chart caches.
+Audit the synthetic inputs, investment profiles, metadata and stored results before updating any approved checksum. The workbook must contain the reviewed VBA source, 1,000 fixed paths, their 1,000 flexible partners, 33 stress cases and three complete funding histories. The synthetic build template must have empty formula and chart caches.
 
-After reviewing the candidate, use the command below to update `EXAMPLE_RISK_SHA256` and `RELEASE_SHA256` in `tools/check_workbook_commit.py`. The trial checksum covers the saved report, the individual trials and the three full funding histories. The full-file checksum includes notes, charts, VBA and every other part of the file. The build template has its own checksum, `TEMPLATE_SHA256`. Audit each artifact before updating its checksum.
-
-To refresh the synthetic template, write fixture cells with the public author and preserve the source workbook's native parts. Use new output paths for each step.
+If the template changes, regenerate it in scratch. Use new output paths so the previous template stays available for comparison.
 
 ```sh
 python3 tools/template_fixture.py workbook/build-template.xlsx scratch/template-plan.json
@@ -168,6 +149,8 @@ python3 tools/author_model.py scratch/template-plan.json scratch/template-cells.
 python3 tools/template_fixture.py workbook/build-template.xlsx scratch/clean-template.xlsx \
   --authored scratch/template-cells.xlsx
 ```
+
+Verify the VBA and example content, then use the reported hashes for the saved results and full workbook in `tools/check_workbook_commit.py`. If the template changes, update its separately audited `TEMPLATE_SHA256`. Stage the intended fictional files and run `python3 -S -B tools/check_workbook_commit.py --tracked` to check the approved contents in the Git index.
 
 ```sh
 PYTHONPATH=tools python3 - "$candidate" <<'PY'
@@ -178,18 +161,18 @@ from check_workbook_commit import audit_sample_workbook
 from package_macro import verify_project
 
 verify_project(sys.argv[1])
-print(audit_sample_workbook(sys.argv[1]))
-print(sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
+print('EXAMPLE_RISK_SHA256', audit_sample_workbook(sys.argv[1]))
+print('RELEASE_SHA256', sha256(Path(sys.argv[1]).read_bytes()).hexdigest())
 PY
 ```
 
+To restore a release, open a PR that restores the verified workbook, matching source, fixtures, checksum values and sample PDF together. Repeat the release and privacy checks against that revision.
+
 ## Check the fictional sample PDF
 
-Use the workbook that produced the sample. The check compares the six printed pages with the saved Summary, checks the portfolio chart against its source values and inspects the PDF for personal information and active content. It runs without Excel. The chart must retain its vector lines and shaded band for the comparison.
+Print **Summary** from the exact fictional candidate with current market results. Use US Letter for the shareable PDF and check all six pages at print size. Keep the dated fictional-example footer, six bookmarks, chart description, vector lines and shaded band. The checker compares the pages and chart with the saved workbook and checks for personal information and active content.
 
 ```sh
 python3 -m pip install pypdf==6.21.4 pdfplumber==0.11.9
-python3 tests/example_pdf_acceptance.py workbook/retirement-model.xlsm docs/examples/retirement-plan-example.pdf
+python3 tests/example_pdf_acceptance.py "$candidate" docs/examples/retirement-plan-example.pdf
 ```
-
-To preview a new edition in Excel, select **Summary**, confirm the fictional scenario and completed market run, and print the active sheet on US Letter paper. Confirm six pages in print preview. The public PDF includes a dated fictional-example footer, six bookmarks and a text description of the chart. Review the pages at print size before sharing.

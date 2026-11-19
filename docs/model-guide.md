@@ -2,13 +2,15 @@
 
 ## Run your first plan
 
-1. **Save a private copy.** The saved scenarios use fictional figures. Select **Open Inputs** on **Start Here** to begin.
-2. **Pick a scenario.** On **Inputs**, choose 1 for the example, 2 to retire later or 3 to test 10% lower retirement spending. Edit the highlighted scenario column. **Jump to** takes you to each group of inputs.
+1. **Save a private copy.** Open the [macro-enabled workbook](../workbook/retirement-model.xlsm) in desktop Excel for Mac. Keep the `.xlsm` format so the Run button works. On **Start Here**, choose **Open Inputs**.
+2. **Pick a scenario.** On **Inputs**, select a scenario in **B4**. Edit the highlighted column. Use D for the example, E for later retirement or F for 10% lower retirement spending. **Jump to** takes you to each group of inputs.
 3. **Enter your figures.** Review ages, pay, savings and spending. Choose the last age to show, up to 125. Use today’s dollars unless a note says otherwise. Optional settings are visible below the main assumptions.
-4. **Review Summary.** Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
-5. **Run market risk.** Open your copy in desktop Excel with macros enabled. On **Risk_Settings**, choose 100 paths while editing and 1,000 for the final report. Select **Run market risk** on **Summary**. Print when the status says **Risk results are current**. [Risk instructions](risk-analysis.md#run-the-analysis)
+4. **Review Summary.** With Excel set to Automatic calculation, the base projection updates as you edit. Start with the outlook, then look at how the plan pays for retirement. If the status asks you to review an input, follow the note beneath it.
+5. **Run market risk when you’re ready.** You can make several edits before running the scenarios. On **Risk_Settings**, use 100 paired paths for a quick comparison or 1,000 for the final report. In desktop Excel with macros enabled, select **Run market risk** on **Summary** to start the full calculation. Print when the status says **Risk results are current**. [Risk instructions](risk-analysis.md#run-the-analysis)
 
 To compare plans, save Summary as a PDF before changing an assumption. Run market risk again and compare the two reports. Each completed run replaces the last one.
+
+When sharing the workbook for others to use, send a fresh fictional copy. Your working file contains household inputs for all three scenarios and saved market results.
 
 Select any formula cell to read its calculation in the formula bar. You can edit scenario inputs, investment assumptions, the conversion comparison, risk settings and published tax values while the sheets are protected. To change a formula in your own copy, choose **Review → Unprotect Sheet**. No password is needed.
 
@@ -87,7 +89,7 @@ Use **Inputs B132** for a separate medical inflation rate, or leave it blank to 
 ## Compare Roth conversions and market risk
 
 - **Income_Targeting.** Enter a retirement age or use 0 for the first retirement year. Start with a zero conversion, then test a larger amount in that year’s dollars. Compare how much can convert, the withdrawals needed for bills, and the change in tax and healthcare costs. Select **Open conversion detail** for the full table. Apply a conversion on **Inputs** to see its effect over the full plan. [Conversion comparison](workbook-schedules.md#income_targeting)
-- **Risk_Settings.** Estimate the share of non-mortgage retirement living costs you could reduce and how much you would cut from that share. The next row shows the combined reduction. Review the path count, seed and inflation mode, then choose **Run market risk** on Summary after changes. Read the success rate, funding examples and stress tests in the report. **Risk Results** and **Funding_Paths** provide supporting detail. [Portfolio risk analysis](risk-analysis.md)
+- **Risk_Settings.** B6 sets the portfolio level that triggers a spending cut. B7 sets the cut and B8 sets the share of non-mortgage living costs you can reduce. B10 shows the combined effect. For example, a 15% cut to a 30% flexible share reduces eligible living costs by 4.5% in a year when the rule applies. [Market risk guide](risk-analysis.md#spending-flexibility)
 - **Portfolio management.** Use the portfolio guide to record tax loss and gain harvesting decisions. [Portfolio management](portfolio-management.md)
 
 ## How the model works
@@ -142,4 +144,4 @@ The workbook applies investment returns after deposits and withdrawals. The esti
 
 Use separate estimates for life insurance, pension survivor choices, the joint tax return for the year of death, the adjustment to cost basis at death and an HSA transfer after the owner’s death. The tax schedules also leave out qualified charitable distributions, medical-expense deductions, the federal senior deduction, state-law changes, California tax on HSA earnings and California’s separate treatment of certain municipal interest.
 
-See the Phase 2 release record for sources, assumptions and verification. [Phase 2 release record](release-notes/phase-2.md)
+For the annual cash flow, account-access and funding calculations, see the [workbook schedules](workbook-schedules.md).
