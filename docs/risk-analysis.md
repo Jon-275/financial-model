@@ -13,6 +13,8 @@ Market risk tests whether income and accessible savings pay the plan’s spendin
 
 Keep Excel’s calculation setting on **Automatic** while editing. Changes to the active financial assumptions mark the previous risk results out of date. Choose **Run market risk** again to replace them. A cancelled, failed or incomplete run does not supply current report results. Switching the dollar view uses the same completed run.
 
+Allow time for the final run. In desktop Excel for Mac, 1,000 pairs took about 8 minutes for the example plan (ages 35–95) and 33 minutes for the full age range (0–125). Your run time will depend on your Mac and your plan.
+
 Excel calculates annual cash flows in the visible worksheets. When the workbook verifies that flexible spending would leave every year unchanged, both spending policies use the same amounts. Each policy still has its own result. The report updates after the entire run passes its checks. You can open, save or print the workbook without starting a run.
 
 To compare spending policies, enter a fixed trial number in **Risk_Trials** cell B3, then enter its flexible partner. For random paths, add 1,000 to the fixed number. For early-loss tests 2001–2013, add 100. Both records are saved even when their outcomes match. Columns I and J show how many years spending was cut and the total reduction in today’s dollars. The seven inflation, longevity and medical tests use fixed spending. Enter 0 in B3 to return to the base plan.
