@@ -27,8 +27,8 @@ If an agency has yet to publish a value, record the estimate and how the model c
 ## Verify and record the release
 
 1. [Build a candidate workbook](../README.md#build-the-next-edition) with the fictional scenario.
-2. Run the [workbook and risk tests](../tests/README.md) against the candidate. Exercise the years before and after each changed figure takes effect. Check the workbook against the risk report with returns set to the plan assumptions.
+2. Run the [workbook and risk tests](../tests/README.md) against the candidate. Test the years before and after each changed figure takes effect. Compare the base projection with a market trial that uses the plan’s assumed returns.
 3. Complete the [desktop Excel release check](../tests/README.md#microsoft-excel-release-check) and open a PR with the source changes, fixtures and rebuilt workbook.
-4. Record the review date, the years checked, the agency links, any values or estimates that changed, and the checks that passed. Link the merged PR from the release record. [Current release record](release-notes/workbook-layout.md)
+4. Record the review date, years checked, agency sources, changes and test results in the notes for the release being prepared. Include the merged PR. [Previous release notes](archive/README.md)
 
 If a release needs to be restored, use a PR to restore the matching source, test data and workbook from the last verified release.

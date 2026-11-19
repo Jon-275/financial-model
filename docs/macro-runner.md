@@ -2,7 +2,7 @@
 
 In Excel for Mac, **Run market risk** calculates the selected market paths and required stresses. The macro coordinates the run. The visible worksheets calculate taxes, healthcare costs, withdrawals and account access.
 
-On the test Mac, the 100-pair example through age 95 completed in 63 seconds. The workbook produced all 233 outcomes, including 33 stress cases. Longer horizons and more paths take more time. [Desktop timing and verification](native-risk-implementation.md)
+With 1,000 pairs and 33 stress cases, the worksheet refresh took 7 min 52 sec through age 95 and 33 min 10 sec through age 125 on the test Mac. [Desktop timing and verification](native-risk-implementation.md#full-report-comparison)
 
 ## Run and inspect
 

@@ -137,7 +137,7 @@ A later correction affected two comparison columns on **Market_Paths**. For an e
 
 An earlier build recorded each retry. It took 10 min 2 sec for the example and 27 min 30 sec through age 125. Eight example trials and 90 maximum-horizon trials failed an initial closing check. Excel recalculated each affected trial in year order, and all 588,054 fields in both runs matched the independent reference.
 
-The final draft workbook also passed a fresh one-pair run using its public macro. All 35 outcomes and the three funding examples matched over 24,618 fields. Changing the displayed dollar units updated Annual Detail and preserved the completed market results. The run restored the original idle trial selection. Its withdrawal table retained all 555,875 formulas and contained no displayed amounts after the run. Desktop Excel exported the six-page Summary on Letter and A4, with all 335 printable cells present on each paper size.
+The worksheet build used for those two baseline runs (workbook SHA-256 prefix `332fb361d3dd`) also passed a one-pair test using its public macro. All 35 outcomes and the three funding examples matched over 24,618 fields. Changing the displayed dollar units updated Annual Detail and preserved the completed market results. The run restored the original idle trial selection. Its withdrawal table retained all 555,875 formulas and contained no displayed amounts after the run. Desktop Excel exported the six-page Summary on Letter and A4, with all 335 printable cells present on each paper size.
 
 ### Earlier timings by plan length
 

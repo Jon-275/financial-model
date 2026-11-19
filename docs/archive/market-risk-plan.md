@@ -1,6 +1,6 @@
 # Market risk and funding decisions
 
-This document records the design of the earlier five-page, macro-free workbook. For the current six-page report and Excel scenario runner, see the [market risk guide](risk-analysis.md) and [workbook schedules](workbook-schedules.md).
+Archived design for the five-page, macro-free workbook. For instructions for the macro-enabled edition, see the [market risk guide](../risk-analysis.md).
 
 The printed plan shows whether the base case covers its costs, how often it does so when markets vary, and which spending choices affect the result. **Risk Results** shows the first shortfall age when one occurs, the bills that went unpaid, and the income and savings the plan could use.
 
@@ -35,8 +35,8 @@ The report shows the refresh step where the risk figure would normally appear if
 - Check workbook output with no results, current results, changed assumptions, scenario switches, restored assumptions, and invalid input. Verify both dollar views against the annual cash-flow schedules and check that the success rate and shortfall ages agree. Confirm that a failed refresh preserves the original file and never creates a partial deliverable.
 - Measure refresh time and peak memory on the standard scenario and the longest supported horizon. Confirm that ordinary workbook recalculation requires only the light display and freshness formulas.
 - Review the workbook in desktop Excel and check US Letter and A4. Print **Summary** as three results pages and two decision pages. Check the balance range, funding table, and navigation to **Risk Results**. Record the platforms and versions tested.
-- Update the [model guide](model-guide.md), [risk guide](risk-analysis.md), build and release checks, and workbook instructions. Keep maintainer steps separate from the reader’s refresh instructions.
+- Update the [model guide](../model-guide.md), [risk guide](../risk-analysis.md), build and release checks, and workbook instructions. Keep maintainer steps separate from the reader’s refresh instructions.
 
 The first integrated market risk release passed 80 workbook scenarios, 34 risk tests, and the workbook refresh test. [Market risk release](https://github.com/Jon-275/financial-model/pull/11)
 
-See the current release record for the five-page **Summary**, appendix layout, and Excel checks. [Current release record](release-notes/workbook-layout.md)
+The release record describes its five-page **Summary**, appendix layout and Excel checks. [Five-page release record](../release-notes/workbook-layout.md)
