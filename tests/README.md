@@ -43,7 +43,24 @@ Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **
 
 ## Share an updated workbook
 
-Use the unedited fictional workbook for distribution. Check its inputs, saved results, embedded VBA and file properties before updating the approved checksums. Stage the intended files, then run `python3 -S -B tools/check_workbook_commit.py --tracked` to verify the staged workbook and template. [Workbook privacy check](../tools/check_workbook_commit.py) · [VBA verification](../tools/package_macro.py)
+Use the unedited fictional workbook for distribution. Set `workbook` to the new file. Check its inputs and properties, then verify the embedded VBA and calculate the two checksums for the release.
+
+```sh
+PYTHONPATH=tools python3 - "$workbook" <<'PY'
+import sys
+from hashlib import sha256
+from pathlib import Path
+from check_workbook_commit import audit_sample_workbook
+from package_macro import verify_project
+
+book = Path(sys.argv[1])
+verify_project(book)
+print("EXAMPLE_RISK_SHA256", audit_sample_workbook(book))
+print("RELEASE_SHA256", sha256(book.read_bytes()).hexdigest())
+PY
+```
+
+After reviewing the results, update the matching values in the privacy checker. Stage the intended files and run `python3 -S -B tools/check_workbook_commit.py --tracked` to verify the staged workbook and template. [Workbook privacy check](../tools/check_workbook_commit.py) · [VBA verification](../tools/package_macro.py)
 
 Print the sample PDF from that same workbook and compare it with the saved Summary. Include a copy of the license when sharing the workbook. [Apache License 2.0](../LICENSE)
 
