@@ -1,12 +1,12 @@
 # Retirement planner
 
-## Explore whether your retirement plan can cover the bills.
+## Plan your retirement in Excel.
 
-An Excel retirement planner for couples modeling US federal and California taxes. Compare retirement ages, spending choices and changing market returns, with calculations you can inspect.
+See whether income and savings can cover spending and taxes through retirement. Compare retirement ages, budgets and market returns. The model estimates US federal and California taxes for a couple, with an option to model a surviving spouse.
 
 **[Download for Excel for Mac](https://github.com/Jon-275/financial-model/raw/main/workbook/retirement-model.xlsm)** · **[Preview the example report](docs/examples/retirement-plan-example.pdf)** · **[Try the guided example](docs/getting-started.md)**
 
-For educational use. All published examples are fictional. Results depend on your assumptions and the model's scope; they are not a guarantee. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
+For educational use. The examples use fictional figures. Results depend on your assumptions. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
 <a href="docs/examples/retirement-plan-example.pdf"><img src="docs/images/summary.png" alt="Fictional example report showing the retirement outlook and a range of simulated portfolio balances" width="680"></a>
 
@@ -33,7 +33,7 @@ You do not need to install Python or clone this repository to use the workbook. 
 3. Compare the provided later-retirement or lower-spending scenario, or change one highlighted input. Review how the base result changes.
 4. When ready, review investment assumptions and choose **Run market risk**. Wait for **Risk results are current**, then print **Summary** or save it as a PDF.
 
-The [guided example](docs/getting-started.md) explains what to look for and how to recover if something does not work. Review all assumptions before entering your own figures.
+Follow the [guided example](docs/getting-started.md), then review the assumptions before entering your own figures.
 
 ## What you can explore
 
@@ -67,7 +67,7 @@ The [guided example](docs/getting-started.md) explains what to look for and how 
 
 ## About the project
 
-Created by [Jon](https://github.com/Jon-275). The project combines a Python workbook builder, visible Excel calculations and a VBA market-risk runner. Read the [engineering case study](docs/case-study.md) for design decisions, validation and limitations.
+Created by [Jon](https://github.com/Jon-275). Python builds the workbook. Excel formulas calculate the plan. A VBA macro runs the market tests. Read [how the project works](docs/case-study.md) for the design choices, checks and limits.
 
 For development, use the [build and testing instructions](tests/README.md). Review published tax figures using the [annual tax review](docs/annual-tax-review.md). [Website and release maintenance](docs/publishing.md)
 

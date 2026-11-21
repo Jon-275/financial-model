@@ -26,9 +26,9 @@ The published example begins at age 35, retires at 60 and projects through 95. I
 
 Select the later-retirement scenario on **Inputs**, then return to **Summary**. Compare retirement age, funding and when income or savings pays the bills. Next try the lower-spending scenario.
 
-For a controlled comparison, save the baseline Summary as a PDF, return to the example and change only the highlighted retirement-spending input. Review the base result again. Editing inputs makes the previous market-risk result out of date; it does not silently rerun simulations.
+To compare one change, save Summary as a PDF, return to the example and change only the highlighted retirement-spending input. Review the base result again. Editing inputs makes the previous market-risk result out of date; it does not silently rerun simulations.
 
-Do not interpret a positive ending balance alone as proof that every year's bills were paid. Account access and timing matter. [Reading the results](model-guide.md#read-the-results)
+A positive ending balance does not mean every year's bills were paid. Check when savings became available and when bills came due. [Reading the results](model-guide.md#read-the-results)
 
 ## 4. Run market risk when ready
 
@@ -36,7 +36,7 @@ Review **Asset_Allocation** and **Risk_Settings**. Use **100 paired paths** for 
 
 Excel displays progress in its status bar. Wait for **Risk results are current**. For a final report, use 1,000 pairs. The documented example took about 8 minutes at 1,000 pairs; the full age range took 33 minutes. Runtime depends on the Mac and plan. Use the workbook's **Cancel** button if needed and wait for confirmation.
 
-Read the success rate together with balance ranges, spending cuts and stress tests. It describes the simulated outcomes under your assumptions. [Market-risk interpretation](risk-analysis.md#read-the-summary)
+Read the success rate, balance range, spending cuts and stress tests together. They show what happened in the model under your assumptions. [Market-risk interpretation](risk-analysis.md#read-the-summary)
 
 ## 5. Save a report, then build your own plan
 
