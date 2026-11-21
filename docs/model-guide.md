@@ -1,5 +1,7 @@
 # Retirement model guide
 
+New to the planner? [Try the guided fictional example](getting-started.md) before entering household information.
+
 ## Run your first plan
 
 1. **Save a private copy.** Download the planner and open it in desktop Excel for Mac. Keep the `.xlsm` format so the Run button works. On **Start Here**, choose **Open Inputs**. [Download the workbook (.xlsm)](../workbook/retirement-model.xlsm?raw=true)

@@ -1,0 +1,21 @@
+name: Help using the planner
+description: Ask a question about the fictional example or workbook workflow.
+title: "Help: "
+body:
+  - type: markdown
+    attributes:
+      value: "Use fictional figures. Never attach your personal workbook or report, and remove household information from screenshots. Try the guided example in docs/getting-started.md first."
+  - type: input
+    id: environment
+    attributes:
+      label: Excel and operating system versions
+      placeholder: "Excel for Mac version …; macOS …"
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: What are you trying to do?
+      description: Include the sheet name and any exact message, using fictional figures.
+    validations:
+      required: true

@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Guided first-use example
+    url: https://github.com/Jon-275/financial-model/blob/main/docs/getting-started.md
+    about: Start with fictional figures and troubleshoot common issues.
