@@ -11,7 +11,13 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def build(output):
     output = output.resolve()
+    marker = output / ".retirement-planner-site"
+    if output.exists() and any(output.iterdir()):
+        if not marker.is_file():
+            raise ValueError("Choose an empty directory or an existing generated site directory")
+        shutil.rmtree(output)
     output.mkdir(parents=True, exist_ok=True)
+    marker.touch()
     for name in ("index.html", "styles.css"):
         shutil.copy2(ROOT / "site" / name, output / name)
     assets = output / "assets"
