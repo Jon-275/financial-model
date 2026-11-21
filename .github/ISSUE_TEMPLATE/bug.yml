@@ -1,0 +1,31 @@
+name: Report a problem
+description: Report a reproducible issue using fictional figures.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: "Do not attach personal workbooks, reports or household information. Reproduce the issue with the fictional example."
+  - type: input
+    id: version
+    attributes:
+      label: Planner version or download date, Excel version and operating system
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce with fictional figures
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result and exact message
+    validations:
+      required: true
