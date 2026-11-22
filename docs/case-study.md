@@ -4,13 +4,13 @@ By [Jon](https://github.com/Jon-275). [Try the example](getting-started.md) · [
 
 ## What I wanted to solve
 
-A retirement plan needs to show whether you can pay each year's bills. A final balance can hide problems: income may start too late, savings may be unavailable, or withdrawals may raise taxes and healthcare costs.
+A retirement plan needs to show whether you can pay each year's bills. A final balance can hide late income, savings you cannot yet access, or higher tax and healthcare costs.
 
-I built an Excel planner that shows those details. Users can compare three scenarios, test market returns and save a six-page report with the inputs behind it.
+I built the planner to show those details. Users can compare three scenarios, test market returns and save a six-page report with its inputs.
 
 ## How it works
 
-Python builds the workbook from source files. Visible Excel formulas calculate income, spending, taxes, withdrawals and account balances. A VBA macro runs market trials through those calculations and saves the results.
+Python builds the workbook. Excel formulas calculate income, spending, taxes, withdrawals and balances. A VBA macro runs market trials through those formulas and saves the results.
 
 | Choice | Reason | Code or guide |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ Python builds the workbook from source files. Visible Excel formulas calculate i
 
 The repository includes expected results for sample plans, tests for financial calculations and reports, and recalculation checks in LibreOffice. The [Excel check procedure](../tests/README.md#verify-a-changed-workbook-in-excel) covers opening the file, changing inputs, running and cancelling trials, and comparing saved results with an independent calculation.
 
-These checks serve different purposes. Passing CI does not prove that every Excel action works. See the [test instructions](../tests/README.md) and [CI results](https://github.com/Jon-275/financial-model/actions/workflows/workbook-checks.yml) for the evidence.
+Automated checks and native Excel checks serve different purposes. Passing CI does not prove that every Excel action works. See the [test instructions](../tests/README.md) and [CI results](https://github.com/Jon-275/financial-model/actions/workflows/workbook-checks.yml) for the evidence.
 
 ## Example output
 

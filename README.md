@@ -1,6 +1,6 @@
 # Retirement planner
 
-Plan retirement spending, taxes and market risk in Excel for Mac. Compare retirement ages and budgets, then inspect the calculations behind the results.
+Test whether income and savings can cover spending and taxes through retirement. Compare retirement ages, budgets and market returns.
 
 The model estimates US federal and California taxes for couples, with an option to model a surviving spouse. It is for educational use and includes fictional examples. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
@@ -19,9 +19,13 @@ The model estimates US federal and California taxes for couples, with an option 
 
 You do not need Python or a copy of the source code. Save a private copy before entering personal figures.
 
+## Test different scenarios
+
+Start with the [fictional example](docs/getting-started.md). On **Inputs**, select later retirement or lower spending, then compare **Summary**. Save a report before changing a plan. Run market risk again before comparing market results.
+
 ## Follow the workbook
 
-[Try the fictional example](docs/getting-started.md), then follow the tabs from left to right:
+Follow the tabs from left to right:
 
 | Tab | What to do |
 | --- | --- |
