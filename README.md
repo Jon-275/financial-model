@@ -2,7 +2,7 @@
 
 ## Plan your retirement in Excel.
 
-See whether income and savings can cover spending and taxes through retirement. Compare retirement ages, budgets and market returns. The model estimates US federal and California taxes for a couple, with an option to model a surviving spouse.
+Test whether income and savings can cover spending and taxes through retirement. Compare retirement ages, budgets and market returns. The model estimates US federal and California taxes for a couple, with an option to model a surviving spouse.
 
 **[Download for Excel for Mac](https://github.com/Jon-275/financial-model/raw/main/workbook/retirement-model.xlsm)** · **[Preview the example report](docs/examples/retirement-plan-example.pdf)** · **[Try the guided example](docs/getting-started.md)**
 
@@ -26,7 +26,7 @@ For educational use. The examples use fictional figures. Results depend on your 
 
 You do not need to install Python or clone this repository to use the workbook. [Versioned downloads and release notes](https://github.com/Jon-275/financial-model/releases)
 
-## Try one decision first
+## Test different scenarios
 
 1. Save a private copy and open **Start Here** in desktop Excel for Mac.
 2. Choose **Open Inputs**, select the fictional example and review **Summary**.
