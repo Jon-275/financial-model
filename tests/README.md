@@ -1,6 +1,6 @@
 # Workbook checks for maintainers
 
-Use these checks when changing the planner or preparing a workbook to share. For help entering household figures, see the [first-use guide](../docs/model-guide.md#run-your-first-plan).
+Use these checks when changing the planner or preparing a workbook to share. For help entering household figures, see the [first-use guide](../docs/getting-started.md).
 
 ## Set up a working copy
 

@@ -2,14 +2,17 @@
 
 The **Run market risk** button on **Summary** refreshes the market results in desktop Excel. The visible worksheets calculate cash flow, taxes, healthcare, withdrawals and account balances. The macro selects trials, checks the results and updates the report. [Market risk guide](risk-analysis.md)
 
-## Run and inspect
+## Inspect a trial
 
-1. Open a private copy of `retirement-model.xlsm` in desktop Excel with macros permitted. Keep calculation on **Automatic** while editing. Excel for the web can display the saved results. [Excel for the web and VBA](https://support.microsoft.com/en-us/excel/work-with-vba-macros-in-excel-for-the-web)
-2. Check the base plan on **Summary**. On **Risk_Settings**, set **Paired market paths** in B29. Use 100 pairs while comparing edits and 1,000 for the final report. Each run adds 33 stress cases. Keep the seed in B30 fixed when comparing plans.
-3. Choose **Run market risk** on the right side of **Summary**. Excel shows progress in its status bar. To request a stop, choose **Cancel** beside the run button and wait for the workbook to confirm cancellation.
-4. Read or print the report when **Summary** says **Risk results are current**. If a run fails, read the message on **Risk_Settings** in A44. An interrupted run keeps the previous completed figures in the detail sheets and withholds the success rate until a new run finishes.
+For setup, running, cancellation and error messages, follow the [market risk guide](risk-analysis.md#run-the-analysis).
 
-To inspect one trial, enter its number in **Risk_Trials** B3. Row 7 shows the selected result. Saved results start in row 8. Enter 0 to return to the main plan. On **Market_Paths**, AH shows the spending cut the flexible rule would allow, AI shows its balance threshold and AE shows the cut actually applied.
+On **Risk_Trials**, enter a trial number in **B3**. Row 7 shows its result; saved results start in row 8. Enter **0** to return to the base plan.
+
+- For a random fixed-spending trial, add **1,000** to select its flexible partner.
+- For early-loss trials **2001–2013**, add **100** for the flexible partner.
+- The seven inflation, longevity and medical tests use fixed spending.
+
+Both paired records are saved even when their outcomes match. Columns **I–J** show years with cuts and the total cut in today's dollars. On **Market_Paths**, AH shows the allowed cut, AI the balance threshold and AE the actual cut.
 
 ## How Excel verifies a run
 

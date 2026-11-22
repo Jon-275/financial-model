@@ -1,58 +1,48 @@
-# Try the retirement planner
+# Try the example
 
-Start with fictional figures so you can learn the workflow before entering household information. No Python installation or repository clone is needed.
+Use fictional figures for your first run. You do not need Python or a copy of the source code.
 
-[Download for Excel for Mac](https://github.com/Jon-275/financial-model/raw/main/workbook/retirement-model.xlsm) · [Preview the six-page example report](examples/retirement-plan-example.pdf)
+[Download for Excel for Mac](https://github.com/Jon-275/financial-model/releases/latest/download/retirement-model.xlsm) · [View the example report](examples/retirement-plan-example.pdf)
 
-## Check compatibility
+## Start Here: save a copy
 
-Use desktop Excel for Mac and save in `.xlsm` format. The market-risk calculation uses VBA macros; follow your organization's macro policy. Windows, LibreOffice and other spreadsheet apps are not verified release targets. Excel for the web can display saved results but cannot run the VBA analysis.
+Open the workbook in desktop Excel for Mac and save a private copy in `.xlsm` format. Keep calculation set to **Automatic**. Macros are required to run market risk; follow your organization's policy.
 
-The base projection updates with Excel calculation set to **Automatic**. You can review inputs and the base result before running market risk. If your macro policy prevents the navigation buttons from working, select the **Inputs** and **Summary** sheet tabs directly.
+Choose **Open Inputs**. If a navigation button does not work, select the sheet tab directly. Excel for the web can show saved results but cannot run the analysis. Windows and other spreadsheet apps are not verified release targets.
 
-## 1. Open a private example copy
+## Inputs: choose a scenario
 
-Save the download somewhere private with a name you recognize, such as `retirement-plan-learning.xlsm`. Open **Start Here**, then **Open Inputs**. Select the example scenario in **Inputs B4**. The highlighted column is the editable scenario; column D holds the example, E compares later retirement and F compares spending 10% less in retirement.
+Select the example in **B4** and keep its fictional figures. Column D holds the example, E compares later retirement and F compares spending 10% less in retirement. Edit only the shaded input cells for the selected scenario.
 
-Keep the fictional figures for this walkthrough. Your personal workbook will contain inputs for all three scenarios and saved market results.
+## Summary: read and compare
 
-## 2. Read the base result
+Read whether the base plan covers spending and taxes through the end age. If not, find the first shortfall age and year.
 
-Open **Summary**. Start with whether the base plan covers spending and taxes through the selected end age. If it does not, look for the first shortfall age and year. The base result uses the entered return assumptions; market simulations are a separate analysis.
+Return to **Inputs**, select the later-retirement or lower-spending scenario, then compare **Summary**. A positive ending balance does not mean every year's bills were paid. Check when income starts and savings become available.
 
-The published example begins at age 35, retires at 60 and projects through 95. Its figures illustrate one set of assumptions. Your copy's saved report can differ if its version or settings differ.
+## Asset_Allocation and Risk_Settings: review and run
 
-## 3. Compare one change
+Review the investment mix on **Asset_Allocation**. On **Risk_Settings**, choose **100 paired paths** for a first run. Keep the seed unchanged when comparing plans.
 
-Select the later-retirement scenario on **Inputs**, then return to **Summary**. Compare retirement age, funding and when income or savings pays the bills. Next try the lower-spending scenario.
+Return to **Summary** and choose **Run market risk**. Watch Excel's status bar and wait for **Risk results are current**. [Settings and result definitions](risk-analysis.md)
 
-To compare one change, save Summary as a PDF, return to the example and change only the highlighted retirement-spending input. Review the base result again. Editing inputs makes the previous market-risk result out of date; it does not silently rerun simulations.
+Use 1,000 pairs for a final report. The documented final example took about 8 minutes; the full age range took 33 minutes. Your Mac and plan affect runtime.
 
-A positive ending balance does not mean every year's bills were paid. Check when savings became available and when bills came due. [Reading the results](model-guide.md#read-the-results)
+## Summary: save the report
 
-## 4. Run market risk when ready
+Choose today's or future dollars. Select only **Summary**, then **File → Print → Active Sheets** to print or save all six pages as a PDF.
 
-Review **Asset_Allocation** and **Risk_Settings**. Use **100 paired paths** for an exploratory run, keeping the seed unchanged when comparing plans. On **Summary**, choose **Run market risk** with macros permitted.
-
-Excel displays progress in its status bar. Wait for **Risk results are current**. For a final report, use 1,000 pairs. The documented example took about 8 minutes at 1,000 pairs; the full age range took 33 minutes. Runtime depends on the Mac and plan. Use the workbook's **Cancel** button if needed and wait for confirmation.
-
-Read the success rate, balance range, spending cuts and stress tests together. They show what happened in the model under your assumptions. [Market-risk interpretation](risk-analysis.md#read-the-summary)
-
-## 5. Save a report, then build your own plan
-
-Choose today's or future dollars on **Summary**. Select only that sheet, then **File → Print → Active Sheets** to print or save all six pages as a PDF. Check the scenario, dollar view and risk status first.
-
-Create another private workbook copy for personal planning. Begin with ages, income, balances and spending, then review every relevant assumption, including healthcare and account access. The [full model guide](model-guide.md) explains the details and [items to estimate separately](model-guide.md#items-to-estimate-separately).
+For your own plan, save another private copy and follow the [workbook guide](model-guide.md). Review all inputs before relying on the results. Save a report before changing a plan; a new market run replaces the old results.
 
 ## If something does not work
 
-| What you see | What to try |
+| Problem | What to do |
 | --- | --- |
-| A navigation button does nothing | Open the named sheet tab directly. Check your organization's macro policy before running market risk. |
-| Base results do not update | Check Excel calculation is set to Automatic. |
-| Summary asks you to review an input | Follow the message beneath the status and resolve it before running risk. |
-| Market results are out of date | Finish editing, then run market risk again. |
-| A run fails | Read **Risk_Settings A44**, correct the reported issue and rerun. A failed run is not a current report. |
-| The file lost its Run button or macro functionality after saving | Return to the original download and retain `.xlsm` format. |
+| A button does nothing | Select the sheet tab directly. Check your macro policy before running market risk. |
+| Results do not update | Set Excel calculation to Automatic. |
+| Summary asks you to review an input | Follow the note beneath the status and correct the input. |
+| Risk results are out of date | Finish editing, then run market risk again. |
+| A run fails | Read the message in **Risk_Settings A44**, correct the issue and rerun. |
+| You need to stop a run | Choose **Cancel** and wait for confirmation. |
 
-[Ask for help](https://github.com/Jon-275/financial-model/issues/new/choose) with your Excel version, macOS version, steps and the exact message. Use fictional figures and remove personal information from screenshots. Do not upload a personal workbook or report.
+[Ask for help](https://github.com/Jon-275/financial-model/issues/new/choose) with the planner version or download date, Excel and macOS versions, steps and exact message. Use fictional figures. Do not attach a personal workbook or report.
