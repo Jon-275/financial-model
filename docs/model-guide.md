@@ -89,7 +89,9 @@ The display limit controls the range shown in Conversion Detail and the charts b
 
 Review the spending-cut rule, number of paired paths, seed and inflation settings. Use **100 pairs** while comparing changes or **1,000 pairs** for a final report. Keep the seed unchanged when comparing plans.
 
-Finish reviewing the assumptions, including **Tax_Tables**, then return to **Summary** and choose **Run market risk**. Progress appears in Excel's status bar. Wait for **Risk results are current** before printing. Use **Cancel** to stop a run and wait for confirmation.
+Finish reviewing the assumptions, including **Tax_Tables**, then close other workbooks and return to **Summary**. Choose **Run market risk**. Progress appears in Excel's status bar. Wait for **Risk results are current** before printing. Use **Cancel** to stop a run and wait for confirmation.
+
+The runner recalculates all open workbooks. Keeping only your plan open avoids extra work during each trial.
 
 The documented 1,000-pair example took about 8 minutes; the full age range took 33 minutes. Runtime depends on your Mac and plan. [Settings and results](risk-analysis.md)
 

@@ -2,6 +2,7 @@
 from collections import defaultdict
 import os
 from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 
 from lxml import etree as E
@@ -12,6 +13,19 @@ from xlsx_read import Workbook
 
 
 class DecisionLayoutTests(unittest.TestCase):
+    def test_saved_example_can_prepare_a_scenario_calculation_copy(self):
+        from prepare_native_cache import prepare_cache_copy
+        path = Path(os.environ.get('RISK_TEST_WORKBOOK',
+                                   Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'))
+        with Workbook(path) as book:
+            count = int(book['Risk_Settings']['B29'].value)
+            context = book['Risk_Data']['Z8'].value
+        with TemporaryDirectory() as directory:
+            target = Path(directory) / 'scenario.xlsx'
+            checked = prepare_cache_copy(path, target, count, context)
+            self.assertGreater(checked, 0)
+            self.assertTrue(target.is_file())
+
     def test_guidance_cannot_replace_calculations_or_numeric_inputs(self):
         changes = defaultdict(dict)
         decision_layout.configure(lambda sheet, address, value, style=None:
