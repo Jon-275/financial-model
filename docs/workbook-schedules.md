@@ -10,6 +10,18 @@ These tabs appear after **Appendix**, in the order listed below. Use the links o
 
 The base plan and market trials share the same annual calculation rules. [Model assumptions](model-methods.md) · [Market result definitions](risk-analysis.md#read-the-summary)
 
+## Understand a calculation
+
+| Calculation | Explanation |
+| --- | --- |
+| Withdrawals, bills and taxes | [Cash-flow rules](model-methods.md#withdrawals-and-taxes) |
+| Account balances and cost basis | [Investment and account calculations](model-methods.md#investment-mix-and-account-values) |
+| Roth withdrawals | [When savings become available](model-methods.md#when-roth-savings-become-available) |
+| Tax and healthcare estimates | [Tax rates and credits](model-methods.md#tax-rates-and-healthcare-credits) |
+| Monte Carlo simulation | [From random draws to the success rate](model-methods.md#how-the-monte-carlo-simulation-works) |
+
+The sheet list below shows where to inspect each calculation in Excel.
+
 ## Report detail
 
 | Tab | Use it to |

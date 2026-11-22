@@ -2,7 +2,7 @@
 
 Use market risk to test whether the plan pays its bills when returns change. Complete **Inputs** and review the base result on **Summary** first.
 
-[Workbook guide](model-guide.md) · [Calculation assumptions](model-methods.md#market-returns-and-inflation)
+[Workbook guide](model-guide.md) · [How the Monte Carlo simulation works](model-methods.md#how-the-monte-carlo-simulation-works) · [Return assumptions](model-methods.md#market-returns-and-inflation)
 
 <a id="returns-and-annual-prices"></a>
 

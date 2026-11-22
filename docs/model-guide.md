@@ -99,7 +99,7 @@ Future values may be estimates. Check the year and source before changing a valu
 
 Use this divider to open the supporting sheets in workbook order. Start with **Annual Detail** for the yearly plan or **Risk Results** for market outcomes. Use **Cash_Flow** to investigate a shortfall and **Checks** to investigate a calculation message.
 
-The [calculation-sheet guide](workbook-schedules.md) explains every tab after Appendix. Select a formula cell to read its calculation. To change a formula in your own copy, choose **Review → Unprotect Sheet**; no password is needed.
+The [calculation-sheet guide](workbook-schedules.md) explains every tab after Appendix and links to the calculation rules, including [how the Monte Carlo simulation works](model-methods.md#how-the-monte-carlo-simulation-works). Select a formula cell to read its calculation. To change a formula in your own copy, choose **Review → Unprotect Sheet**; no password is needed.
 
 <a id="how-the-model-works"></a>
 <a id="withdrawals-and-taxes"></a>

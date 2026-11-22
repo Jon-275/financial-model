@@ -50,6 +50,53 @@ For taxable investments, enter the cost basis from your brokerage records. When 
 
 The workbook applies investment returns after deposits and withdrawals. The estimated tax rate in row 61 is used for after-tax net worth.
 
+## How the Monte Carlo simulation works
+
+Monte Carlo means running the same plan through many different sequences of market returns. One **path** is a year-by-year market sequence for the whole plan. The workbook tests each random path twice: once with fixed spending and once with the spending-cut rule.
+
+### From inputs to results
+
+1. **Read the assumptions.** The workbook uses the selected scenario, each account's investment mix, asset returns, volatility and correlations. Risk_Settings sets the path count, seed, spending cuts and inflation options.
+2. **Generate repeatable random draws.** The seed and trial number set the random-number sequence on **Random_Numbers**. The same version, inputs and settings reproduce the same sampled markets.
+3. **Build annual asset returns.** **Market_Paths** turns the draws into yearly returns for US stocks, international stocks, bonds, cash and property. Correlation settings link their movements. Asset growth uses a lognormal distribution. Each account uses its working-year or retirement mix and the plan's fee assumptions.
+4. **Build the price path.** If variable inflation is on, a separate draw changes inflation around the entered rate, with persistence and bounds. Each path's prices feed spending, healthcare and indexed tax calculations. Inflation varies independently of the asset draws.
+5. **Calculate the household's cash flow.** The **Trial_** sheets calculate each year's income, account access, healthcare, withdrawals, taxes, bills and balances. These use the base plan's annual formulas. A trial can run short before its end age even if its ending portfolio is positive.
+6. **Compare spending policies.** Fixed and flexible spending use the same markets and inflation. The flexible policy applies the spending-cut rule when its trigger is met. The workbook saves both outcomes; it can reuse a fixed result after proving that the flexible policy would change nothing.
+7. **Check and summarize.** The runner checks the trial balances before saving a complete batch. **Risk_Data** calculates the statistics shown on **Summary** and **Risk Results**. Failed or incomplete runs do not become current report results.
+
+### How the success rate is calculated
+
+```text
+Fixed-spending success rate = successful random fixed-spending paths / random path count
+```
+
+For example, 950 successful paths out of 1,000 gives **95%**. This is an illustration, not the example plan's result. Success means every bill and tax was paid on time through the end age. Even one cent unpaid counts as a shortfall, including a bill repaid later. Flexible spending has its own success rate. The 33 stress outcomes are separate from these rates.
+
+The balance chart calculates percentiles at each age. Its shaded band can use different paths at different ages. The low, median and high funding examples instead follow three complete fixed-spending paths, ranked by ending balance in today's dollars. [Result definitions](risk-analysis.md#read-the-summary)
+
+### Trace one path in the workbook
+
+Start with a completed run whose results are current. In **Risk_Trials B3**, select trial **1**. Follow its draws on **Random_Numbers**, returns and prices on **Market_Paths**, then cash flow and balances on the **Trial_** sheets. Select **1001** to compare its flexible-spending partner under the same markets. Enter **0** to return to the base plan. [Trial inspection details](macro-runner.md#inspect-a-trial)
+
+The simulation uses fixed return, volatility and correlation assumptions rather than historical crisis replays. It does not estimate the chance that its assumptions are correct. More paths reduce sampling variation; they do not remove these limits.
+
+<details>
+<summary>Random-number and return formulas</summary>
+
+**Random_Numbers** uses the `xoshiro128**` generator, with each trial's starting state derived from the seed and trial number. Each projected year uses six independent normal draws, generated from uniform draws by the Box–Muller method. Five feed asset returns; the sixth feeds optional inflation variation.
+
+**Market_Paths** applies a Cholesky factor of the correlation matrix to the five asset draws. It then calculates each asset return as:
+
+```text
+return = (1 + entered return) × exp(log shift + log scale × correlated draw) − 1
+```
+
+The scale uses annual volatility and the market-variation multiplier. Under **compound growth**, the entered gross return anchors the median and the log shift is zero. Under **simple annual average**, the log shift is minus half the log variance so the entered gross return anchors the mean. Account returns apply the sampled change in the account's asset mix to its base gross return.
+
+Inspect the factor and return parameters on **Market_Paths** beside the annual table. The source defines the exact scale calculations: [workbook formulas](../tools/native_risk.py), [random draws](../tools/native_random.py), [independent comparison](../tools/risk_engine/native_paths.py) and [return parameters](../tools/risk_engine/paths.py).
+
+</details>
+
 ## Market returns and inflation
 
 The base plan and market trials use each account’s investment mix, including the HSA, and the fee on **Inputs**. Enter expected returns before inflation. The change in buying power is `(1 + return after fees) / (1 + inflation) - 1`. The annual raise on **Inputs** already includes inflation.

@@ -19,6 +19,7 @@ Use desktop Excel for Mac. Keep a private `.xlsm` copy and use fictional figures
 ## Look up a detail
 
 - [Calculation rules and assumptions](model-methods.md)
+- [How the Monte Carlo simulation works](model-methods.md#how-the-monte-carlo-simulation-works)
 - [What the model leaves out](model-guide.md#items-to-estimate-separately)
 - [Optional portfolio notes](portfolio-management.md): decisions outside the workbook workflow
 - [Get help or report a problem](https://github.com/Jon-275/financial-model/issues/new/choose)
