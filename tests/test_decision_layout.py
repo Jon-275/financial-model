@@ -146,7 +146,8 @@ class DecisionLayoutTests(unittest.TestCase):
         changes = defaultdict(dict)
         decision_layout.configure(lambda sheet, address, value, style=None:
                                   changes[sheet].__setitem__(address, value))
-        path = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'
+        path = Path(os.environ.get('RISK_TEST_WORKBOOK',
+                                   Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'))
         with Workbook(path) as book:
             for sheet, cells in changes.items():
                 for address, value in cells.items():
