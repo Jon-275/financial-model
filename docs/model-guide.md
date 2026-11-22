@@ -24,6 +24,8 @@ Use **Jump to** to move through the input groups. Enter ages, income, savings an
 
 The [input reference](input-reference.md) follows the rows on this sheet. It explains which amounts to include, blank versus zero, and special values such as **999 = off**.
 
+Blue cells are editable. The highlighted scenario column supplies the active values used by the plan.
+
 Resolve input-check messages before reading the final results or running market risk. **View input decisions** opens the report's record of account-access assumptions.
 
 <a id="read-the-results"></a>
@@ -66,6 +68,8 @@ Use this sheet for more detail on the result: savings benchmarks, balances avail
 
 Review the investment profiles chosen in **Inputs rows 15–16**. Edit the blue cells for each account's mix of stocks, bonds, cash and real assets. Each account column must total **100%**.
 
+Use **On this sheet** to jump between returns, account mixes, profile checks and the returns used by the plan. The same index on the other working tabs links to their main sections and back to Summary.
+
 Check the expected returns, annual fee, volatility and correlations. Volatility sets how much returns vary; correlations set how closely assets move together. The table at the bottom shows expected returns after fees and before inflation.
 
 <a id="compare-roth-conversions-and-market-risk"></a>
@@ -79,7 +83,7 @@ Use this sheet to compare a Roth conversion in one retirement year.
 3. Review funded costs, withdrawals, taxes and healthcare together. Choose **Open conversion detail** to see the range of tested amounts.
 4. Enter a planned conversion on **Inputs** to see its effect over the full plan, including later Medicare costs.
 
-The display limit controls the range shown in Conversion Detail.
+The display limit controls the range shown in Conversion Detail and the charts below the comparison. Choose **View conversion charts** to see them.
 
 ## Risk_Settings
 

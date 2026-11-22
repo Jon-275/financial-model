@@ -17,6 +17,7 @@ import input_validation
 from workbook_protection import WorksheetProtection
 import native_risk
 import native_layout
+import decision_layout
 import native_package
 from openpyxl.formula.translate import Translator
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
@@ -103,7 +104,7 @@ def main():
                 cols=E.SubElement(root,x('cols'))
                 for col in range(1,max(column_index_from_string(coordinate_from_string(a)[0]) for a in edits)+1):
                     w=10 if col<=2 and n not in {'Funding_Calc','Targeting_Calc'} else (27 if n=='Checks' and col==9 or n=='Cash_Flow' and col==12 or n=='Healthcare' and col==20 else 19)
-                    if n == 'Risk_Settings': w = (35, 16, 67)[col - 1]
+                    if n == 'Risk_Settings' and col <= 3: w = (35, 16, 67)[col - 1]
                     E.SubElement(cols,x('col'),min=str(col),max=str(col),width=str(w),customWidth='1')
                     if n == 'Cash_Flow' and 30 <= col <= 39:
                         cols[-1].set('hidden', '1')
@@ -183,6 +184,7 @@ def main():
             workbook_layout.apply_sheet_layout(layout_name, root)
             report_layout.apply(layout_name, root, style_ids, number_formats, active_fill)
             native_layout.apply(n, root, style_ids, number_formats, active_fill)
+            decision_layout.apply(n, root, style_ids, number_formats)
             input_validation.apply(n, root)
             protection.apply(n, root)
             workbook_metadata.clear_revision_ids(root)
@@ -193,14 +195,10 @@ def main():
         report_layout.install_print_names(wb)
         install_dashboard(src, authored, wb, changes, sp['Summary'], ap['Summary'])
         native_package.install(wb,changes,plan.get('native_names',{}))
-        # Use the open space beside the conversion controls, above the full sweep.
+        # Keep the native conversion charts below the comparison controls.
         part = 'xl/drawings/drawing2.xml'
         drawing = read(src, part)
-        for anchor in drawing:
-            for endpoint in ('from', 'to'):
-                column = anchor.find(f'{q(DRAW, endpoint)}/{q(DRAW, "col")}')
-                if column is not None:
-                    column.text = str(int(column.text) - 16)
+        decision_layout.conversion_charts(drawing)
         changes[part] = pack(drawing)
         wb.find(x('calcPr')).set('fullCalcOnLoad','1')
         wb.find(x('calcPr')).set('calcMode','auto')
@@ -222,6 +220,7 @@ def main():
                 if runs:
                     runs[0].text=title
                     for run in runs[1:]: run.text=''
+            decision_layout.conversion_chart_style(chart)
             changes[part]=pack(chart)
         with zipfile.ZipFile(target,'w',zipfile.ZIP_DEFLATED,compresslevel=5) as out:
             for p in src.namelist():

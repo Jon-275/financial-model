@@ -92,3 +92,5 @@ def configure(put):
         141: 'Single-filer tax tables',
     }.items():
         put('Tax_Tables', f'A{row}', heading, 'detail_band')
+    import decision_layout
+    decision_layout.configure(put)
