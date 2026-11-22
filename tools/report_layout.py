@@ -146,7 +146,7 @@ def install_styles(root, style_ids):
             break
         base_code = original.get('numFmtId', '0')
         for role, color, bold, fill in (
-            ('input_value', BLUE, False, 'F6F8FA'),
+            ('input_value', BLUE, False, 'EAF3FB'),
             ('input_selected', INK, True, 'F2F6F9'),
             ('input_label', INK, False, None),
             ('input_note', MUTED, False, None),

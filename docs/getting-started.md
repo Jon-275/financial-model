@@ -24,7 +24,7 @@ Return to **Inputs**, select the later-retirement or lower-spending scenario, th
 
 Review the investment mix on **Asset_Allocation**. On **Risk_Settings**, choose **100 paired paths** for a first run. Keep the seed unchanged when comparing plans.
 
-Return to **Summary** and choose **Run market risk**. Watch Excel's status bar and wait for **Risk results are current**. [Settings and result definitions](risk-analysis.md)
+Close other workbooks, then return to **Summary** and choose **Run market risk**. Watch Excel's status bar and wait for **Risk results are current**. [Settings and result definitions](risk-analysis.md)
 
 Use 1,000 pairs for a final report. The documented final example took about 8 minutes; the full age range took 33 minutes. Your Mac and plan affect runtime.
 
