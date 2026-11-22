@@ -34,6 +34,24 @@ class LayoutStyles(dict):
 
 
 class DecisionLayoutTests(unittest.TestCase):
+    def test_tax_navigation_caption_has_room_in_the_builder_and_saved_workbook(self):
+        from zipfile import ZipFile
+        from xlsx_read import sheet_parts
+        root = layout_sheet()
+        cell = decision_layout._cell(root, 'G3')
+        cell.set('t', 'inlineStr')
+        E.SubElement(E.SubElement(cell, decision_layout.X + 'is'), decision_layout.X + 't').text = 'Shared by all scenarios.'
+        numbers = ['0']
+        decision_layout.apply('Tax_Tables', root, LayoutStyles(numbers), numbers)
+        row_path = f"{decision_layout.X}sheetData/{decision_layout.X}row[@r='3']"
+        self.assertGreaterEqual(float(root.find(row_path).get('ht')), 20)
+        path = os.environ.get('RISK_TEST_WORKBOOK',
+                              Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm')
+        with ZipFile(path) as archive:
+            root = E.fromstring(archive.read(sheet_parts(archive)['Tax_Tables']))
+            self.assertTrue(decision_layout._content(decision_layout._cell(root, 'G3')))
+            self.assertGreaterEqual(float(root.find(row_path).get('ht')), 20)
+
     def test_empty_inputs_keep_percent_and_currency_formats(self):
         for name, address, code in (('Asset_Allocation', 'B6', '10'),
                                     ('Income_Targeting', 'B36', '165')):

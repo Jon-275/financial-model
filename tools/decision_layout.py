@@ -200,7 +200,7 @@ def apply(name, root, styles, numbers, shared_strings=()):
     last = {'Asset_Allocation': 'F', 'Income_Targeting': 'D', 'Risk_Settings': 'C', 'Tax_Tables': 'E'}.get(name)
     if last:
         for row in (1, 2, 3):
-            # Tax row 3 is blank; the others contain the short usage instruction.
+            # Tax A3 is blank; the others contain the short usage instruction.
             for area in list(merges):
                 if area.startswith(f'A{row}:'):
                     merges.remove(area)
@@ -256,7 +256,7 @@ def apply(name, root, styles, numbers, shared_strings=()):
             for link in list(links):
                 if link.get('ref', '').startswith('J'):
                     links.remove(link)
-        _rows(root, 265, 27, {1: 38, 2: 36, 3: 10})
+        _rows(root, 265, 27, {1: 38, 2: 36, 3: 28})
         for row in data:
             i = int(row.get('r'))
             if i <= 3:
