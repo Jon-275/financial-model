@@ -318,23 +318,6 @@ summary {
 details p {
   margin:16px 0 0;
 }
-.builder {
-  background:var(--paper);
-  padding:64px 0;
-}
-.builder-layout {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:64px;
-}
-.builder p {
-  max-width:640px;
-  margin:0;
-}
-.builder .button {
-  flex-shrink:0;
-}
 .final-cta {
   padding-top:80px;
   padding-bottom:80px;
@@ -376,12 +359,6 @@ footer div {
   }
   .start-layout,.compatibility {
     gap:45px;
-  }
-  .builder-layout {
-    display:block;
-  }
-  .builder .button {
-    margin-top:24px;
   }
 }
 @media(max-width:650px) {
@@ -427,9 +404,6 @@ footer div {
   }
   .report-label {
     font-size:.75rem;
-  }
-  .builder {
-    padding:50px 0;
   }
   .final-cta {
     padding-top:56px;

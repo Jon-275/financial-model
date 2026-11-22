@@ -97,7 +97,7 @@ The documented 1,000-pair example took about 8 minutes; the full age range took 
 
 ## Tax_Tables
 
-Review the years and values used for federal, California, payroll, retirement-account and healthcare calculations. Use **Find a rate or limit** to reach a table.
+Review the years and values used for federal, California, payroll, retirement-account and healthcare calculations. Use **On this sheet** to reach a table.
 
 Future values may be estimates. Check the year and source before changing a value. Maintainers should follow the [annual tax review](annual-tax-review.md).
 
