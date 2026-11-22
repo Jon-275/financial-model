@@ -97,6 +97,27 @@ def _content(cell):
             or (inline is not None and bool(''.join(inline.itertext()))))
 
 
+def _text(cell, shared_strings):
+    if cell.get('t') == 's':
+        return shared_strings[int(cell.findtext(X + 'v'))]
+    inline = cell.find(X + 'is')
+    return ''.join(inline.itertext()) if inline is not None else cell.findtext(X + 'v', '')
+
+
+def _add_links(root, destinations):
+    links = root.find(X + 'hyperlinks')
+    if links is None:
+        _link(root, destinations)
+        return
+    existing = {link.get('ref'): link for link in links}
+    for address, target in destinations.items():
+        link = existing.get(address)
+        if link is None:
+            link = E.SubElement(links, X + 'hyperlink', ref=address)
+        link.attrib.pop('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id', None)
+        link.set('location', target)
+
+
 def _cell(root, address):
     data = root.find(X + 'sheetData')
     _, number = coordinate_from_string(address)
@@ -132,7 +153,7 @@ def _freeze(root, rows):
     E.SubElement(view, X + 'selection', pane='bottomLeft', activeCell=f'A{rows+1}', sqref=f'A{rows+1}')
 
 
-def apply(name, root, styles, numbers):
+def apply(name, root, styles, numbers, shared_strings=()):
     if name not in {*NAVIGATION, 'Planning Metrics', 'Inputs'}:
         return
     if name == 'Inputs':
@@ -153,24 +174,25 @@ def apply(name, root, styles, numbers):
     merges = [item.get('ref') for item in root.iter(X + 'mergeCell')]
     if name in NAVIGATION:
         column, links = NAVIGATION[name]
-        _link(root, {f'{column}2': 'Summary!B3',
+        _add_links(root, {f'{column}2': 'Summary!B3',
                      **{f'{column}{row}': target for row, (_, target) in enumerate(links, 4)}})
         for row in (2, *range(4, len(links) + 4)):
             _cell(root, f'{column}{row}').set('s', styles['report_link'])
+    from workbook_protection import _entry_cells
+    entries = _entry_cells(name, root)
     # Remove the old cell grid and standardize body type without changing formats.
     for cell in data.iter(X + 'c'):
         column, row = coordinate_from_string(cell.get('r'))
         old = cell.get('s', '0')
         advanced = styles.get(('advanced_input', old))
-        if not _content(cell):
+        if not _content(cell) and cell.get('r') not in entries:
             cell.set('s', styles['schedule', '0'])
         elif advanced and cell.find(X + 'f') is None:
             cell.set('s', advanced)
         elif old not in {styles[key] for key in ('title', 'band', 'detail_title', 'detail_band', 'report_table_head', 'header', 'report_link', 'report_section', 'report_caption', 'report_active')}:
             if _content(cell):
                 cell.set('s', styles['schedule', numbers[int(old)]])
-    from workbook_protection import _entry_cells
-    for address in _entry_cells(name, root):
+    for address in entries:
         cell = _cell(root, address)
         code = numbers[int(cell.get('s', '0'))]
         cell.set('s', styles['input_value', code])
@@ -242,8 +264,8 @@ def apply(name, root, styles, numbers):
             a = row.find(f"{X}c[@r='A{i}']")
             populated = [cell for cell in row if _content(cell)
                          and column_index_from_string(coordinate_from_string(cell.get('r'))[0]) <= 5]
-            if a is not None and len(populated) == 1:
-                text = ''.join(a.itertext())
+            if a is not None and _content(a) and len(populated) == 1:
+                text = _text(a, shared_strings)
                 heading = a.get('s') in (styles['detail_band'], styles['band']) or (len(text) < 100 and text.isupper())
                 _span(root, 'A', 'E', i, styles['detail_band' if heading else 'report_caption'], merges)
                 row.set('ht', '38' if len(text) > 145 else '30')
@@ -258,7 +280,7 @@ def apply(name, root, styles, numbers):
             if d is not None and d.get('t') in ('inlineStr', 's') and d.get('s') not in (styles['header'], styles['report_table_head']):
                 if not _content(_cell(root, f'E{i}')):
                     _span(root, 'D', 'E', i, styles['report_caption'], merges)
-                    row.set('ht', '42' if len(''.join(d.itertext())) > 100 else '32')
+                    row.set('ht', '42' if len(_text(d, shared_strings)) > 100 else '32')
         _freeze(root, 3)
     elif name == 'Planning Metrics':
         _cell(root, 'A1').set('s', styles['detail_title'])

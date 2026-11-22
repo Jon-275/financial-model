@@ -54,6 +54,7 @@ def main():
         next_part=max(int(re.search(r'sheet(\d+).xml',p)[1]) for p in sp.values())+1
         skip = risk_cleanup.retire_legacy(src, wb, rel, ct)
         sst = shared_strings(authored)
+        baseline_strings = shared_strings(src)
         orig={n:{c.get('r'):c for c in read(src,sp[n]).iter(x('c'))} for n in ('Inputs','Summary','Projection')}
         styles={'title':('Summary','A1'),'band':('Inputs','A73'),'header':('Inputs','A74'),'note':('Inputs','G53'),
                 'label':('Inputs','A53'),'money':('Projection','AW6'),'whole':('Projection','C6'),
@@ -184,7 +185,7 @@ def main():
             workbook_layout.apply_sheet_layout(layout_name, root)
             report_layout.apply(layout_name, root, style_ids, number_formats, active_fill)
             native_layout.apply(n, root, style_ids, number_formats, active_fill)
-            decision_layout.apply(n, root, style_ids, number_formats)
+            decision_layout.apply(n, root, style_ids, number_formats, baseline_strings)
             input_validation.apply(n, root)
             protection.apply(n, root)
             workbook_metadata.clear_revision_ids(root)
