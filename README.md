@@ -45,9 +45,7 @@ Follow the tabs from left to right:
 
 [Ask a question or report a problem](https://github.com/Jon-275/financial-model/issues/new/choose). Include your Excel version, steps and exact message. Use fictional figures; do not attach a personal workbook or report.
 
-## About the project
-
-Created by [Jon](https://github.com/Jon-275). Python builds the workbook, Excel formulas calculate the plan and a VBA macro runs the market tests. [How I built it](docs/case-study.md)
+## Development
 
 For development, see the [build and test guide](tests/README.md). [Tax data review](docs/annual-tax-review.md) · [Website and release maintenance](docs/publishing.md) · [Releases](https://github.com/Jon-275/financial-model/releases)
 
