@@ -56,6 +56,19 @@ class DesktopBenchmarkTests(unittest.TestCase):
             benchmark.prepare(self.source, 'HEAD', '0' * 64, output, 'example-95', 100)
         self.assertFalse(output.exists())
 
+    def test_fixture_replays_after_the_source_ref_moves(self) -> None:
+        pinned = benchmark.read_json(self.directory / 'fixture.json')['commit']
+        git = benchmark.git
+
+        def moved_ref(*args: str) -> bytes:
+            """Simulate a changed symbolic revision while keeping Git objects available."""
+            if args[0] == 'rev-parse':
+                return b'0000000000000000000000000000000000000000\n'
+            return git(*args)
+
+        with patch.object(benchmark, 'git', side_effect=moved_ref):
+            self.assertEqual(benchmark.load_fixture(self.directory)['commit'], pinned)
+
     def test_prior_batch_cannot_be_recorded_as_a_native_run(self) -> None:
         with self.assertRaisesRegex(ValueError, 'newly completed'):
             evidence.evidence(self.directory, self.capture.name, self.run_metadata)

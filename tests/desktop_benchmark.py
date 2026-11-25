@@ -107,9 +107,7 @@ def load_fixture(directory: Path) -> dict[str, Any]:
                                      'risk_schema', 'risk_engine'))):
         raise ValueError('The fixture manifest does not match the desktop catalog.')
     source = check_source(fixture['commit'], fixture['source_sha256'])
-    revision = git('rev-parse', '--verify', '--end-of-options', f"{fixture['revision']}^{{commit}}").decode().strip()
-    if revision != fixture['commit']:
-        raise ValueError('The source revision does not resolve to the fixture commit.')
+    # The recorded revision label can move after preparation. Replay uses the pinned commit.
     input_path = directory / INPUT
     if digest(input_path) != fixture['input_sha256']:
         raise ValueError('The desktop input checksum changed.')
