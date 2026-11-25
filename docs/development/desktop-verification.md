@@ -58,7 +58,7 @@ python3 tests/desktop_evidence.py record "$fixture_dir" mac-01.xlsm scratch/timi
 python3 tests/desktop_evidence.py check "$fixture_dir/evidence-mac-01.json"
 ```
 
-`DesktopEvidence/v1` binds the source, fixture, desktop input, reference and Excel capture by hash. The checker requires a fresh completed batch, replays the independent comparison, and rejects missing checks, mismatched inputs or a reused capture supplied as another repeat. Timing and environment fields describe the observed run. Keep evidence bundles local because Excel can add personal document metadata on save. Share sanitized summaries and hashes in PRs. The D3 release record also requires the hands-on compatibility, recovery and print checks below. [Evidence checker](../../tests/desktop_evidence.py)
+`DesktopEvidence/v1` binds the source, fixture, desktop input, reference and Excel capture by hash. The checker requires a fresh batch and verifies the saved workbook's VBA source and library IDs against the pinned input. It replays the independent comparison and rejects missing checks, mismatched inputs, and duplicate saved batch timestamps for the same candidate, fixture and machine, even when the two save files have different hashes. Timing and environment fields describe the observed run. Keep evidence bundles local because Excel can add personal document metadata on save. Share sanitized summaries and hashes in PRs. The D3 release record also requires the hands-on compatibility, recovery and print checks below. [Evidence checker](../../tests/desktop_evidence.py)
 
 ### November 24, 2026 baseline
 
