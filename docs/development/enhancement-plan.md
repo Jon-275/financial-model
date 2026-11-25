@@ -4,7 +4,7 @@ Status on November 24, 2026. This PR defines the implementation and release cont
 
 ## Baseline and intended outcome
 
-Use the published `v1.0.0` workbook and source commit `6573e1e` as the comparison point. The release records Excel for Mac 16.115 and a reconciled 1,000-pair run with 33 stresses. It already includes a native runner, guidance for 100 and 1,000 pairs, a fictional walkthrough, a six-page report, and federal and California calculations. The published 8-minute standard and 33-minute full-range figures are historical measurements. Windows is still unverified. The first current Mac benchmark attempt stopped at the file access prompt and produced no timing. [Release and evidence](https://github.com/Jon-275/financial-model/releases/tag/v1.0.0) · [Risk guide](../risk-analysis.md)
+Use the published `v1.0.0` workbook and source commit `6573e1e` as the comparison point. The release records Excel for Mac 16.115 and a reconciled 1,000-pair run with 33 stresses. It already includes a native runner, guidance for 100 and 1,000 pairs, a fictional walkthrough, a six-page report, and federal and California calculations. The published 8-minute standard and 33-minute full-range figures are historical measurements. D1 recorded a fresh 100-pair Mac baseline. Windows remains unverified. [Release and evidence](https://github.com/Jon-275/financial-model/releases/tag/v1.0.0) · [D1 baseline](desktop-verification.md#november-24-2026-baseline)
 
 The target is a faster, easier-to-use local planner with reproducible financial results and a supportable Windows distribution path. Keep Excel as a first-class interface and retain inspectable ledgers, fictional release fixtures and offline household data. Verify each supported platform and tax jurisdiction before adding it to release claims. Require a versioned, independently reconciled calculation contract before building an interactive web interface.
 
@@ -14,9 +14,9 @@ Each row is a branch or a short stack. The owner column names an accountable rol
 
 | ID | Change and dependencies | Accountable role | Exit evidence | State |
 | --- | --- | --- | --- | --- |
-| D0 | Pinned dev-loop pilot and shared Codex instructions | Maintainer | Existing gates green, all review threads closed, hygiene checks green on the same head | [PR #31](https://github.com/Jon-275/financial-model/pull/31) |
-| P0 | Implementation contracts, compatibility protocol and study materials | Product/engineering lead | Every workstream has dependencies, fixtures, a release gate and an owner role | This PR |
-| D1 | Desktop fixture builder, versioned evidence checker and runbook, after P0. 2–4 days | Excel engineer | Verified input hash, fixture replay, rejected partial or wrong-candidate evidence, first reconciled Mac run | Ready after P0 |
+| D0 | Pinned dev-loop pilot and shared Codex instructions | Maintainer | Existing gates green, all review threads closed, hygiene checks green on the same head | [Merged in PR #31](https://github.com/Jon-275/financial-model/pull/31) |
+| P0 | Implementation contracts, compatibility protocol and study materials | Product/engineering lead | Every workstream has dependencies, fixtures, a release gate and an owner role | [Merged in PR #32](https://github.com/Jon-275/financial-model/pull/32) |
+| D1 | Desktop fixture builder, versioned evidence checker and runbook, after P0 | Excel engineer | Verified input hash, fixture replay, rejected partial or wrong-candidate evidence, first reconciled Mac run | [Mac baseline verified](desktop-verification.md#november-24-2026-baseline) |
 | D2 | Five-person fictional baseline study, after P0. 1–2 days plus sessions | UX research lead | Moderator dry-run, five task records, baseline findings and issue links | Participant nominations available |
 | D3 | Native coverage per platform, after D1. 2–5 days plus access | Excel engineer and desktop IT | Public artifact validated on each claimed build, with cancellation, reconciliation and print evidence | Windows desktop unavailable |
 | D4 | Require drift check after two ordinary hosted PRs with dev-loop and a workflow-event rehearsal. 1–2 days | Repository maintainer | A drifted head blocks merging, labels cannot bypass it, existing gates still required | Awaiting D0 and two PRs |
