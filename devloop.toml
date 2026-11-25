@@ -1,0 +1,16 @@
+[framework]
+version = "0.10"
+
+[pr]
+max_lines = 800
+
+[agents]
+tools = ["codex"]
+skills_targets = [".agents/skills"]
+
+[skills]
+include = ["devloop-setup"]
+project = "devloop/skills"
+
+[changelog]
+code = ["tools/*", "workbook/*", "site/*", ".github/workflows/*", "devloop.toml"]

@@ -37,6 +37,23 @@ GitHub recalculates sample plans in LibreOffice and compares them with expected 
 
 Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **Gemini Review** must pass on the latest commit. Address every open review thread before merging. [Branch rules](https://github.com/Jon-275/financial-model/rules/27295551)
 
+## Use dev-loop during development
+
+Install the pinned dev-loop release with `uv`. It uses Python 3.12 or later.
+
+```sh
+uv tool install --python 3.12 'git+https://github.com/Jon-275/dev-loop@1e8fc4c86fab7bc87fe6fb2575276deee8cd342f'
+devloop doctor --check
+devloop changelog check
+```
+
+1. Work on one change per branch. For changes to financial calculations or saved market results, describe the expected behavior and how to verify it in the pull request.
+2. For code, workbook, or workflow changes, add a short release note in `changes/<slug>.<section>.md`. The supported sections are `breaking`, `added`, `changed`, `fixed` and `security`. Run `devloop changelog check` and the relevant workbook checks before review.
+3. After committing, run `devloop size --base origin/main`, or use the predecessor ref for a stacked pull request. The pilot uses an 800-line budget. A workbook or PDF is binary and counts as zero lines, so describe the changes and link the validation evidence in the pull request.
+4. Wait for reviewers on the current commit. Reply to findings with `accepted:` or `rejected:` and explain the fix or decision. Batch fixes into one push per review round.
+
+The [pilot workflow](../.github/workflows/devloop.yml) reports instruction drift, PR size and changelog validation. Treat its results as advisory during the pilot. Use `devloop sync` after editing `devloop.toml` or a project skill, then commit the generated updates with the source change. Keep `.githooks` enabled for the workbook privacy check. Before preparing a release, use `devloop changelog build --dry-run` to preview the notes.
+
 ## Verify a changed workbook in Excel
 
 1. Open a test copy in **desktop Excel for Mac** without a repair prompt. Go from **Start Here** to **Inputs**. Change an input and the end age. Check that **Summary** updates, **Annual Detail** ends at that age and old market results become out of date.
