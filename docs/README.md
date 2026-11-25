@@ -30,3 +30,4 @@ Use desktop Excel for Mac. Keep a private `.xlsm` copy and use fictional figures
 - [Review annual tax data](annual-tax-review.md)
 - [Understand the VBA runner](macro-runner.md)
 - [Maintain the website and downloads](publishing.md)
+- [Implement and track planner enhancements](development/enhancement-plan.md)
