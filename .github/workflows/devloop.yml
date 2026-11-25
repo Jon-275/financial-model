@@ -13,6 +13,6 @@ permissions:
 
 jobs:
   hygiene:
-    uses: Jon-275/dev-loop/.github/workflows/pr-hygiene.yml@1e8fc4c86fab7bc87fe6fb2575276deee8cd342f # v0.10.0
+    uses: Jon-275/dev-loop/.github/workflows/pr-hygiene.yml@99aabeeb1b7cd30bfb709d3e69a5ae24c3086d2a
     with:
-      devloop: git+https://github.com/Jon-275/dev-loop@1e8fc4c86fab7bc87fe6fb2575276deee8cd342f
+      devloop: git+https://github.com/Jon-275/dev-loop@99aabeeb1b7cd30bfb709d3e69a5ae24c3086d2a
