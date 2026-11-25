@@ -68,12 +68,14 @@ def overrides(case: str, pairs: int) -> dict[str, dict[str, int]]:
     return {'Inputs': dict(FIXTURES[case][2]), 'Risk_Settings': {'B29': pairs, 'B30': SEED}}
 
 
-def check_source(commit: str, expected: str) -> None:
+def check_source(commit: str, expected: str) -> bytes:
     """Bind a release checksum to the fictional workbook tracked at the commit."""
     if not re.fullmatch(r'[0-9a-f]{40}', commit) or not re.fullmatch(r'[0-9a-f]{64}', expected):
         raise ValueError('Expected a full commit SHA and lowercase SHA-256.')
-    if sha256(git('show', f'{commit}:{SOURCE}')).hexdigest() != expected:
+    source = git('show', f'{commit}:{SOURCE}')
+    if sha256(source).hexdigest() != expected:
         raise ValueError('The workbook checksum differs from the pinned source commit.')
+    return source
 
 
 def check_workbook(path: Path, fixture: dict[str, Any], *, pairs: int) -> None:
@@ -104,13 +106,16 @@ def load_fixture(directory: Path) -> dict[str, Any]:
                        for field in ('revision', 'commit', 'source_sha256', 'input_sha256',
                                      'risk_schema', 'risk_engine'))):
         raise ValueError('The fixture manifest does not match the desktop catalog.')
-    check_source(fixture['commit'], fixture['source_sha256'])
+    source = check_source(fixture['commit'], fixture['source_sha256'])
     revision = git('rev-parse', '--verify', '--end-of-options', f"{fixture['revision']}^{{commit}}").decode().strip()
     if revision != fixture['commit']:
         raise ValueError('The source revision does not resolve to the fixture commit.')
     input_path = directory / INPUT
     if digest(input_path) != fixture['input_sha256']:
         raise ValueError('The desktop input checksum changed.')
+    with ZipFile(BytesIO(source)) as pinned, ZipFile(input_path) as prepared:
+        if pinned.read('xl/vbaProject.bin') != prepared.read('xl/vbaProject.bin'):
+            raise ValueError('The desktop input VBA project differs from the pinned source.')
     check_workbook(input_path, fixture, pairs=pairs)
     return fixture
 

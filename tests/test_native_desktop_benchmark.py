@@ -12,6 +12,8 @@ import unittest
 from unittest.mock import patch
 from zipfile import ZipFile
 
+from pyopenvba import ExcelFile
+
 import desktop_benchmark as benchmark
 import desktop_evidence as evidence
 from xlsx_read import Workbook
@@ -59,17 +61,18 @@ class DesktopBenchmarkTests(unittest.TestCase):
             evidence.evidence(self.directory, self.capture.name, self.run_metadata)
 
     def test_replays_complete_evidence_and_rejects_wrong_or_missing_data(self) -> None:
-        with patch.object(evidence, 'compare_capture', return_value='233 outcomes.') as compare:
+        with patch.object(evidence, 'compare_capture', return_value=('233 outcomes.', 50000.0)) as compare:
             record = evidence.evidence(self.directory, self.capture.name, self.run_metadata)
             cases = (
                 ('valid', {}, None),
-                ('partial', {'checks': {'fresh_capture': 'pass'}}, 'both passing checks'),
+                ('partial', {'checks': {'fresh_capture': 'pass'}}, 'all passing checks'),
                 ('wrong-fixture', {'fixture': 'extended-125'}, 'artifact hashes'),
                 ('wrong-candidate', {'source_sha256': '0' * 64}, 'artifact hashes'),
                 ('wrong-capture', {'capture_sha256': '0' * 64}, 'artifact hashes'),
                 ('wrong-reference', {'reference_sha256': '0' * 64}, 'artifact hashes'),
                 ('unbound-copy', {'capture': '../capture.xlsm'}, 'inside the fixture directory'),
                 ('false-summary', {'comparison': '2,033 outcomes.'}, 'differs from the replay'),
+                ('false-batch', {'batch_serial': 51000.0}, 'timestamp differs from the workbook'),
                 ('unknown-time', {'run': {**self.run_metadata, 'seconds': -1}}, 'positive, finite'),
             )
             for name, changes, message in cases:
@@ -81,12 +84,12 @@ class DesktopBenchmarkTests(unittest.TestCase):
                             evidence.check(path)
                     else:
                         with contextlib.redirect_stdout(StringIO()):
-                            _, capture_hash = evidence.check(path)
+                            _, _, capture_hash = evidence.check(path)
                         self.assertEqual(capture_hash, benchmark.digest(self.capture))
-            self.assertEqual(compare.call_count, 3)
+            self.assertEqual(compare.call_count, 4)
 
     def test_reused_capture_does_not_count_as_another_repeat(self) -> None:
-        with patch.object(evidence, 'compare_capture', return_value='233 outcomes.'):
+        with patch.object(evidence, 'compare_capture', return_value=('233 outcomes.', 50000.0)):
             record = evidence.evidence(self.directory, self.capture.name, self.run_metadata)
             first, second = (self.directory / f'evidence-repeat-{number}.json' for number in (1, 2))
             benchmark.write_json(first, record)
@@ -97,6 +100,40 @@ class DesktopBenchmarkTests(unittest.TestCase):
                         evidence.main()
             self.assertEqual(failed.exception.code, 1)
             self.assertIn('reused capture', error.getvalue())
+
+    def test_byte_different_saves_cannot_double_count_one_batch(self) -> None:
+        first = self.directory / 'fresh-capture.xlsm'
+        second = self.directory / 'resaved-capture.xlsm'
+        benchmark.write_values(self.capture, first, {'Risk_Data': {'Z7': 50000.0}})
+        copyfile(first, second)
+        with ZipFile(second, 'a') as archive:
+            archive.comment = b'Changed package metadata without rerunning Excel.'
+        self.assertNotEqual(benchmark.digest(first), benchmark.digest(second))
+        records = [self.directory / f'evidence-resave-{number}.json' for number in (1, 2)]
+        with patch.object(evidence, 'compare', return_value=True):
+            for number, (path, capture) in enumerate(zip(records, (first, second), strict=True), 1):
+                run = {**self.run_metadata, 'phase': 'warm', 'repeat': number}
+                benchmark.write_json(path, evidence.evidence(self.directory, capture.name, run))
+            with patch.object(sys, 'argv', ['desktop_evidence.py', 'check', *map(str, records)]):
+                with contextlib.redirect_stdout(StringIO()), contextlib.redirect_stderr(StringIO()) as error:
+                    with self.assertRaises(SystemExit) as failed:
+                        evidence.main()
+        self.assertEqual(failed.exception.code, 1)
+        self.assertIn('saved batch timestamp', error.getvalue())
+
+    def test_changed_vba_cannot_claim_a_pinned_timing(self) -> None:
+        capture = self.directory / 'altered-runner.xlsm'
+        benchmark.write_values(self.capture, capture, {'Risk_Data': {'Z7': 50000.0}})
+        with ExcelFile(capture) as book:
+            source = book.vba_modules()['MarketRiskRunner']
+            changed = source.replace('The trial result area is too small', 'the trial result area is too small', 1)
+            self.assertNotEqual(changed, source)
+            book.set_module('MarketRiskRunner', changed)
+            book.save()
+        with patch.object(evidence, 'compare', return_value=True) as compare:
+            with self.assertRaisesRegex(ValueError, 'VBA source or libraries differ'):
+                evidence.evidence(self.directory, capture.name, self.run_metadata)
+        compare.assert_not_called()
 
 
 if __name__ == '__main__':
