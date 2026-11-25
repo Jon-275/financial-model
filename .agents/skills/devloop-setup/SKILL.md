@@ -18,7 +18,7 @@ copy: change the source and re-render.
 ## Steps
 
 0. Install the devloop release whose minor version `framework.version` names, for
-   example `uv tool install git+https://github.com/Jon-275/dev-loop@v0.10.0`, or pin it in
+   example `uv tool install git+https://github.com/Jon-275/dev-loop@v0.11.0`, or pin it in
    the project's dev dependencies.
 1. Run `devloop doctor`. It lists every problem and the file it concerns.
 2. If the configuration is wrong, fix `devloop.toml` and run `devloop doctor` again.

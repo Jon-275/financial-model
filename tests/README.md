@@ -39,10 +39,10 @@ Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **
 
 ## Use dev-loop during development
 
-Install the pinned dev-loop release with `uv`. It uses Python 3.12 or later.
+Install the pinned dev-loop revision with `uv`. It uses Python 3.12 or later.
 
 ```sh
-uv tool install --python 3.12 'git+https://github.com/Jon-275/dev-loop@1e8fc4c86fab7bc87fe6fb2575276deee8cd342f'
+uv tool install --python 3.12 'git+https://github.com/Jon-275/dev-loop@017bc7c1e3bee10ee79461345dd20d30f9495f30'
 devloop doctor --check
 devloop changelog check
 ```
@@ -53,6 +53,8 @@ devloop changelog check
 4. Wait for reviewers on the current commit. Reply to findings with `accepted:` or `rejected:` and explain the fix or decision. Batch fixes into one push per review round.
 
 The [pilot workflow](../.github/workflows/devloop.yml) reports instruction drift, PR size and changelog validation. Treat its results as advisory during the pilot. Use `devloop sync` after editing `devloop.toml` or a project skill, then commit the generated updates with the source change. Keep `.githooks` enabled for the workbook privacy check. Before preparing a release, use `devloop changelog build --dry-run` to preview the notes.
+
+Use the normal repository identity for commits. Keep coding-tool attribution out of commit metadata, messages and pull request descriptions. The repository setting disables automatic commit trailers.
 
 ## Verify a changed workbook in Excel
 

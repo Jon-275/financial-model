@@ -1,5 +1,5 @@
 [framework]
-version = "0.10"
+version = "0.11"
 
 [pr]
 max_lines = 800
@@ -7,6 +7,7 @@ max_lines = 800
 [agents]
 tools = ["codex"]
 skills_targets = [".agents/skills"]
+commit_attribution = false
 
 [skills]
 include = ["devloop-setup"]
