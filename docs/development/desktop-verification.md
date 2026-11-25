@@ -67,7 +67,7 @@ python3 tests/desktop_evidence.py check "$fixture_dir/evidence-mac-01.json"
 | MacBook Pro, Apple M5 Pro, 24 GB, macOS 26.7.3 (25G342), Excel 16.115.26110837 | `v1.0.0`, `example-95`, seed 2026, 100 pairs | One timed warm repeat, **135 seconds** from `RunMarketRisk` invocation to the workbook's saved batch timestamp. Excel showed current results and saved the `.xlsm`. | **233 outcomes**, with 80,454 compared fields and zero differences. The runner reported 46 verified fixed-result reuses. |
 | Windows | Desktop Excel | Unverified | No Windows capture |
 
-An earlier untimed run on the same Mac also reconciled. The timed value covers computation through the captured timestamp. Final verification and file save follow that timestamp. This is a single-device baseline observation. The repeated workload matrix, native cancellation and report exercises remain in R1 and D3.
+An earlier untimed run on the same Mac also reconciled. The timed value covers computation through the captured timestamp. Final verification and file save follow that timestamp. The Mac timing matrix appears below. Native cancellation and report exercises remain part of D3.
 
 ### November 25, 2026 Mac matrix
 
@@ -75,7 +75,7 @@ The Mac workload matrix has one cold and three warm runs for each scenario and p
 
 Timing uses a monotonic clock from starting the synchronous Excel command for `RunMarketRisk` through its return, including final verification and restoration. Workbook opening, saving and independent replay take place outside that interval. The November 24 observation ends at the batch timestamp inside the macro and stays separate. Peak RSS is the maximum of two-second process samples where collected. Raw captures stay local.
 
-**Mac matrix coverage is 20 of 24 independently reconciled runs.** Windows remains unverified.
+**Mac matrix coverage is 24 of 24 independently reconciled runs.** Windows remains unverified.
 
 The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.26110837. The Excel update channel was unobserved.
 
@@ -84,11 +84,11 @@ The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` us
 | `example-95` | 100 | 143.965 | 130.199 | 161.823 | 135.364 | 135.364 |
 | `example-95` | 1,000 | 1,108.198 | 1,081.553 | 1,109.471 | 1,146.757 | 1,109.471 |
 | `extended-125` | 100 | 201.229 | 204.682 | 188.917 | 180.185 | 188.917 |
-| `extended-125` | 1,000 | — | — | — | — | — |
+| `extended-125` | 1,000 | 1,575.026 | 1,644.752 | 1,629.388 | 1,608.097 | 1,629.388 |
 | `full-0-125` | 100 | 274.019 | 298.783 | 271.708 | 259.099 | 271.708 |
 | `full-0-125` | 1,000 | 2,063.465 | 2,415.751 | 2,508.750 | 2,549.974 | 2,508.750 |
 
-Each capture below passed freshness, pinned runner identity and independent reconciliation. The field counts include trial, balance, ranked path ID and funding ledger values.
+Each capture passed freshness, pinned runner identity and independent reconciliation. The full matrix covers 27,192 outcomes and 8,022,096 field comparisons across the repeated runs. Field counts include trial, balance, ranked path ID and funding ledger values.
 
 | Fixture and pairs | Repeat | Outcomes | Fields checked | Peak sampled RSS (MiB) | Capture SHA-256 |
 | --- | --- | ---: | ---: | ---: | --- |
@@ -104,6 +104,10 @@ Each capture below passed freshness, pinned runner identity and independent reco
 | `extended-125`, 100 | warm 1 | 233 | 80,454 | 1,558 | `3499c2cd62e27e863d7f8f2eab70cd2d477bc6b2117a71fbe0f49c5e4eb6db68` |
 | `extended-125`, 100 | warm 2 | 233 | 80,454 | 1,502 | `8d69ea56a4ba028219a9a4b73b8bbcae222db167aaa350728ac0539eb053c853` |
 | `extended-125`, 100 | warm 3 | 233 | 80,454 | 1,608 | `84555000918c69878d8e3ad38d0c6c6199e748b47cb7c30cedaa2abab3c0d8f7` |
+| `extended-125`, 1,000 | cold 1 | 2,033 | 588,054 | 2,505 | `6987152e765a09154c5d1792f22aa063a599e5f60f9c3feeb38aa6dc14fe4c5e` |
+| `extended-125`, 1,000 | warm 1 | 2,033 | 588,054 | 2,866 | `b929d75def00265a68a9392581432adac74e87e20a28e1831b6c5d301b50f36f` |
+| `extended-125`, 1,000 | warm 2 | 2,033 | 588,054 | 2,728 | `c25cfdc661afd419d1589f4eeed3fd484c06487432de232a011a7c833f38e531` |
+| `extended-125`, 1,000 | warm 3 | 2,033 | 588,054 | 2,748 | `2f62d38a44bebda4b7279a8a0347c782fd7b95ef49c1b473985a084d9fd5a674` |
 | `full-0-125`, 100 | cold 1 | 233 | 80,454 | 1,446 | `3187571f73ac3d36bb8da2534a3a98b48f9da526b0d655092757b7cbdfbd5c8f` |
 | `full-0-125`, 100 | warm 1 | 233 | 80,454 | 1,677 | `821e6f93786d585abca2613214485786f54ce63e769a706e975274c35ad6b097` |
 | `full-0-125`, 100 | warm 2 | 233 | 80,454 | 1,697 | `60dade3311bccbf995bcb97b97002471a8e21e17cc846a790e4e0671bb68dce4` |
