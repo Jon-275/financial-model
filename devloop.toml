@@ -9,7 +9,16 @@ tools = ["codex"]
 skills_targets = [".agents/skills"]
 
 [skills]
-include = ["devloop-setup", "stateful-change"]
+include = [
+    "address-review",
+    "devloop-setup",
+    "lessons-intake",
+    "pr-workflow",
+    "release",
+    "review-locally",
+    "split-stack",
+    "stateful-change",
+]
 
 [changelog]
 code = ["tools/*", "workbook/*", "site/*", ".github/workflows/*", "devloop.toml"]

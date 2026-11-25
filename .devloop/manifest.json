@@ -1,6 +1,12 @@
 {
   "files": [
+    ".agents/skills/address-review/SKILL.md",
     ".agents/skills/devloop-setup/SKILL.md",
+    ".agents/skills/lessons-intake/SKILL.md",
+    ".agents/skills/pr-workflow/SKILL.md",
+    ".agents/skills/release/SKILL.md",
+    ".agents/skills/review-locally/SKILL.md",
+    ".agents/skills/split-stack/SKILL.md",
     ".agents/skills/stateful-change/SKILL.md"
   ]
 }
