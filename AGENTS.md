@@ -43,6 +43,9 @@ configure dev-loop and this section to update project instructions.
 - **Never hide a finding or a figure.** Suppressed or excluded items are counted and named.
 - **Stateful changes start with their invariants**: write the states, identities and
   invariants first, then an end-state test, then the code.
+- **Risky changes are designed with the council.** Before writing a tier-1 or tier-2
+  change, the council's roles design it (`council-build`); the council still reviews
+  the result before merge.
 <!-- devloop:end rules -->
 
 <!-- devloop:begin review -->
@@ -65,7 +68,6 @@ configure dev-loop and this section to update project instructions.
   - rebase a PR or merge `main` into it only when GitHub reports a conflict or `main`
     changed code it depends on, since every push re-runs CI and every reviewer.
 - Leave a hand-off note per branch in `.devloop/notes/<branch>.md` (never committed).
-- Set `DEVLOOP_AGENT=<tool>/<model>` (for example `codex/gpt-5`) in the environment you
-  commit from, once per clone run `devloop agent --install`, and every commit then carries
-  an `Agent:` trailer, so the weekly metrics report each tool's figures.
+- Use the normal repository identity for commits.
+  Keep coding-tool attribution out of commit metadata, messages and pull request descriptions.
 <!-- devloop:end coordination -->

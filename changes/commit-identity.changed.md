@@ -1,0 +1,1 @@
+- **Use the repository’s standard commit identity.** The pinned development workflow keeps automatic attribution out of its generated instructions and commit hook.
