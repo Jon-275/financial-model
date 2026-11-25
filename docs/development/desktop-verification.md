@@ -4,7 +4,7 @@ Use the [enhancement ledger](enhancement-plan.md) to track the implementation an
 
 ## D1. Build fixtures and check evidence
 
-The desktop benchmark builder creates a disposable `.xlsm` from a workbook that matches both its published SHA-256 and the tracked workbook at the specified Git revision. It writes the declared inputs and records the resulting input hash in `fixture.json`. The released fictional snapshot is the seed-2026 reference for the standard example, including a 100-pair subset with independently ranked funding histories. For an edited case, the builder independently authors and packages a fresh pre-VBA `.xlsx` from the pinned source and template. It applies the same overrides and gives the empty result batch to `native_bootstrap`. [Benchmark builder](../../tests/desktop_benchmark.py) · [Bootstrap](../../tools/native_bootstrap.py)
+The desktop benchmark builder creates a disposable `.xlsm` from a workbook that matches both its published SHA-256 and the tracked workbook at the specified Git revision. It writes the declared inputs and records the resulting input hash and resolved commit in `fixture.json`. Replay uses that commit even if the original branch name moves. The released fictional snapshot is the seed-2026 reference for the standard example, including a 100-pair subset with independently ranked funding histories. For an edited case, the builder independently authors and packages a fresh pre-VBA `.xlsx` from the pinned source and template. It applies the same overrides and gives the empty result batch to `native_bootstrap`. [Benchmark builder](../../tests/desktop_benchmark.py) · [Bootstrap](../../tools/native_bootstrap.py)
 
 | Fixture ID | Inputs or action | Evidence |
 | --- | --- | --- |
