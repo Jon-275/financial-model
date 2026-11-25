@@ -42,7 +42,7 @@ Open a pull request into `main`. **Workbook checks**, **Greptile Review** and **
 Install the pinned dev-loop revision with `uv`. It uses Python 3.12 or later.
 
 ```sh
-uv tool install --python 3.12 'git+https://github.com/Jon-275/dev-loop@99aabeeb1b7cd30bfb709d3e69a5ae24c3086d2a'
+uv tool install --python 3.12 'git+https://github.com/Jon-275/dev-loop@017bc7c1e3bee10ee79461345dd20d30f9495f30'
 devloop doctor --check
 devloop changelog check
 ```
