@@ -4,7 +4,7 @@ Use the [enhancement ledger](enhancement-plan.md) to track the implementation an
 
 ## D1. Build fixtures and check evidence
 
-Implement a versioned fixture catalog. The desktop input starts from a checksum-verified public or candidate `.xlsm`. Apply only declared fictional edits to a disposable copy. Introduce a fixture-builder entry point under `tests/` around the existing XLSX fixture helpers. The released fictional snapshot is the seed-2026 reference for the unmodified example. For an edited case, independently author and package a fresh pre-VBA `.xlsx` from the pinned source and template, apply the same overrides, and recalculate to a missing risk state with an empty result batch. `native_bootstrap` requires that state before generating the expected batch. Validate assumptions and hashes for the base artifact, edited input, independent reference and saved capture. [Fixture helpers](../../tests/fixtures.py) · [Bootstrap](../../tools/native_bootstrap.py)
+The desktop benchmark builder creates a disposable `.xlsm` from a workbook that matches both its published SHA-256 and the tracked workbook at the specified Git revision. It writes the declared inputs and records the resulting input hash in `fixture.json`. The released fictional snapshot is the seed-2026 reference for the standard example, including a 100-pair subset with independently ranked funding histories. For an edited case, the builder independently authors and packages a fresh pre-VBA `.xlsx` from the pinned source and template. It applies the same overrides and gives the empty result batch to `native_bootstrap`. [Benchmark builder](../../tests/desktop_benchmark.py) · [Bootstrap](../../tools/native_bootstrap.py)
 
 | Fixture ID | Inputs or action | Evidence |
 | --- | --- | --- |
@@ -17,7 +17,57 @@ Implement a versioned fixture catalog. The desktop input starts from a checksum-
 
 Planning preflight recalculated `extended-125` and `full-0-125` in Calc using seed 2026 and a 100-pair setting. Both accepted the intended horizons and the risk settings. The independent deterministic ledger matched 8,640 and 12,000 annual values respectively within the existing one-cent tolerance. Native Excel execution and timing remain D1 and D3 evidence.
 
-Create `DesktopEvidence/v1` and a validation command. Require source commit/tag, input workbook hash, declared edits, policy and schema versions, seed, expected counts, Excel build/channel/bitness, OS build/architecture and machine class. Key results by candidate hash, fixture, platform/build, distribution policy, pair count, check ID and repeat. Require repeats and durations on timed cases only. An expected failure case passes when the intended diagnostic, recovery state and saved evidence match. Use `pass`, `fail`, `blocked` and `not_run` for check outcomes. Each claim needs evidence of its type and matching hashes for the reference, saved workbook, reconciliation output and PDF when applicable. Reject duplicate keys, missing required checks, orphan evidence and mismatched candidates or fixtures. Test complete, deliberately incomplete and mismatched manifests.
+### Prepare and record a benchmark
+
+Run from the repository root with the [maintainer dependencies](../../tests/README.md). Use the `.xlsm` and `SHA256SUMS.txt` from the same [published release](https://github.com/Jon-275/financial-model/releases/tag/v1.0.0), and fetch its Git tag if your clone lacks it. The fixture command accepts all three benchmark cases and either pair count. The independent reference for an edited horizon also requires LibreOffice Calc.
+
+```sh
+release_sha256=$(awk '$2=="retirement-model.xlsm" {print $1}' scratch/SHA256SUMS.txt)
+fixture_dir=scratch/benchmarks/example-95-100
+python3 tests/desktop_benchmark.py prepare scratch/retirement-model.xlsm "$fixture_dir" \
+  --revision v1.0.0 --sha256 "$release_sha256" --fixture example-95 --pairs 100
+python3 tests/desktop_benchmark.py reference "$fixture_dir"
+cp "$fixture_dir/desktop-input.xlsm" "$fixture_dir/mac-01.xlsm"
+```
+
+Open only the run copy in desktop Excel and run **Run market risk**. Measure the run separately from file open and save. After **Risk results are current**, save the copy in `.xlsm` format. Keep the original `desktop-input.xlsm` in the directory. Record the observed timing and environment in a separate JSON file. Use `cold` for the first run in a fresh Excel process, or `warm` after the process has already run the workbook. Count repeats within each phase.
+
+```json
+{
+  "platform": "mac",
+  "phase": "warm",
+  "repeat": 1,
+  "seconds": 120.0,
+  "excel_build": "16.115.26110837",
+  "excel_channel": "not observed",
+  "excel_bitness": 64,
+  "os_build": "macOS 26.7.3 (25G342)",
+  "architecture": "arm64",
+  "machine": "MacBook Pro, Apple M5 Pro, 24 GB",
+  "distribution": "local copy of fictional release",
+  "macro_policy": "per-file prompt",
+  "timing_method": "launch to visible completion"
+}
+```
+
+The JSON shows the field format with an illustrative duration. Record the actual measurement and method. Run both commands below to save and replay the evidence.
+
+```sh
+python3 tests/desktop_evidence.py record "$fixture_dir" mac-01.xlsm scratch/timing.json \
+  --output evidence-mac-01.json
+python3 tests/desktop_evidence.py check "$fixture_dir/evidence-mac-01.json"
+```
+
+`DesktopEvidence/v1` binds the source, fixture, desktop input, reference and Excel capture by hash. The checker requires a fresh completed batch, replays the independent comparison, and rejects missing checks, mismatched inputs or a reused capture supplied as another repeat. Timing and environment fields describe the observed run. Keep evidence bundles local because Excel can add personal document metadata on save. Share sanitized summaries and hashes in PRs. The D3 release record also requires the hands-on compatibility, recovery and print checks below. [Evidence checker](../../tests/desktop_evidence.py)
+
+### November 24, 2026 baseline
+
+| Platform | Fixture | Observation | Reconciliation |
+| --- | --- | --- | --- |
+| MacBook Pro, Apple M5 Pro, 24 GB, macOS 26.7.3 (25G342), Excel 16.115.26110837 | `v1.0.0`, `example-95`, seed 2026, 100 pairs | One timed warm repeat, **135 seconds** from `RunMarketRisk` invocation to the workbook's saved batch timestamp. Excel showed current results and saved the `.xlsm`. | **233 outcomes**, with 80,454 compared fields and zero differences. The runner reported 46 verified fixed-result reuses. |
+| Windows | Desktop Excel | Unverified | No Windows capture |
+
+An earlier untimed run on the same Mac also reconciled. The timed value covers computation through the captured timestamp. Final verification and file save follow that timestamp. This is a single-device baseline observation. The repeated workload matrix, native cancellation and report exercises remain in R1 and D3.
 
 Run the existing comparison from the repository root against saved captures. Replace the paths below with the fixture artifacts from the manifest. Use `--expect-reused` only when the independent case supplies that expected count.
 
@@ -28,7 +78,7 @@ python3 tests/native_excel_acceptance.py "$before" "$after" --check-restoration
 
 ## D3. Execute on supported desktop builds
 
-Record Microsoft 365 desktop Excel on Apple Silicon and 64-bit Windows first. Name the supported update channels and versions before release. Add other architectures or Windows/macOS channels only when their own test evidence exists. Exercise the public download under normal policies. In E1b, repeat acceptance on E1a's signed file under its target distribution policy. Preserve application security settings in either lane. Current status is Mac verification recorded for the released v1.0.0 artifact, fresh benchmark pending, and Windows desktop unavailable. [Maintainer walkthrough](../../tests/README.md#verify-a-changed-workbook-in-excel) · [Windows macro behavior](https://learn.microsoft.com/en-us/microsoft-365-apps/security/internet-macros-blocked)
+Record Microsoft 365 desktop Excel on Apple Silicon and 64-bit Windows first. Name the supported update channels and versions before release. Add other architectures or Windows/macOS channels only when their own test evidence exists. Exercise the public download under normal policies. In E1b, repeat acceptance on E1a's signed file under its target distribution policy. Preserve application security settings in either lane. The released v1.0.0 workbook has prior Mac compatibility evidence. **Windows remains unverified.** [Maintainer walkthrough](../../tests/README.md#verify-a-changed-workbook-in-excel) · [Windows macro behavior](https://learn.microsoft.com/en-us/microsoft-365-apps/security/internet-macros-blocked)
 
 1. Open a disposable copy through the supported user route, record any security or repair prompts, and verify the normal path to **Inputs** and **Summary**. Check protected formulas and editable inputs. Edit the end age and an assumption from an active scenario. Verify that the base Summary and Annual Detail update and saved risk becomes stale. Undo, switch scenarios, change only dollar view and verify status after each step.
 2. Run on the worksheet button and verify progress, visible Cancel, failure status, retry, last-audit fields, save/reopen and the inspection selector. In a separate exercise with a second disposable workbook, record application-wide recalculation and verify that the runner makes no unintended edits or settings changes. Confirm the base projection works when macros are blocked. Repeat essential button and print checks interactively if app automation is used. Dispatch only reviewed commits with synthetic inputs to a licensed managed test device or private interactive host.
