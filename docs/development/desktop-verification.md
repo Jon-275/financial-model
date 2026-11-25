@@ -75,14 +75,14 @@ The Mac workload matrix has one cold and three warm runs for each scenario and p
 
 Timing uses a monotonic clock from starting the synchronous Excel command for `RunMarketRisk` through its return, including final verification and restoration. Workbook opening, saving and independent replay take place outside that interval. The November 24 observation ends at the batch timestamp inside the macro and stays separate. Peak RSS is the maximum of two-second process samples where collected. Raw captures stay local.
 
-**Mac matrix coverage is 16 of 24 independently reconciled runs.** Windows remains unverified.
+**Mac matrix coverage is 20 of 24 independently reconciled runs.** Windows remains unverified.
 
 The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.26110837. The Excel update channel was unobserved.
 
 | Fixture | Pairs | Cold (s) | Warm 1 (s) | Warm 2 (s) | Warm 3 (s) | Warm median (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | `example-95` | 100 | 143.965 | 130.199 | 161.823 | 135.364 | 135.364 |
-| `example-95` | 1,000 | — | — | — | — | — |
+| `example-95` | 1,000 | 1,108.198 | 1,081.553 | 1,109.471 | 1,146.757 | 1,109.471 |
 | `extended-125` | 100 | 201.229 | 204.682 | 188.917 | 180.185 | 188.917 |
 | `extended-125` | 1,000 | — | — | — | — | — |
 | `full-0-125` | 100 | 274.019 | 298.783 | 271.708 | 259.099 | 271.708 |
@@ -96,6 +96,10 @@ Each capture below passed freshness, pinned runner identity and independent reco
 | `example-95`, 100 | warm 1 | 233 | 80,454 | 993 | `24d3e6bc620116e1486c32f8cbfb894c9ad686eb45dc9c47650277bc559dd916` |
 | `example-95`, 100 | warm 2 | 233 | 80,454 | 1,213 | `e3f3e9145429d54e36d9e66049645ff2d2185b9a4f8d50f07608a3847a25718f` |
 | `example-95`, 100 | warm 3 | 233 | 80,454 | 970 | `568380daa0aa0821641bbe1702ae0af1418339c738620e3ca7fb7817a76b19cb` |
+| `example-95`, 1,000 | cold 1 | 2,033 | 588,054 | 1,805 | `b36a3a839de196af00274b62b565533d503a9838254264bea70cd5f8e08b7e4a` |
+| `example-95`, 1,000 | warm 1 | 2,033 | 588,054 | 2,480 | `ae46812ae9959e53b95fedf40a1e8219b8c572527a30cb0431b97707b6487494` |
+| `example-95`, 1,000 | warm 2 | 2,033 | 588,054 | 2,722 | `c4ac4c09e35672503211f0e21536efc65f17e21a04f3ee43e10fb301c0805f30` |
+| `example-95`, 1,000 | warm 3 | 2,033 | 588,054 | 2,451 | `071b7f57a78c8ca934ab85c30c549ae27ff2753720ac736d390dee76a998dfc9` |
 | `extended-125`, 100 | cold 1 | 233 | 80,454 | 1,237 | `1c31e9b0daba118a17267a9f6007a2829571fcac763e7ffa6bf2156726b7bc80` |
 | `extended-125`, 100 | warm 1 | 233 | 80,454 | 1,558 | `3499c2cd62e27e863d7f8f2eab70cd2d477bc6b2117a71fbe0f49c5e4eb6db68` |
 | `extended-125`, 100 | warm 2 | 233 | 80,454 | 1,502 | `8d69ea56a4ba028219a9a4b73b8bbcae222db167aaa350728ac0539eb053c853` |
