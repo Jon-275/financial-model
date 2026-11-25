@@ -49,7 +49,7 @@ devloop changelog check
 
 1. Work on one change per branch. For changes to financial calculations or saved market results, describe the expected behavior and how to verify it in the pull request.
 2. For code, workbook, or workflow changes, add a short release note in `changes/<slug>.<section>.md`. The supported sections are `breaking`, `added`, `changed`, `fixed` and `security`. Run `devloop changelog check` and the relevant workbook checks before review.
-3. After committing, run `devloop size --base origin/main`. The pilot uses an 800-line budget. A workbook or PDF is binary and counts as zero lines, so describe the changes and link the validation evidence in the pull request.
+3. After committing, run `devloop size --base origin/main`, or use the predecessor ref for a stacked pull request. The pilot uses an 800-line budget. A workbook or PDF is binary and counts as zero lines, so describe the changes and link the validation evidence in the pull request.
 4. Wait for reviewers on the current commit. Reply to findings with `accepted:` or `rejected:` and explain the fix or decision. Batch fixes into one push per review round.
 
 The [pilot workflow](../.github/workflows/devloop.yml) reports instruction drift, PR size and changelog validation. Treat its results as advisory during the pilot. Use `devloop sync` after editing `devloop.toml` or a project skill, then commit the generated updates with the source change. Keep `.githooks` enabled for the workbook privacy check. Before preparing a release, use `devloop changelog build --dry-run` to preview the notes.
