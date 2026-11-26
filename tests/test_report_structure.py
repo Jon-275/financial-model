@@ -66,6 +66,68 @@ class ReportStructureTests(unittest.TestCase):
                         self.assertIn(self.cells['Summary'].get(address),(None,''),
                                       f'{area} would discard {address}')
 
+    def test_disposable_policy_report_scope_is_connected_and_current_only(self) -> None:
+        """Add scope only to existing report tabs through the explicit candidate seam."""
+        before = {name: cells.copy() for name, cells in self.cells.items()}
+
+        def put(sheet: str, address: str, value: str, style: str) -> None:
+            self.assertEqual(style, 'report_caption')
+            self.cells[sheet][address] = value
+
+        plan_report.configure_policy_scope(put)
+        changes = {
+            (sheet, cell) for sheet in self.cells
+            for cell, value in self.cells[sheet].items()
+            if before.get(sheet, {}).get(cell) != value
+        }
+        self.assertEqual(changes, {('Summary', 'B5'), ('Summary', 'B7'),
+                                   ('Annual Detail', 'B3'), ('Risk Results', 'B9')})
+        self.assertEqual(before['Summary']['B5'], before['Annual Detail']['B3'])
+        self.assertIn('Opening year: ', before['Summary']['B5'])
+        self.assertNotIn('Opening year', self.cells['Summary']['B5'])
+        scope = self.cells['Summary']['B7']
+        for cell in ('Inputs!$B$130', 'Inputs!$B$136', 'Tax_Tables!$B$267',
+                     'Inputs!$B$129="OK"', 'Inputs!$B$133="OK"',
+                     'ISNUMBER(Tax_Tables!$B$219)', 'Tax_Tables!$B$219=0', 'Tax_Tables!$B$219=1'):
+            self.assertIn(cell, scope)
+        self.assertIn('Published tables (2026 income / 2027 SDI)', scope)
+        self.assertIn('Baseline tax tables', scope)
+        self.assertIn('Review tax table mode on Tax_Tables.', scope)
+        annual = self.cells['Annual Detail']['B3']
+        self.assertIn('Summary!$B$7&', annual)
+        self.assertIn('Inputs!$B$7', annual)
+        self.assertEqual(self.cells['Risk Results']['B9'], '=IF(Risk_Data!$Z$1="current",Summary!$B$7,"")')
+        for sheet, cell in changes:
+            self.assertTrue(Tokenizer(self.cells[sheet][cell]).items)
+
+    def test_disposable_policy_report_scope_keeps_existing_print_geometry(self) -> None:
+        """Reserve only unused caption ranges on the candidate report tabs."""
+        for sheet, added_merge in (('Summary', 'B7:I7'), ('Annual Detail', None), ('Risk Results', 'B9:I9')):
+            with self.subTest(sheet=sheet):
+                layouts = []
+                for explicit in (False, True):
+                    root = etree.Element(X + 'worksheet')
+                    etree.SubElement(root, X + 'dimension', ref='A1:N189')
+                    etree.SubElement(etree.SubElement(root, X + 'sheetViews'), X + 'sheetView')
+                    data = etree.SubElement(root, X + 'sheetData')
+                    if sheet == 'Summary':
+                        for index in range(71, 74):
+                            row = etree.SubElement(data, X + 'row', r=str(index))
+                            for column in 'GH':
+                                etree.SubElement(row, X + 'c', r=f'{column}{index}')
+                    styles = {'report_case_age': '1', 'report_money': '2',
+                              'report_case_age_alt': '3', 'report_money_alt': '4'}
+                    report_layout.apply(sheet, root, styles, [], 0, with_state_policy=explicit)
+                    layouts.append(root)
+                legacy, candidate = layouts
+                legacy_merges, candidate_merges = (
+                    {cell.get('ref') for cell in root.findall(f'{X}mergeCells/{X}mergeCell')} for root in layouts
+                )
+                self.assertEqual(candidate_merges, legacy_merges | ({added_merge} if added_merge else set()))
+                for root in layouts:
+                    root.remove(root.find(X + 'mergeCells'))
+                self.assertEqual(etree.tostring(legacy), etree.tostring(candidate))
+
     def test_seven_stress_rows_and_dollar_units_are_complete(self):
         summary=self.cells['Summary']
         for row in (*range(104,109),113,114):

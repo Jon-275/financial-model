@@ -87,6 +87,7 @@ def main():
                 revised_sst = shared_strings(revised)
                 for n,p in paths(revised).items():
                     overlay[n]={c.get('r'):c for c in read(revised,p).iter(x('c'))}
+        with_state_policy = f'B{WORKBOOK_JURISDICTION_ROW}' in plan['cells'].get('Inputs', {})
         for n,edits in plan['cells'].items():
             new=n not in sp
             if new:
@@ -184,10 +185,11 @@ def main():
             root.find(x('dimension')).set('ref',f'A1:{max_col}{max(rows)}')
             layout_name = native_risk.BASE_LAYOUT.get(n, n)
             workbook_layout.apply_sheet_layout(layout_name, root)
-            report_layout.apply(layout_name, root, style_ids, number_formats, active_fill)
+            report_layout.apply(layout_name, root, style_ids, number_formats, active_fill,
+                                with_state_policy=with_state_policy)
             native_layout.apply(n, root, style_ids, number_formats, active_fill)
             decision_layout.apply(n, root, style_ids, number_formats, baseline_strings)
-            input_validation.apply(n, root, with_state_policy=n == 'Inputs' and f'B{WORKBOOK_JURISDICTION_ROW}' in edits)
+            input_validation.apply(n, root, with_state_policy=n == 'Inputs' and with_state_policy)
             protection.apply(n, root)
             workbook_metadata.clear_revision_ids(root)
             changes[part]=pack(root); print(n,len(edits),flush=True)

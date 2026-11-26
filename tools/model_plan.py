@@ -579,6 +579,8 @@ def main() -> None:
     plan_report.configure(put)
     risk_presentation.configure(put, plan_report.display_dollars, plan_report.price_index_at,
                                 plan_report.FUTURE_VIEW)
+    if options.test_california_policy:
+        plan_report.configure_policy_scope(put)
     def is_tax_formula(address):
         value = cells['Tax_Tables'].get(address, wb['Tax_Tables'][address].value)
         return isinstance(value, str) and value.startswith('=')

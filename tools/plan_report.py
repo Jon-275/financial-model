@@ -1,6 +1,11 @@
 """Build the reader-facing plan from the existing annual schedules."""
 
+from collections.abc import Callable
+
+from openpyxl.utils.cell import absolute_coordinate
+
 import risk_presentation as risk
+from state_policy import CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_ROW
 from targeting import DETAIL as CONVERSION_DETAIL
 
 SUMMARY = 'Summary'
@@ -361,6 +366,27 @@ def configure(put):
         for index, (column, amount) in enumerate(zip('BCDEFGHIJ', _annual_amounts(source))):
             style = 'report_row' if index < 2 else 'report_money'
             appendix(f'{column}{row}', f'=IF({ok},IF(Report_Data!$Q$2>={source - 4},{amount},""),"")', style)
+
+
+def configure_policy_scope(put: Callable[[str, str, str, str], None]) -> None:
+    """Show validated California table provenance on the disposable v2 report."""
+    jurisdiction = f'Inputs!$B${WORKBOOK_JURISDICTION_ROW}'
+    version = f'Tax_Tables!{absolute_coordinate(WORKBOOK_CA_POLICY_VERSION_CELL)}'
+    mode = 'Tax_Tables!$B$219'
+    published = (f'Published tables ({CALIFORNIA_POLICY.published_income_year} income / '
+                 f'{CALIFORNIA_POLICY.published_sdi_year} SDI)')
+    scope = (f'"Opening year "&TEXT(Inputs!$B$130,"0")&" • State tax "&{jurisdiction}&" • "&{version}'
+             f'&" • "&IF({mode}=1,"{published}","Baseline tax tables")')
+    mode_ok = f'AND(ISNUMBER({mode}),OR({mode}=0,{mode}=1))'
+    mode_error = '"Review tax table mode on Tax_Tables."'
+    inputs_ok = 'AND(Inputs!$B$129="OK",Inputs!$B$133="OK")'
+    scope_formula = (f'=IFERROR(IF({inputs_ok},IF({mode_ok},{scope},{mode_error}),'
+                     f'"Review tax and opening year on Inputs."),{mode_error})')
+    put(SUMMARY, 'B5', '=IFERROR("Scenario: "&Inputs!$B$7,"Choose a scenario on Inputs")', 'report_caption')
+    put(SUMMARY, 'B7', scope_formula, 'report_caption')
+    scope_ref = f'{SUMMARY}!$B$7'
+    put(APPENDIX, 'B3', f'=IFERROR({scope_ref}&" • Scenario: "&Inputs!$B$7,{scope_ref})', 'report_caption')
+    put(risk.SHEET, 'B9', risk.display(scope_ref), 'report_caption')
 
 
 def _stress_page(summary,plan_ok):

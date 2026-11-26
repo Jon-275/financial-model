@@ -62,6 +62,12 @@ Use the normal repository identity for commits. Keep coding-tool attribution out
 2. Review **Asset_Allocation** and **Risk_Settings**, then choose **Run market risk** on **Summary**. Test **Cancel**, rerun and save when the status says **Risk results are current**. If market calculations changed, compare saved results with an independent reference using the same fictional inputs and seed. [Market result comparison](native_excel_acceptance.py)
 3. Switch dollar views on **Summary**. Preview all six pages on Letter and A4, including both decision records. Record the Excel version, checks performed and checks still open in the pull request. [Print instructions](../docs/model-guide.md#print-your-plan)
 
+### Verify the California v2 report candidate
+
+Use a disposable explicit-policy workbook with a completed, independently reconciled run. Check the opening year, `CA`, `ca-individual-v1` and published California income and disability insurance table years on Summary, Annual Detail and Risk Results. Switch to baseline tables and confirm the caption shows `Baseline tax tables` and the previous run’s caption disappears from Risk Results. Rerun and verify the baseline caption there. Use a separate invalid fixture to check that changing the jurisdiction or policy version clears the valid scope and prompts a review of the inputs.
+
+On each supported desktop platform, preview Summary in both dollar views on Letter and A4. Confirm the six pages and existing breaks, that the complete scope is readable on page one and that the separately printed Annual Detail shows its scope without clipping. Compare each export’s printed values and chart with the corresponding saved workbook. Distribution also requires the sample PDF acceptance command below and the matching fictional workbook and release checks.
+
 ## Share an updated workbook
 
 Use a fresh workbook with fictional inputs. Set `workbook` to that file and inspect its inputs and file properties. Verify the VBA code and calculate both release checksums:
