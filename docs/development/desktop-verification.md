@@ -67,7 +67,55 @@ python3 tests/desktop_evidence.py check "$fixture_dir/evidence-mac-01.json"
 | MacBook Pro, Apple M5 Pro, 24 GB, macOS 26.7.3 (25G342), Excel 16.115.26110837 | `v1.0.0`, `example-95`, seed 2026, 100 pairs | One timed warm repeat, **135 seconds** from `RunMarketRisk` invocation to the workbook's saved batch timestamp. Excel showed current results and saved the `.xlsm`. | **233 outcomes**, with 80,454 compared fields and zero differences. The runner reported 46 verified fixed-result reuses. |
 | Windows | Desktop Excel | Unverified | No Windows capture |
 
-An earlier untimed run on the same Mac also reconciled. The timed value covers computation through the captured timestamp. Final verification and file save follow that timestamp. This is a single-device baseline observation. The repeated workload matrix, native cancellation and report exercises remain in R1 and D3.
+An earlier untimed run on the same Mac also reconciled. The timed value covers computation through the captured timestamp. Final verification and file save follow that timestamp. The Mac timing matrix appears below. Native cancellation and report exercises remain part of D3.
+
+### November 25, 2026 Mac matrix
+
+The Mac workload matrix has one cold and three warm runs for each scenario and pair count. Each cold run starts in a fresh Excel process. The warm repeats use the same process and a prior run of the same workload. The first standard-case warm repeat opened a fresh copy of the fixture in that process. Subsequent warm repeats keep the workbook open with the previous published batch. Inputs and the runner are fixed, and each run starts with only the benchmark workbook open. Two extended-horizon 100-pair attempts were discarded when unrelated workbook prompts interrupted capture. Cold retries start in a fresh Excel process.
+
+Timing uses a monotonic clock from starting the synchronous Excel command for `RunMarketRisk` through its return, including final verification and restoration. Workbook opening, saving and independent replay take place outside that interval. The November 24 observation ends at the batch timestamp inside the macro and stays separate. Peak RSS is the maximum of two-second process samples where collected. Raw captures stay local.
+
+**Mac matrix coverage is 24 of 24 independently reconciled runs.** Windows remains unverified.
+
+The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.26110837. The Excel update channel was unobserved.
+
+| Fixture | Pairs | Cold (s) | Warm 1 (s) | Warm 2 (s) | Warm 3 (s) | Warm median (s) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `example-95` | 100 | 143.965 | 130.199 | 161.823 | 135.364 | 135.364 |
+| `example-95` | 1,000 | 1,108.198 | 1,081.553 | 1,109.471 | 1,146.757 | 1,109.471 |
+| `extended-125` | 100 | 201.229 | 204.682 | 188.917 | 180.185 | 188.917 |
+| `extended-125` | 1,000 | 1,575.026 | 1,644.752 | 1,629.388 | 1,608.097 | 1,629.388 |
+| `full-0-125` | 100 | 274.019 | 298.783 | 271.708 | 259.099 | 271.708 |
+| `full-0-125` | 1,000 | 2,063.465 | 2,415.751 | 2,508.750 | 2,549.974 | 2,508.750 |
+
+Each capture passed freshness, pinned runner identity and independent reconciliation. The full matrix covers 27,192 outcomes and 8,022,096 field comparisons across the repeated runs. Field counts include trial, balance, ranked path ID and funding ledger values.
+
+| Fixture and pairs | Repeat | Outcomes | Fields checked | Peak sampled RSS (MiB) | Capture SHA-256 |
+| --- | --- | ---: | ---: | ---: | --- |
+| `example-95`, 100 | cold 1 | 233 | 80,454 | — | `6bfdf0872eb40dc75bfb89c31ff33f7883b282645f1f018ff5fa74c839a1952e` |
+| `example-95`, 100 | warm 1 | 233 | 80,454 | 993 | `24d3e6bc620116e1486c32f8cbfb894c9ad686eb45dc9c47650277bc559dd916` |
+| `example-95`, 100 | warm 2 | 233 | 80,454 | 1,213 | `e3f3e9145429d54e36d9e66049645ff2d2185b9a4f8d50f07608a3847a25718f` |
+| `example-95`, 100 | warm 3 | 233 | 80,454 | 970 | `568380daa0aa0821641bbe1702ae0af1418339c738620e3ca7fb7817a76b19cb` |
+| `example-95`, 1,000 | cold 1 | 2,033 | 588,054 | 1,805 | `b36a3a839de196af00274b62b565533d503a9838254264bea70cd5f8e08b7e4a` |
+| `example-95`, 1,000 | warm 1 | 2,033 | 588,054 | 2,480 | `ae46812ae9959e53b95fedf40a1e8219b8c572527a30cb0431b97707b6487494` |
+| `example-95`, 1,000 | warm 2 | 2,033 | 588,054 | 2,722 | `c4ac4c09e35672503211f0e21536efc65f17e21a04f3ee43e10fb301c0805f30` |
+| `example-95`, 1,000 | warm 3 | 2,033 | 588,054 | 2,451 | `071b7f57a78c8ca934ab85c30c549ae27ff2753720ac736d390dee76a998dfc9` |
+| `extended-125`, 100 | cold 1 | 233 | 80,454 | 1,237 | `1c31e9b0daba118a17267a9f6007a2829571fcac763e7ffa6bf2156726b7bc80` |
+| `extended-125`, 100 | warm 1 | 233 | 80,454 | 1,558 | `3499c2cd62e27e863d7f8f2eab70cd2d477bc6b2117a71fbe0f49c5e4eb6db68` |
+| `extended-125`, 100 | warm 2 | 233 | 80,454 | 1,502 | `8d69ea56a4ba028219a9a4b73b8bbcae222db167aaa350728ac0539eb053c853` |
+| `extended-125`, 100 | warm 3 | 233 | 80,454 | 1,608 | `84555000918c69878d8e3ad38d0c6c6199e748b47cb7c30cedaa2abab3c0d8f7` |
+| `extended-125`, 1,000 | cold 1 | 2,033 | 588,054 | 2,505 | `6987152e765a09154c5d1792f22aa063a599e5f60f9c3feeb38aa6dc14fe4c5e` |
+| `extended-125`, 1,000 | warm 1 | 2,033 | 588,054 | 2,866 | `b929d75def00265a68a9392581432adac74e87e20a28e1831b6c5d301b50f36f` |
+| `extended-125`, 1,000 | warm 2 | 2,033 | 588,054 | 2,728 | `c25cfdc661afd419d1589f4eeed3fd484c06487432de232a011a7c833f38e531` |
+| `extended-125`, 1,000 | warm 3 | 2,033 | 588,054 | 2,748 | `2f62d38a44bebda4b7279a8a0347c782fd7b95ef49c1b473985a084d9fd5a674` |
+| `full-0-125`, 100 | cold 1 | 233 | 80,454 | 1,446 | `3187571f73ac3d36bb8da2534a3a98b48f9da526b0d655092757b7cbdfbd5c8f` |
+| `full-0-125`, 100 | warm 1 | 233 | 80,454 | 1,677 | `821e6f93786d585abca2613214485786f54ce63e769a706e975274c35ad6b097` |
+| `full-0-125`, 100 | warm 2 | 233 | 80,454 | 1,697 | `60dade3311bccbf995bcb97b97002471a8e21e17cc846a790e4e0671bb68dce4` |
+| `full-0-125`, 100 | warm 3 | 233 | 80,454 | 1,719 | `c1749b4d45121ab4fa0b3e77c314df5a4b9eea2322612c6132ad2ca740aac2a3` |
+| `full-0-125`, 1,000 | cold 1 | 2,033 | 588,054 | 3,112 | `92c8739b1b2555966e035eb634062e4479465a10604ca0bd7a9143dc467163aa` |
+| `full-0-125`, 1,000 | warm 1 | 2,033 | 588,054 | 3,571 | `0630091ddeaea2facfb911410ac0a4ea420a55d460a8691501a6a843951e70ca` |
+| `full-0-125`, 1,000 | warm 2 | 2,033 | 588,054 | 3,763 | `3d992a6210495f71a841bb715198d5f4a43209a891cb2e798bf1c716de03bc52` |
+| `full-0-125`, 1,000 | warm 3 | 2,033 | 588,054 | 3,496 | `ce2110230e8f83cd9e4769e9d5a938c789157b709173bf11e69ae9821a2906a3` |
 
 Run the existing comparison from the repository root against saved captures. Replace the paths below with the fixture artifacts from the manifest. Use `--expect-reused` only when the independent case supplies that expected count.
 
