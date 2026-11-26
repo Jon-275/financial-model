@@ -162,6 +162,21 @@ The profile records computed and reused trial totals, all 33 stresses, three ran
 
 The diagnostic runner uses a monotonic raw clock on 64-bit Mac and requests the performance counter on 64-bit Windows. Leave Excel and system security policies in place. Record the diagnostics as unavailable if platform policy blocks the clock. Windows execution remains unverified. [Apple monotonic clock](https://developer.apple.com/documentation/kernel/1646199-mach_continuous_time) · [Windows performance counter](https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps)
 
+### November 25, 2026 Mac stage profiles
+
+The diagnostic runner at `042d6a7593fa14485e22eef4e1967d844856d33e` profiled the pinned `v1.0.0` fictional `example-95` fixture with 100 pairs and seed 2026. The Mac and Excel build match the release matrix above. One cold run started in a fresh Excel process. The three warm repeats used that process and kept the workbook open. The timings are for the diagnostic fixture. Use the 24-run release matrix above for release-run timings.
+
+| Run | Macro wall time (s) | Total time assigned to stages (s) |
+| --- | ---: | ---: |
+| Cold | 133.941 | 133.757 |
+| Warm 1 | 150.119 | 149.892 |
+| Warm 2 | 154.158 | 153.972 |
+| Warm 3 | 129.035 | 128.858 |
+
+Each saved batch independently reconciled 233 outcomes and 80,454 fields, with 187 computed outcomes, 46 verified reuses, 33 stresses, three ranked histories and zero ordered retries. The warm median wall time was 150.119 seconds. Across the three warm runs, median full calculation was 55.029 seconds, median trial preparation was 38.701 seconds and median reuse verification was 38.947 seconds. These are medians for individual stages. Preparation and reuse verification each include multiple operations, so use finer probes to choose what to optimize.
+
+The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033a0cc537b335cac4f16e3`. Capture hashes, the fault exercises and follow-up profiling are recorded with the reviewed source. The raw workbooks stay local. Windows remains unverified. [PR #37 evidence](https://github.com/Jon-275/financial-model/pull/37)
+
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
 
 Set release latency budgets after collecting raw timings. Initial comparison targets are at least 25% better warm median for full-range 1,000 pairs, no more than 10% regression in any other fixture, and visible cancel acknowledgement within five seconds at normal yield points. Track median 100-pair time as the exploration outcome and require an explicit budget on each supported device before claiming the new fast path. Record the prior 8- and 33-minute figures as historical context. Investigate and correct the cause of every new reconciliation or recovery failure. Keep the candidate Mac-only if Windows evidence is absent and label the missing tests in the release decision.
