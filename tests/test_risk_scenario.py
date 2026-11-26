@@ -10,11 +10,13 @@ import unittest
 from xml.etree import ElementTree
 from zipfile import ZipFile
 
+from lxml import etree
+
 from risk_engine.scenario import ScenarioError, load_scenario
 from state_policy import CALIFORNIA_POLICY
 from workbook_recalc import RecalculationError, clear_formula_results
 from xlsx_read import q, sheet_parts
-from xlsx_values import write_values
+from xlsx_values import X, update_sheet, write_values
 
 
 _WORKBOOK = Path(os.environ.get('RISK_TEST_WORKBOOK',
@@ -35,6 +37,30 @@ def _replace_saved_number(source: Path, destination: Path, sheet: str, coordinat
                 cell = next(cell for cell in tree.iter(q('c')) if cell.get('r') == coordinate)
                 cell.find(q('v')).text = str(value)
                 payload = ElementTree.tostring(tree, encoding='UTF-8', xml_declaration=True)
+            modified.writestr(entry, payload)
+
+
+def _write_explicit_policy_fixture(source: Path, destination: Path) -> None:
+    """Write the future schema and active state formula cache into a fictional copy."""
+    with ZipFile(source) as original, ZipFile(destination, 'x') as modified:
+        parts = sheet_parts(original)
+        for entry in original.infolist():
+            payload = original.read(entry)
+            if entry.filename == parts['Inputs']:
+                sheet = etree.fromstring(payload)
+                selected = sheet.find(f'.//{X}c[@r="B4"]/{X}v').text
+                scenario_cell = f'{"DEF"[int(selected) - 1]}136'
+                update_sheet(sheet, {'A136': 'State tax jurisdiction', 'B136': 'CA', scenario_cell: 'CA'})
+                active = sheet.find(f'.//{X}c[@r="B136"]')
+                active.remove(active.find(X + 'is'))
+                active.set('t', 'str')
+                etree.SubElement(active, X + 'f').text = 'INDEX(D136:F136,1,B4)'
+                etree.SubElement(active, X + 'v').text = 'CA'
+                payload = etree.tostring(sheet, encoding='UTF-8', xml_declaration=True)
+            elif entry.filename == parts['Tax_Tables']:
+                sheet = etree.fromstring(payload)
+                update_sheet(sheet, {'B266': 'workbook-state-policy-v1', 'B267': 'ca-individual-v1'})
+                payload = etree.tostring(sheet, encoding='UTF-8', xml_declaration=True)
             modified.writestr(entry, payload)
 
 
@@ -68,6 +94,17 @@ class ScenarioWorkbookTests(unittest.TestCase):
                 ScenarioError, 'Projection!BY4: cannot identify the legacy California tax layout'
             ):
                 load_scenario(changed)
+
+    def test_explicit_california_policy_versions_the_digest(self) -> None:
+        """A workbook carrying the new state policy schema gets a fresh scenario identity."""
+        with TemporaryDirectory() as folder:
+            explicit = Path(folder) / 'explicit-california.xlsx'
+            _write_explicit_policy_fixture(_WORKBOOK, explicit)
+            candidate = load_scenario(explicit)
+        self.assertIs(candidate.state_policy, CALIFORNIA_POLICY)
+        self.assertNotEqual(candidate.digest, self.scenario.digest)
+        self.assertEqual(candidate.inputs, self.scenario.inputs)
+        self.assertEqual(candidate.years, self.scenario.years)
 
     def test_changed_active_scenario_literal_invalidates_its_cache(self):
         s = self.scenario

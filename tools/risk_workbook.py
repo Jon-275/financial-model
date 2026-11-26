@@ -18,7 +18,7 @@ import investment_results
 from risk_engine.scenario import (
     ASSET_ROWS, CACHED_INPUT_ROWS, CORRELATION_HEADER_ROW, CORRELATION_ROWS, HSA_RETURN_ROWS,
     ONE_TIME_EXPENSE_ROWS, RISK_CONTROL_ROWS, RISK_RETURN_BASIS_ROW, RISK_STRESS_ROWS,
-    SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW, asset_profile_start,
+    SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW, asset_profile_start, workbook_has_explicit_state_policy,
 )
 
 SHEET = DATA_SHEET
@@ -168,6 +168,8 @@ def _worksheet(source, *, calculated=False):
         version = sheet[SCHEMA_CELL].value
         if version != SCHEMA or sheet[ENGINE_CELL].value != __version__:
             raise ValueError('Use the workbook and risk runner from the same release.')
+        if workbook_has_explicit_state_policy(book):
+            raise ValueError('The workbook risk snapshot format does not track explicit state tax inputs. Use JSON output.')
         return book, sheet
     except BaseException:
         book.close()
@@ -330,10 +332,13 @@ def _replace_snapshot(sheet, values):
 
 def write_snapshot(source, destination, calculated_source, scenario, report, *, workbook_name=None, run_date=None):
     """Update the risk sheet and local chart names in an unpublished copy of the source."""
-    values = _report_values(report, scenario.inputs[7], run_date or date.today())
-    values.update(_assumption_values(calculated_source))
     try:
         with ZipFile(source) as original:
+            # Validate the same open file used below. A calculated copy can hide
+            # the raw formulas that identify an incomplete state-aware layout.
+            validate_source(original.fp)
+            values = _report_values(report, scenario.inputs[7], run_date or date.today())
+            values.update(_assumption_values(calculated_source))
             part = _sheet_part(original)
             sheet = _parse(original.read(part))
             _replace_snapshot(sheet, values)

@@ -3,6 +3,13 @@
 from dataclasses import dataclass
 
 
+WORKBOOK_STATE_POLICY_SCHEMA = 'workbook-state-policy-v1'
+WORKBOOK_STATE_POLICY_SCHEMA_CELL = 'B266'
+WORKBOOK_CA_POLICY_VERSION_CELL = 'B267'
+WORKBOOK_JURISDICTION_ROW = 136
+WORKBOOK_JURISDICTION_LABEL = 'State tax jurisdiction'
+
+
 @dataclass(frozen=True, slots=True)
 class StatePolicy:
     """Versioned rules for a jurisdiction, with separate income and payroll sources."""
