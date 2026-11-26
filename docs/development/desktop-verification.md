@@ -77,7 +77,7 @@ Timing uses a monotonic clock from starting the synchronous Excel command for `R
 
 **Mac matrix coverage is 24 of 24 independently reconciled runs.** Windows remains unverified.
 
-The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.26110837. The Excel update channel was unobserved.
+The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.2 (16.115.26112215). The Excel update channel was unobserved. Process samples identify the Excel build for the November 25 matrix and profiles.
 
 | Fixture | Pairs | Cold (s) | Warm 1 (s) | Warm 2 (s) | Warm 3 (s) | Warm median (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -137,6 +137,47 @@ Record Microsoft 365 desktop Excel on Apple Silicon and 64-bit Windows first. Na
 Time the native macro independently of open, fixture preparation and save. For `example-95`, `extended-125` and `full-0-125`, collect 100- and 1,000-pair timings with one cold run and three warm repeats per supported platform on fixed hardware and settings. Close other workbooks during benchmark runs. Record the individual values and warm median. Report percentiles only with a sample that supports them. Capture peak memory where safely measurable and record progress and cancel latency separately. Budget for the existing long-running fixtures as an integration lane, with full grids on candidates touching execution and smaller smoke coverage on unrelated changes.
 
 Instrument preflight/snapshot, trial preparation, recalculation, verified capture, fallback, ranking, publish and restore. Count executed and reused trials, fallback reasons, and all 33 stresses. Store timing and counters in test evidence outside plan identity and financial outputs. Measure the primary full calculation in `FinishTrialCalculation`, the year-ordered retry and workbook ranking separately. Inspect formula dependencies with `native_order_acceptance.py` before trying to narrow the calculation scope. [Native runner](../../tools/vba/RunMarketRisk.bas) · [Order acceptance](../../tests/native_order_acceptance.py) · [Excel calculation performance](https://learn.microsoft.com/en-us/office/vba/excel/concepts/excel-performance/excel-improving-calculation-performance)
+
+### Capture a stage profile
+
+Prepare a pinned fictional fixture and its independent reference using the commands in D1. The profiling tool derives a second `.xlsm` in that directory and replaces only its VBA project. It checks every other package part against the original. Use a separate working copy of `desktop-profile-input.xlsm` for Excel. Keep this diagnostic workbook local to the benchmark environment.
+
+```sh
+python3 tests/desktop_stage_profile.py prepare "$fixture_dir"
+```
+
+1. Open the working copy of the diagnostic workbook as the only workbook in desktop Excel. Measure the synchronous `RunMarketRisk` invocation from dispatch through return with an independent monotonic clock. Use the run timing metadata from D1 and record the diagnostic distribution.
+2. Call `ReadMarketRiskProfile` in the same workbook after that invocation returns. Capture the returned text using Excel's AppleScript `run VB Macro` command on Mac or `Application.Run` on Windows. Save that text locally as `profile.txt`. Save the workbook with a distinct `.xlsm` filename in the fixture directory and confirm the report shows current results before recording.
+3. Record and replay the evidence. Keep the original diagnostic input untouched. Use a distinct capture, timing file, text payload and evidence name for each repeat.
+
+```sh
+python3 tests/desktop_stage_profile.py record "$fixture_dir" capture-cold-01.xlsm \
+  "$fixture_dir/timing.json" "$fixture_dir/profile.txt" --output profile-evidence-cold-01.json
+python3 tests/desktop_stage_profile.py check "$fixture_dir"/profile-evidence-*.json
+```
+
+Each transition assigns elapsed time to one stage. Preflight covers input checks and snapshotting Excel settings and protections. Preparation covers trial selection and staging trial arrays. Primary calculation times the full Excel calculation and its existing wait. Verified capture covers the source-range calculation, reads and reconciliations. Ordered calculation covers the retry caused by a balance check or an unexpectedly repeated ending. Ranking covers sorting, selection and staging of the three ranked ledgers. Their calculations and capture use the same timing stages as other trials. Reuse verification covers the fixed-path proof calculation and its paired-flexible checks. Progress covers status-bar updates and the existing cancellation yield. Publish covers the prior-batch backups, guarded writes and workbook verification. Restore includes returning to the inspection selection, cleanup and rollback where applicable.
+
+The profile records computed and reused trial totals, all 33 stresses, three ranked ledgers, full calculation entries and ordered retries by reason. It binds the exact diagnostic fixture and capture to a fresh published batch and the independent reference. A missing clock, cancellation or any runner failure prevents a profile from counting as completed timing evidence. Verify interrupted runs separately with the restoration comparison under D3. Report the diagnostic stage totals with the external wall times and compare the latter with matched runs of the release runner before attributing a performance difference.
+
+The diagnostic runner uses a monotonic raw clock on 64-bit Mac and requests the performance counter on 64-bit Windows. Leave Excel and system security policies in place. Record the diagnostics as unavailable if platform policy blocks the clock. Windows execution remains unverified. [Apple monotonic clock](https://developer.apple.com/documentation/kernel/1646199-mach_continuous_time) · [Windows performance counter](https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps)
+
+### November 25, 2026 Mac stage profiles
+
+The diagnostic runner at `042d6a7593fa14485e22eef4e1967d844856d33e` profiled the pinned `v1.0.0` fictional `example-95` fixture with 100 pairs and seed 2026. The Mac and Excel build match the release matrix above. One cold run started in a fresh Excel process. The three warm repeats used that process and kept the workbook open. The timings are for the diagnostic fixture. Use the 24-run release matrix above for release-run timings.
+
+| Run | Macro wall time (s) | Total time assigned to stages (s) |
+| --- | ---: | ---: |
+| Cold | 133.941 | 133.757 |
+| Warm 1 | 150.119 | 149.892 |
+| Warm 2 | 154.158 | 153.972 |
+| Warm 3 | 129.035 | 128.858 |
+
+Each saved batch independently reconciled 233 outcomes and 80,454 fields, with 187 computed outcomes, 46 verified reuses, 33 stresses, three ranked histories and zero ordered retries. The warm median wall time was 150.119 seconds. Across the three warm runs, median full calculation was 55.029 seconds, median trial preparation was 38.701 seconds and median reuse verification was 38.947 seconds. These are medians for individual stages. Preparation and reuse verification each include multiple operations, so use finer probes to choose what to optimize.
+
+On disposable copies of the saved cold batch, an injected cancellation at the second progress yield and an injected failure after the publication writes each preserved 595,814 stored result fields and restored inspection, application controls and worksheet protection. A profiling-clock fault yielded unavailable diagnostics and a fresh financial batch that reconciled. All three subsequent retries published fresh current batches and reconciled all 233 outcomes. The cancellation exercise invoked the runner directly. D3 still covers the visible Cancel button, Esc and print behavior.
+
+The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033a0cc537b335cac4f16e3`. Capture hashes and follow-up profiling are recorded with the reviewed source. The raw workbooks stay local. Windows remains unverified. [PR #37 evidence](https://github.com/Jon-275/financial-model/pull/37)
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
 

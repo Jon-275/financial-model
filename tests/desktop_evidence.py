@@ -96,7 +96,8 @@ def vba_identity(path: Path) -> tuple[dict[str, tuple[str, ...]], tuple[tuple[st
     return modules, tuple(sorted(libraries))
 
 
-def compare_capture(directory: Path, fixture: dict[str, Any], reference: Path, capture: Path) -> tuple[str, float]:
+def compare_capture(directory: Path, fixture: dict[str, Any], reference: Path, capture: Path, *,
+                    candidate: Path | None = None, expected_reused: int | None = None) -> tuple[str, float]:
     """Check freshness and run the existing field-by-field reconciliation."""
     check_workbook(capture, fixture, pairs=fixture['pairs'])
     with Workbook(directory / INPUT) as before, Workbook(capture) as after:
@@ -104,11 +105,11 @@ def compare_capture(directory: Path, fixture: dict[str, Any], reference: Path, c
         if (not all(type(stamp) in (int, float) and isfinite(stamp) for stamp in (old_stamp, new_stamp))
                 or new_stamp <= old_stamp):
             raise ValueError('The capture must contain a newly completed Excel batch.')
-    if vba_identity(capture) != vba_identity(directory / INPUT):
+    if vba_identity(capture) != vba_identity(candidate if candidate is not None else directory / INPUT):
         raise ValueError('The capture VBA source or libraries differ from the pinned runner.')
     output = StringIO()
     with redirect_stdout(output):
-        passed = compare(reference, capture)
+        passed = compare(reference, capture, expected_reused)
     if not passed:
         raise ValueError('Independent reconciliation failed.')
     return output.getvalue().strip(), new_stamp

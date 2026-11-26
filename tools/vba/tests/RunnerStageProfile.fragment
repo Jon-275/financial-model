@@ -1,0 +1,151 @@
+' Local benchmark copy only. Append declarations and procedures at their respective anchors.
+#If Mac Then
+Private Declare PtrSafe Function ProfileNanoseconds Lib "/usr/lib/libSystem.B.dylib" Alias "clock_gettime_nsec_np" (ByVal clockID As Long) As LongLong
+Private Const PROFILE_CLOCK As String = "mac-raw"
+Private Const CLOCK_MONOTONIC_RAW As Long = 4
+#ElseIf Win64 Then
+Private Declare PtrSafe Function ProfileCounter Lib "kernel32" Alias "QueryPerformanceCounter" (ByRef ticks As LongLong) As Long
+Private Declare PtrSafe Function ProfileFrequency Lib "kernel32" Alias "QueryPerformanceFrequency" (ByRef ticks As LongLong) As Long
+Private Const PROFILE_CLOCK As String = "windows-qpc"
+#Else
+Private Const PROFILE_CLOCK As String = "unsupported"
+#End If
+
+Private Enum RunnerProfileStage
+    ProfilePreflight = 1
+    ProfilePreparation
+    ProfilePrimaryCalculation
+    ProfileVerifiedCapture
+    ProfileOrderedCalculation
+    ProfileRanking
+    ProfileReuseVerification
+    ProfileProgress
+    ProfilePublish
+    ProfileRestore
+End Enum
+
+Private Enum RunnerProfileRetry
+    ProfileBalanceMismatch = 1
+    ProfileRepeatedEnding
+End Enum
+
+Private mProfileSeconds(1 To ProfileRestore) As Double
+Private mProfileRetries(1 To 2) As Long
+Private mProfileActive As Long
+Private mProfileLastTick As Double
+Private mProfileFrequency As Double
+Private mProfileSerial As Double
+Private mProfileOutcome As String
+Private mProfileComputed As Long
+Private mProfileReused As Long
+Private mProfileStress As Long
+Private mProfileRanked As Long
+Private mProfileFull As Long
+
+' === Diagnostic procedures ===
+Private Function RunnerClockFrequency() As Double
+#If Mac Then
+    RunnerClockFrequency = 1000000000#
+#ElseIf Win64 Then
+    Dim ticks As LongLong
+    If ProfileFrequency(ticks) <> 0 Then RunnerClockFrequency = CDbl(ticks)
+#End If
+End Function
+
+Private Function RunnerClockTicks() As Double
+    ' Double retains sub-microsecond precision at practical desktop uptimes.
+#If Mac Then
+    RunnerClockTicks = CDbl(ProfileNanoseconds(CLOCK_MONOTONIC_RAW))
+#ElseIf Win64 Then
+    Dim ticks As LongLong
+    If ProfileCounter(ticks) <> 0 Then RunnerClockTicks = CDbl(ticks)
+#End If
+End Function
+
+Private Sub StartMarketRiskProfile()
+    Dim failure As Long
+    Erase mProfileSeconds
+    Erase mProfileRetries
+    mProfileActive = 0
+    mProfileOutcome = vbNullString
+    mProfileSerial = 0#
+    mProfileComputed = 0
+    mProfileReused = 0
+    mProfileStress = 0
+    mProfileRanked = 0
+    mProfileFull = 0
+    On Error GoTo ClockUnavailable
+    mProfileFrequency = RunnerClockFrequency()
+    If mProfileFrequency <= 0# Then Exit Sub
+    mProfileLastTick = RunnerClockTicks()
+    If mProfileLastTick > 0# Then mProfileActive = ProfilePreflight
+    Exit Sub
+ClockUnavailable:
+    failure = Err.Number
+    Err.Clear
+    If failure = 18 Then Err.Raise 18
+End Sub
+
+Private Sub MoveMarketRiskProfile(ByVal nextStage As Long)
+    Dim ticks As Double, failure As Long
+    If mProfileActive = 0 Then Exit Sub
+    On Error GoTo ClockUnavailable
+    ticks = RunnerClockTicks()
+    If ticks < mProfileLastTick Or ticks <= 0# Then
+        mProfileActive = 0
+        Exit Sub
+    End If
+    mProfileSeconds(mProfileActive) = mProfileSeconds(mProfileActive) + (ticks - mProfileLastTick) / mProfileFrequency
+    mProfileLastTick = ticks
+    mProfileActive = nextStage
+    Exit Sub
+ClockUnavailable:
+    failure = Err.Number
+    Err.Clear
+    mProfileActive = 0
+    If failure = 18 Then Err.Raise 18
+End Sub
+
+Private Sub CountProfileTrial(ByVal code As Long, ByVal reused As Boolean)
+    If reused Then
+        mProfileReused = mProfileReused + 1
+    Else
+        mProfileComputed = mProfileComputed + 1
+    End If
+    If code > 2000 Then mProfileStress = mProfileStress + 1
+End Sub
+
+Private Sub CountProfileRetry(ByVal reason As RunnerProfileRetry)
+    If reason >= ProfileBalanceMismatch And reason <= ProfileRepeatedEnding Then
+        mProfileRetries(reason) = mProfileRetries(reason) + 1
+    Else
+        mProfileActive = 0
+    End If
+End Sub
+
+Private Sub FinishMarketRiskProfile(ByVal outcome As String, Optional ByVal serial As Double = 0#)
+    If mProfileActive = 0 Then Exit Sub
+    ' Flush the last stage, then drop the sentinel. A failed clock also drops it.
+    MoveMarketRiskProfile ProfileRestore
+    If mProfileActive = 0 Then Exit Sub
+    mProfileActive = 0
+    mProfileOutcome = outcome
+    mProfileSerial = serial
+End Sub
+
+Public Function ReadMarketRiskProfile() As String
+    ' One bounded, locale-invariant payload without inputs, financial results or paths.
+    Dim payload As String, stage As Long
+    payload = "RunnerStageProfile/v1"
+    If mRunning Or Len(mProfileOutcome) = 0 Then
+        ReadMarketRiskProfile = payload & "|unavailable"
+        Exit Function
+    End If
+    payload = payload & "|" & mProfileOutcome & "|" & PROFILE_CLOCK & "|" & Trim$(Str$(mProfileSerial))
+    For stage = ProfilePreflight To ProfileRestore
+        payload = payload & "|" & Trim$(Str$(mProfileSeconds(stage)))
+    Next stage
+    ReadMarketRiskProfile = payload & "|" & Trim$(Str$(mProfileComputed)) & "|" & Trim$(Str$(mProfileReused)) _
+        & "|" & Trim$(Str$(mProfileStress)) & "|" & Trim$(Str$(mProfileRanked)) & "|" & Trim$(Str$(mProfileFull)) _
+        & "|" & Trim$(Str$(mProfileRetries(ProfileBalanceMismatch))) & "|" & Trim$(Str$(mProfileRetries(ProfileRepeatedEnding)))
+End Function
