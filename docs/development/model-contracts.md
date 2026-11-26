@@ -62,7 +62,24 @@ The independent reference SHA-256 is `48bad0ced1adbc062f05cdf01bf07e11d46c619bce
 
 The read-only comparison used the native retry capture `1a000d1fc8b15f19c57a5c8ea68d9643f9f79db27615ccb49f392d184304baf6` and independent v2 reference `48bad0ced1adbc062f05cdf01bf07e11d46c619bceb6c7e42c0b81601993dc36`. All 1,021 populated `Report_Data` cells and 360 of 363 populated **Summary** cells matched within the existing comparison tolerance. The three expected differences were `Summary!B6`, with the preparation date changing from November 25 to 26, 2026, and `Summary!B31` and `Summary!K24`, with the saved run time changing from `2026-11-25 22:19` to `2026-11-26 09:47`. Neither sheet had cached Excel errors. The retry shows the plan funded through age 95, a projected $2,378,480.92 ending portfolio in opening-year dollars and all 100 fixed-spending paths paying their required costs.
 
-The selected jurisdiction `CA`, the `ca-individual-v1` rules version and the complete policy-bound risk signature matched the reference. **Tax_Tables** retained published mode, the 2026 California income-tax table and the 2027 disability insurance rate. The saved **Summary**, **Risk Results** and **Annual Detail** bodies do not show the selected jurisdiction, policy version or effective table years. Summary retains its `$B$2:$I$189` print area, manual breaks after rows 32, 64, 96, 128 and 160, and the generic California footer. Native display of the policy scope, Letter and A4 print layout, PDF verification and distribution remain open.
+The selected jurisdiction `CA`, the `ca-individual-v1` rules version and the complete policy-bound risk signature matched the reference. **Tax_Tables** retained published mode, the 2026 California income-tax table and the 2027 disability insurance rate. This retry capture predates the explicit caption in **Summary**, **Risk Results** and **Annual Detail**. Summary retains its `$B$2:$I$189` print area, manual breaks after rows 32, 64, 96, 128 and 160, and the generic California footer.
+
+#### California report caption state checks
+
+On November 26, 2026, two independently bootstrapped fictional workbooks from the caption candidate `1a6ce61b873bd361ace7fc722a3efc823c90fe23` verified the cached report scope in `Summary!B7`, `'Annual Detail'!B3` and `'Risk Results'!B9`. Both current captions began with `Opening year 2026 • State tax CA • ca-individual-v1 •` and ended with `Published tables (2026 income / 2027 SDI)` or `Baseline tax tables`. Annual Detail added ` • Scenario: Example plan`. Both runs were `current` and `complete` with 100 pairs, seed 2026 and 233 outcomes.
+
+Calc recalculated two disposable copies of the published reference from cleared formula caches. Setting `Tax_Tables!B219` to `0` showed baseline scope on Summary and Annual Detail, cleared the Risk Results caption and marked risk `stale`. Setting `Inputs!D136` to lowercase `ca` showed `Review tax and opening year on Inputs.` on Summary, with the scenario suffix on Annual Detail, cleared the Risk Results caption and marked risk `invalid`. Both preserved the prior `complete` batch signature, counts, all 233 trial IDs and three ranked funding IDs with their valid flags. Calc rounded the saved run timestamp by less than one microsecond.
+
+| Fictional workbook evidence | SHA-256 |
+| --- | --- |
+| Published current reference | `d23afd95be8dcaea86a1f7e3442481f99dee9369162361df46048927a9309cab` |
+| Baseline current reference | `83b9e0bac45206ad74c331acc4edb7c206db4a2ec12b71e8227a853e051f5800` |
+| Published-to-baseline Calc input | `8719ce5d667bc8ac6d2dd28657d56652cffd7c34940a5697d41045f4f983d7d0` |
+| Baseline with retained stale run after Calc | `a11982ebabfb13be5f74b0a3b5ec7011abcd44d6eb3750a08751820c761f01cd` |
+| Invalid-jurisdiction Calc input | `9d94056a2c6d21bf4f48444154a65b6a44902f73c4803e0760d30c4469972ac6` |
+| Invalid jurisdiction after Calc | `a6649664184c9421774014d8c6c0ce254ed30c23a3e391fce54380e50a15db42` |
+
+The packaged draft, both references and both prepared Calc inputs preserve the Summary print area and five manual breaks, the dynamic Annual Detail print area and its repeated row 5, and the original page settings and margins. The Calc outputs retain the print areas, titles and breaks. Calc changes the header margin from 0.18 to 0.511811 inches on both sheets. The native Excel caption matrix, Letter and A4 layout and PDF checks, distribution and Windows verification remain open. [Desktop report checks](../../tests/README.md#verify-the-california-v2-report-candidate)
 
 #### California tax scenario parity
 
