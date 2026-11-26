@@ -8,6 +8,7 @@ from types import SimpleNamespace
 import unittest
 
 from risk_engine.annual import AnnualModel, PathResult, YearResult, reconcile
+from risk_engine.native_annual import NativeAnnualModel, price_path
 from risk_engine.paths import Guardrail, ReturnModel, RiskInputs, TrialOutcome
 from risk_engine.report import _allocations, _representative_trials, _result, run_analysis
 from risk_engine.scenario import HSA_RETURN_ROWS, load_scenario
@@ -41,6 +42,9 @@ class AnnualRiskTests(unittest.TestCase):
         first, second = run(), run()
         self.assertEqual(first, second)
         self.assertEqual(first['provenance']['seed'], str(2**64 - 1))
+        self.assertEqual(first['provenance']['state_jurisdiction'], 'CA')
+        self.assertEqual(first['provenance']['state_policy_version'], 'ca-individual-v1')
+        self.assertEqual(first['provenance']['inputs_sha256'], self.scenario.digest)
         self.assertEqual(first['annual'][-1]['age'], self.scenario.inputs[53])
         self.assertAlmostEqual(first['baseline']['opening_balance_real'],
                                self.scenario.opening_projection['BH'], places=2)
@@ -82,6 +86,14 @@ class AnnualRiskTests(unittest.TestCase):
         for row in result['representative_paths']:
             self.assertEqual(row['fixed'], result['baseline'])
             self.assertEqual(row['flexible'], result['baseline'])
+
+    def test_native_no_shock_retains_california_policy_and_reconciles(self) -> None:
+        """Repricing a native path must preserve the effective state policy."""
+        calendar = NativeAnnualModel(self.scenario)
+        path = price_path(calendar, (self.scenario.inputs[14],) * len(calendar.periods))
+        self.assertIs(path.tables.state_policy, self.scenario.state_policy)
+        result = path.run(path.baseline_returns, audit=True)
+        self.assertEqual(reconcile(path, result)['years'], len(self.scenario.years))
 
     def test_hsa_export_uses_the_simulated_rate_in_both_stages(self):
         working_rate, retirement_rate = HSA_RETURN_ROWS
