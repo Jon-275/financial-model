@@ -276,8 +276,8 @@ def matched_warm_results(controls: list[tuple[dict, dict]], candidates: list[tup
     guarded = warm_session(candidates, guarded=True)
     fixture, pairs = control[0]['fixture'], control[0]['pairs']
     if (fixture != 'full-0-125' or pairs not in PAIR_COUNTS
-            or any((item['fixture'], item['pairs']) != (fixture, pairs) for item in control)):
-        raise ValueError('Use matched full-0-125 controls at a single allowed pair count.')
+            or any((item['fixture'], item['pairs']) != (fixture, pairs) for item in (*control, *guarded))):
+        raise ValueError('Use matched full-0-125 arms at a single allowed pair count.')
     if controls[0][1]['excel_pid'] == candidates[0][1]['excel_pid']:
         raise ValueError('Each cold arm requires its own fresh Excel process.')
     require_matched_runs([*control, *guarded], (*ENVIRONMENT, 'distribution'))
@@ -301,10 +301,15 @@ def matched_warm_results(controls: list[tuple[dict, dict]], candidates: list[tup
 def replay_warm_arm(paths: list[Path], *, guarded: bool) -> list[tuple[dict, dict]]:
     """Replay each workbook capture and load its corresponding native timing receipt."""
     replay = check if guarded else check_control
-    return [
-        (replay(path), read_json(path.with_name(f'raw-{phase}-{repeat:02}.json')))
-        for path, (phase, repeat) in zip(paths, WARM_SEQUENCE, strict=True)
-    ]
+    result = []
+    for path, (phase, repeat) in zip(paths, WARM_SEQUENCE, strict=True):
+        evidence = replay(path)
+        if guarded:
+            fixture = matched_fixture(path.parent)
+            evidence = evidence | {'fixture': fixture['fixture'], 'pairs': fixture['pairs']}
+        receipt = read_json(path.with_name(f'raw-{phase}-{repeat:02}.json'))
+        result.append((evidence, receipt))
+    return result
 
 
 def main() -> int:

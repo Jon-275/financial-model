@@ -140,6 +140,10 @@ class GuardedCalculationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'preceding saved capture'):
             matched_warm_results(control, candidate)
         candidate[2][1]['starting_sha256'] = candidate[1][0]['capture_sha256']
+        candidate[2][0]['pairs'] = 100
+        with self.assertRaisesRegex(ValueError, 'single allowed pair count'):
+            matched_warm_results(control, candidate)
+        candidate[2][0]['pairs'] = 1000
         candidate[2][1]['timing']['seconds'] = 70
         with self.assertRaisesRegex(ValueError, 'timing receipt'):
             matched_warm_results(control, candidate)
