@@ -251,6 +251,22 @@ On November 26, 2026 the adaptive trace reproduced the first closing-balance rej
 
 The trace identifies the full-calculation return as the first sampled point with mixed-trial values. The Excel-internal dependency or scheduling cause remains open. Both frozen and reread residuals and the independent trial replay support the observation. The separate diagnostic stopped after fixed trial 81 and independently verified the prior inspection, inactive funding detail and all 595,814 stored result fields. Its reads were excluded from performance measurements. Trace input SHA-256 `50bb370cebe964408ac1467a158f77a8d655840bdfde212c3145bae8afb67865`. Saved capture SHA-256 `ccad2bad445d4bdda4eef416dbcfc2067b806dbe8a4cede1c05a49a4a5bbe6bd`.
 
+#### Brokerage funding solver
+
+A second disposable 1,000-pair trace reproduced stale values after switching from fixed trial 6 to 7. The age-121 opening brokerage balance and return matched trial 7 when full calculation returned. The withdrawal and closing value still matched trial 6. At the first brokerage closing rejection, the funding solver's selected gross draw also matched trial 6. The selected withdrawal in `Trial_Funding_Calc!H14884` exceeded its own formula evaluated with its live precedents by $658.21. This places a stale value inside the funding solver as well as in the projection.
+
+| Cumulative recalculation at age 121 | Selected gross draw ($) | Brokerage withdrawal ($) | Brokerage close ($) | Brokerage check residual ($) |
+| --- | ---: | ---: | ---: | ---: |
+| First brokerage rejection | 3,991,289.26 | 3,984,479.92 | 347,487,591.62 | −35,408,938.13 |
+| Projection withdrawal and close | 3,991,289.26 | 3,984,479.92 | 382,896,529.76 | 0.00 |
+| Selected solver withdrawal and projection | 3,991,289.26 | 3,983,821.71 | 382,897,338.32 | 0.00 |
+| Localized inputs, whole same-year solver block and projection | 3,761,432.87 | 3,753,965.32 | 383,179,699.55 | 0.00 |
+| Existing full ordered retry | 3,761,432.87 | 3,753,965.32 | 383,179,699.55 | 0.00 |
+
+Projection-only recalculation produced a zero value in `Trial_Checks!N126` while the withdrawal still exceeded the independent result by $230,514.60. The complete same-year solver recalculation and the ordered retry both produced the independently replayed withdrawal and close to the cent. The diagnostic preserved the original rejection, performed the full ordered retry and cancelled before publishing. This establishes the limit of the single brokerage closing equation. A release repair still needs evidence that it prevents stale funding throughout the capture, preserves cancellation and publication recovery, and passes the matched warm gate.
+
+The diagnostic stopped after fixed trial 81 and independently restored the inspection, inactive funding detail and 595,814 stored fields. It was excluded from timing. Input SHA-256 `bfedd28d0b4c77d843b92ed751837262782f8851e6fdd19a0f021ad5f0f23caf`. Saved capture SHA-256 `aae764dc8232d9348c63b6cb3bd594f66e8a9340ae65f4926e9e511995b85fd0`. The independent reference is the same as the full-scale benchmark above. Windows remains unverified.
+
 ### Performance release gate
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
