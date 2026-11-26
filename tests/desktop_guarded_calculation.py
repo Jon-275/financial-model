@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from typing import Any
 
-from desktop_benchmark import digest, load_fixture, read_json, write_json
+from desktop_benchmark import PAIR_COUNTS, digest, load_fixture, read_json, write_json
 from desktop_evidence import capture_file, compare_capture, reference_file, validate_run
 from desktop_stage_profile import CANDIDATE, PROFILE, check_candidate, instrument, parse
 from desktop_stage_profile import check as check_control
@@ -97,14 +97,15 @@ def overlay(source: str, *, mode: str) -> str:
 
 
 def matched_fixture(directory: Path) -> dict[str, Any]:
-    """Limit this experiment to the pinned full-horizon 100-pair fixture."""
+    """Limit this experiment to the pinned full-horizon catalog fixtures."""
     fixture = load_fixture(directory)
-    if (fixture['fixture'], fixture['pairs']) != ('full-0-125', 100):
-        raise ValueError('Use the full-0-125, 100-pair diagnostic fixture.')
+    if fixture['fixture'] != 'full-0-125':
+        raise ValueError('Use a full-0-125 diagnostic fixture.')
     return fixture
 
 
-def read_profile(profile_text: str, count_text: str, *, seconds: float, mode: str) -> dict[str, Any]:
+def read_profile(profile_text: str, count_text: str, *, seconds: float, mode: str,
+                 pairs: int = 100) -> dict[str, Any]:
     """Check exclusive timings and reconcile smart, full, ordered and injected attempts."""
     if mode not in MODES:
         raise ValueError('Unknown guarded calculation mode.')
@@ -112,7 +113,7 @@ def read_profile(profile_text: str, count_text: str, *, seconds: float, mode: st
     if not separator or tag != GUARDED_PROFILE:
         raise ValueError('Expected a guarded calculation stage profile.')
     # The first-attempt counter occupies the same position as the baseline full-attempt counter.
-    profile = parse(PROFILE + '|' + content, pairs=100, platform='mac', seconds=seconds)
+    profile = parse(PROFILE + '|' + content, pairs=pairs, platform='mac', seconds=seconds)
     counts = profile['counters']
     counts['smart_attempts'] = counts.pop('full_attempts')
     fields = count_text.strip().split('|')
@@ -148,7 +149,7 @@ def record(directory: Path, name: str, timing: dict[str, Any], profile_text: str
     fixture = matched_fixture(directory)
     if name == CANDIDATE:
         raise ValueError('Keep the diagnostic input and the saved capture separate.')
-    profile = read_profile(profile_text, count_text, seconds=timing['seconds'], mode=mode)
+    profile = read_profile(profile_text, count_text, seconds=timing['seconds'], mode=mode, pairs=fixture['pairs'])
     candidate = check_candidate(directory, transform=partial(overlay, mode=mode))
     reference, capture = reference_file(directory, fixture), capture_file(directory, name)
     comparison, serial = compare_capture(directory, fixture, reference, capture, candidate=candidate,
@@ -178,6 +179,10 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
     """Compare the initial cold and warm pairs after replaying their evidence."""
     if len(controls) != 2 or len(candidates) != 2:
         raise ValueError('Provide one cold run and one warm run for each comparison arm.')
+    fixture, pairs = controls[0]['fixture'], controls[0]['pairs']
+    if (fixture != 'full-0-125' or pairs not in PAIR_COUNTS
+            or (controls[1]['fixture'], controls[1]['pairs']) != (fixture, pairs)):
+        raise ValueError('The controls must use the same full-horizon fixture and pair count.')
     if (any(item.get('mode') != 'natural' for item in candidates) or canary.get('mode') != 'canary'
             or (canary['run']['phase'], canary['run']['repeat']) != ('cold', 1)):
         raise ValueError('The comparison requires natural timings and a separate cold canary.')
@@ -207,7 +212,7 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
         return {key: item[key] for key in ('candidate_sha256', 'capture_sha256', 'profile', 'comparison')}
 
     return {
-        'schema': COMPARISON, 'experiment': 'full-0-125, 100 fictional pairs',
+        'schema': COMPARISON, 'experiment': f'{fixture}, {pairs} fictional pairs',
         'environment': {**{field: canary['run'][field] for field in ENVIRONMENT}, 'timing_method': MACRO_WALL_TIME},
         **{field: canary[field] for field in provenance},
         'matched_initial_observations': [

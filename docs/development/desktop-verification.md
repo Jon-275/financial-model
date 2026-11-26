@@ -181,7 +181,7 @@ The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033
 
 ### Guarded Mac calculation experiment
 
-Use separate copies of the `full-0-125` 100-pair fixture and its independent reference. Prepare the full-first control with the existing stage profile command. Prepare the natural candidate and the fault-injection copy from untouched copies of the same fixture. The candidate attempts Excel's normal calculation first. A balance mismatch or a suspect repeated ending triggers the original full calculation, then the original ordered recalculation if needed. Recheck the selector, assumptions and closing balances on every attempt. Hard calculation or input errors and invalid accepted capture records stop the run. The candidate's `primary_calculation` bucket includes normal and full fallback time.
+Use separate copies of the `full-0-125` fixture and its independent reference. Select 100 pairs for a smoke test or 1,000 pairs for the full-scale workload. Match the count and manifest across the comparison arms. Prepare the full-first control with the existing stage profile command. Prepare the natural candidate and the fault-injection copy from untouched copies of the same fixture. The candidate attempts Excel's normal calculation first. A balance mismatch or a suspect repeated ending triggers the original full calculation, then the original ordered recalculation if needed. Recheck the selector, assumptions and closing balances on every attempt. Hard calculation or input errors and invalid accepted capture records stop the run. The candidate's `primary_calculation` bucket includes normal and full fallback time.
 
 ```sh
 python3 tests/desktop_guarded_calculation.py prepare "$candidate_dir"
