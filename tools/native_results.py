@@ -2,6 +2,7 @@
 from openpyxl.utils.cell import get_column_letter as L
 from native_capture import FIRST,CAPACITY,LAST,ANNUAL_FIRST,ANNUAL_CAPACITY,SIGNATURE,RANK,FAILURE_RANK,CONTEXT
 import native_funding_paths
+from state_policy import WORKBOOK_STATE_POLICY_NATIVE_SCHEMA
 
 SHEET='Risk_Data'
 TRIAL='Risk_Trials'
@@ -83,7 +84,8 @@ def _status(put, *, stored_context=CONTEXT):
         f'IFERROR(IF({complete},"current","incomplete"),"incomplete")))))','report_caption')
 
 
-def configure(m):
+def configure(m, *, with_state_policy: bool = False) -> None:
+    """Author captured trial statistics and the selected native schema."""
     _ranks(m)
     m.cells[SHEET].clear();m.styles[SHEET].clear()
     put=lambda a,v,s='report_money':m.put(SHEET,a,v,s)
@@ -98,7 +100,8 @@ def configure(m):
         ('AB3',f'=COUNTIF({TRIAL}!C{FIRST}:C{LAST},1)','whole'),
         ('AA4','Use Run market risk on Summary to refresh the captured trials.','report_caption'),
         ('BA1','Run field','header'),('BB1','Value','header'),
-        ('Z2',SCHEMA,'report_caption'),('Z4',ENGINE,'report_caption'),
+        ('Z2',WORKBOOK_STATE_POLICY_NATIVE_SCHEMA if with_state_policy else SCHEMA,'report_caption'),
+        ('Z4',ENGINE,'report_caption'),
         ('Z6','','report_caption'),('Z7','','report_caption'),('Z8','','report_caption'),
         ('Z9','','report_caption'),('Z10','','whole'),('Z11','','whole'),
     ):put(a,v,s)

@@ -7,10 +7,13 @@ from tempfile import TemporaryDirectory
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from lxml import etree
+from openpyxl import load_workbook
 from pyopenvba import ExcelFile
 from pyopenvba.cfb import CFB
 from pyopenvba.vba import decompress
 
+from risk_engine.scenario import workbook_has_explicit_state_policy
+from state_policy import WORKBOOK_STATE_POLICY_NATIVE_SCHEMA
 from vba_declarations import audit_vba_declarations
 
 
@@ -37,8 +40,8 @@ def audit_project_metadata(payload, module_names):
                     raise ValueError('The VBA project contains a local profile path.')
 
 
-def verify_project(path):
-    """Require the exact published runner and empty workbook and sheet modules."""
+def verify_project(path: str | Path, *, test_runner_source: str | None = None) -> None:
+    """Require the published runner or an explicit test overlay and empty document modules."""
     with ZipFile(path) as archive:
         book = etree.fromstring(archive.read('xl/workbook.xml'))
         sheets = book.find('{*}sheets')
@@ -49,7 +52,8 @@ def verify_project(path):
         if set(modules) != expected or workbook.forms():
             raise ValueError('The VBA project contains unexpected modules or forms.')
         runner = modules.pop(MODULE)
-        if runner.splitlines() != SOURCE.read_text(encoding='ascii').splitlines():
+        expected_runner = SOURCE.read_text(encoding='ascii') if test_runner_source is None else test_runner_source
+        if runner.splitlines() != expected_runner.splitlines():
             raise ValueError('The embedded runner differs from its published source.')
         audit_vba_declarations(runner)
         for source in modules.values():
@@ -64,12 +68,22 @@ def verify_project(path):
                 raise ValueError('A VBA reference contains a local profile path.')
 
 
-def package_macro(source, destination):
+def package_macro(source: str | Path, destination: str | Path, *, test_runner_source: str | None = None) -> None:
+    """Package a workbook with the published runner or explicit local test source."""
     source, destination = Path(source), Path(destination)
     if source.suffix.lower() != '.xlsx' or destination.suffix.lower() != '.xlsm':
         raise ValueError('Use an .xlsx calculation workbook and a new .xlsm destination.')
     if destination.exists():
         raise FileExistsError(destination)
+    if test_runner_source is None:
+        draft = load_workbook(source, read_only=True, keep_links=False)
+        try:
+            explicit_version = ('Risk_Data' in draft.sheetnames
+                                and draft['Risk_Data']['Z2'].value == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA)
+            if explicit_version or workbook_has_explicit_state_policy(draft):
+                raise ValueError('An explicit state policy workbook requires the test overlay.')
+        finally:
+            draft.close()
     destination.parent.mkdir(parents=True, exist_ok=True)
     with TemporaryDirectory(dir=destination.parent) as directory:
         build = Path(directory) / 'retirement-model.xlsm'
@@ -87,10 +101,11 @@ def package_macro(source, destination):
                     content = etree.tostring(root, encoding='UTF-8', xml_declaration=True, standalone=True)
                 output.writestr(part, content)
         with ExcelFile(build) as workbook:
-            code = SOURCE.read_text(encoding='ascii').replace('\n', '\r\n')
+            source_text = SOURCE.read_text(encoding='ascii') if test_runner_source is None else test_runner_source
+            code = source_text.replace('\n', '\r\n')
             workbook.add_vba_project().add_module(MODULE, code)
             workbook.save()
-        verify_project(build)
+        verify_project(build, test_runner_source=test_runner_source)
         # One filesystem operation publishes the complete file and refuses to overwrite another run.
         link(build, destination)
 

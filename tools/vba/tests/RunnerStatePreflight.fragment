@@ -1,0 +1,85 @@
+Private Function ReadWorkbookStatePolicy(ByVal book As Workbook) As String
+    Dim inputs As Worksheet, tables As Worksheet, schemaCell As Range, selected As Long
+    Set inputs = book.Worksheets("Inputs")
+    Set tables = book.Worksheets("Tax_Tables")
+    Set schemaCell = book.Worksheets("Risk_Data").Range("Z2")
+    If schemaCell.HasFormula Then RaiseRunError "The native risk schema must be a literal."
+    If SameStateText(schemaCell.Value2, STATE_NATIVE_SCHEMA) Then
+        RequireStateLiteral tables.Range(STATE_SCHEMA_CELL), STATE_SCHEMA, "Check the state tax workbook schema on Tax_Tables."
+        RequireStateLiteral tables.Range(STATE_SCHEMA_LABEL_CELL), STATE_SCHEMA_LABEL, "Check the state tax workbook schema label."
+        RequireStateLiteral tables.Range(STATE_VERSION_CELL), STATE_VERSION, "Check the California state tax policy version on Tax_Tables."
+        RequireStateLiteral tables.Range(STATE_VERSION_LABEL_CELL), STATE_VERSION_LABEL, "Check the California state tax policy version label."
+        RequireStateLiteral inputs.Cells(STATE_INPUT_ROW, 1), STATE_INPUT_LABEL, "Check the state tax jurisdiction label on Inputs."
+        If inputs.Range("B4").HasFormula Then RaiseRunError "Choose a literal scenario number on Inputs."
+        selected = WholeNumber(inputs.Range("B4").Value2, 1, 3, "Choose scenario 1, 2 or 3 on Inputs.")
+        RequireStateLiteral inputs.Cells(STATE_INPUT_ROW, selected + 3), STATE_JURISDICTION, "Enter the literal state tax jurisdiction CA in the selected scenario."
+        If Not inputs.Cells(STATE_INPUT_ROW, 2).HasFormula Then RaiseRunError "The active state tax selector formula is missing."
+        If Not inputs.Range("B129").HasFormula Or Not TaxGateReferencesState(inputs.Range("B129").Formula) Then _
+            RaiseRunError "The state tax gate on Inputs is missing or incompatible."
+        ReadWorkbookStatePolicy = STATE_JURISDICTION
+        Exit Function
+    End If
+
+    RequireText schemaCell.Value2, EXPECTED_SCHEMA, "Use a supported native risk schema with this test runner."
+    If HasStatePolicyMarkers(inputs, tables) Then RaiseRunError "The legacy native schema cannot use an explicit state policy."
+    RequireStateLiteral book.Worksheets(STATE_LEGACY_INPUT_SHEET).Range(STATE_LEGACY_INPUT_CELL), _
+        STATE_LEGACY_INPUT_HEADER, "Cannot identify the legacy California tax layout."
+    RequireStateLiteral book.Worksheets(STATE_LEGACY_LEDGER_SHEET).Range(STATE_LEGACY_LEDGER_CELL), _
+        STATE_LEGACY_LEDGER_HEADER, "Cannot identify the legacy California tax layout."
+End Function
+
+Private Sub RecalculateStateSelection(ByVal book As Workbook, ByVal jurisdiction As String)
+    If Len(jurisdiction) = 0 Then Exit Sub
+    With book.Worksheets("Inputs").Cells(STATE_INPUT_ROW, 2)
+        .Calculate
+        RequireText .Value2, jurisdiction, "The recalculated state tax jurisdiction does not match the selected scenario."
+    End With
+End Sub
+
+Private Sub RequireStatePolicyContext(ByVal book As Workbook, ByVal jurisdiction As String, ByVal context As String)
+    Dim prefix As String
+    prefix = STATE_LEGACY_CONTEXT
+    If Len(jurisdiction) > 0 Then prefix = STATE_NATIVE_CONTEXT
+    RequireText Left$(context, Len(prefix)), prefix, "The assumption record version does not match the native risk schema."
+    If Len(jurisdiction) = 0 Then Exit Sub
+    If Not book.Worksheets("Market_Paths").Range("BB3").HasFormula Then RaiseRunError "The policy assumption record formula is missing."
+    RequireText book.Worksheets("Inputs").Cells(STATE_INPUT_ROW, 2).Value2, jurisdiction, _
+        "The recalculated state tax jurisdiction does not match the selected scenario."
+    If Len(context) <= Len(prefix) + Len(STATE_CONTEXT_SUFFIX) Then RaiseRunError "The assumption record policy is incomplete."
+    RequireText Right$(context, Len(STATE_CONTEXT_SUFFIX)), STATE_CONTEXT_SUFFIX, "The assumption record policy does not match the workbook."
+End Sub
+
+Private Sub RequireStateLiteral(ByVal area As Range, ByVal expected As String, ByVal detail As String)
+    If area.HasFormula Then RaiseRunError detail
+    RequireText area.Value2, expected, detail
+End Sub
+
+Private Function SameStateText(ByVal value As Variant, ByVal expected As String) As Boolean
+    If VarType(value) = vbString Then SameStateText = (StrComp(CStr(value), expected, vbBinaryCompare) = 0)
+End Function
+
+Private Function HasStatePolicyMarkers(ByVal inputs As Worksheet, ByVal tables As Worksheet) As Boolean
+    Dim column As Variant, address As Variant
+    HasStatePolicyMarkers = True
+    If TaxGateReferencesState(inputs.Range("B129").Formula) Then Exit Function
+    For Each column In Array(1, 2, 4, 5, 6)
+        With inputs.Cells(STATE_INPUT_ROW, column)
+            If .HasFormula Or Not IsEmpty(.Value2) Then Exit Function
+        End With
+    Next column
+    If SameStateText(inputs.Cells(STATE_INPUT_ROW, 7).Value2, STATE_INPUT_NOTE) Then Exit Function
+    For Each address In Array(STATE_SCHEMA_CELL, STATE_VERSION_CELL)
+        With tables.Range(CStr(address))
+            If .HasFormula Or Not IsEmpty(.Value2) Then Exit Function
+        End With
+    Next address
+    If SameStateText(tables.Range(STATE_SCHEMA_LABEL_CELL).Value2, STATE_SCHEMA_LABEL) Then Exit Function
+    HasStatePolicyMarkers = SameStateText(tables.Range(STATE_VERSION_LABEL_CELL).Value2, STATE_VERSION_LABEL)
+End Function
+
+Private Function TaxGateReferencesState(ByVal formula As Variant) As Boolean
+    Dim expression As String
+    If VarType(formula) <> vbString Then Exit Function
+    expression = " " & UCase$(Replace(CStr(formula), "$", "")) & " "
+    TaxGateReferencesState = (expression Like "*[!A-Z0-9_][B-F]" & CStr(STATE_INPUT_ROW) & "[!A-Z0-9_]*")
+End Function

@@ -20,8 +20,8 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.exceptions import InvalidFileException
 
 from state_policy import (
-    CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
-    WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA, WORKBOOK_STATE_POLICY_SCHEMA_CELL,
+    CALIFORNIA_POLICY, LEGACY_CA_POLICY_HEADERS, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
+    WORKBOOK_JURISDICTION_NOTE, WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA, WORKBOOK_STATE_POLICY_SCHEMA_CELL,
     WORKBOOK_STATE_POLICY_TABLE_LABELS, StatePolicy, resolve_state_policy,
 )
 
@@ -155,7 +155,8 @@ def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
         tax_check = inputs['B129'].value
         references_jurisdiction = (isinstance(tax_check, str)
                                    and re.search(rf'\b[B-F]{row}\b', tax_check.upper().replace('$', '')) is not None)
-        if references_jurisdiction or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF'):
+        if (references_jurisdiction or inputs[f'G{row}'].value == WORKBOOK_JURISDICTION_NOTE
+                or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF')):
             return True
     if 'Tax_Tables' not in sheets:
         return False
@@ -170,10 +171,7 @@ def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
 def _workbook_state_policy(raw: Workbook, cached: Workbook, *, selected: int) -> StatePolicy | None:
     """Read explicit state inputs or recognize the known legacy California layout."""
     if not workbook_has_explicit_state_policy(raw):
-        for sheet, cell, expected in (
-            ('Inputs', 'A128', 'Opening California capital loss carryforward'),
-            ('Projection', 'BY4', 'California capital loss carryforward'),
-        ):
+        for sheet, cell, expected in LEGACY_CA_POLICY_HEADERS:
             if raw[sheet][cell].value != expected:
                 _invalid(f'{sheet}!{cell}', 'cannot identify the legacy California tax layout')
         return None

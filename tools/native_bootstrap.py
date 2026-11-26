@@ -29,6 +29,9 @@ from risk_engine.native_paths import NativeReturnModel
 from risk_engine.paths import Guardrail, RiskInputs
 from risk_engine.report import _first_shortfall, _outcome, _representative_trials
 from risk_engine.scenario import load_scenario
+from state_policy import (
+    WORKBOOK_STATE_POLICY_NATIVE_CONTEXT, WORKBOOK_STATE_POLICY_NATIVE_SCHEMA, WORKBOOK_STATE_POLICY_NATIVE_SUFFIX,
+)
 from workbook_recalc import clear_formula_results, recalculate
 from xlsx_values import write_values
 
@@ -48,7 +51,8 @@ class RunSettings:
 def _read_plan(calculated):
     book = load_workbook(calculated, read_only=True, data_only=True, keep_links=False)
     try:
-        if book['Risk_Data']['Z2'].value != SCHEMA or book['Risk_Data']['Z4'].value != ENGINE:
+        schema = book['Risk_Data']['Z2'].value
+        if schema not in (SCHEMA, WORKBOOK_STATE_POLICY_NATIVE_SCHEMA) or book['Risk_Data']['Z4'].value != ENGINE:
             raise ValueError('Build the native template before preparing its market results.')
         market_check = book['Market_Paths']['AL3'].value
         if market_check != 'OK':
@@ -56,8 +60,12 @@ def _read_plan(calculated):
         if book['Risk_Data']['Z1'].value != 'missing':
             raise ValueError('Build from a fresh template with empty market result areas.')
         context = book['Market_Paths']['BB3'].value
-        if not isinstance(context, str) or not context.startswith('native-risk-v1|'):
+        with_state_policy = schema == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA
+        prefix = WORKBOOK_STATE_POLICY_NATIVE_CONTEXT if with_state_policy else trial.CONTEXT_PREFIX
+        if not isinstance(context, str) or not context.startswith(prefix):
             raise ValueError('The calculated market assumption record is missing.')
+        if with_state_policy and not context.endswith(WORKBOOK_STATE_POLICY_NATIVE_SUFFIX):
+            raise ValueError('The market assumption record does not contain the California policy.')
         values = [row[0] for row in book['Risk_Settings'].iter_rows(
             min_col=2, max_col=2, min_row=29, max_row=36, values_only=True)]
         count, seed, volatility, vary, deviation, persistence, lower, upper = values
