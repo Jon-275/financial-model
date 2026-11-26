@@ -3,7 +3,8 @@
 from pathlib import Path
 import unittest
 
-from desktop_guarded_calculation import GUARDED_BRANCH, GUARDED_PROFILE, overlay, read_profile
+from desktop_guarded_calculation import (ENVIRONMENT, GUARDED_BRANCH, GUARDED_PROFILE, matched_results,
+                                         overlay, read_profile)
 from desktop_stage_profile import STAGES, instrument
 
 
@@ -48,6 +49,28 @@ class GuardedCalculationTests(unittest.TestCase):
                 read_profile(profile(), counts, seconds=30, mode=mode)
         with self.assertRaises(ValueError):
             read_profile(profile(0), 'GuardedCalculation/v1|46200|1|2', seconds=30, mode='canary')
+
+    def test_matched_results_reject_mixed_environment_and_reused_batches(self) -> None:
+        def evidence(phase: str, timestamp: float, mode: str | None) -> dict:
+            return {
+                'mode': mode, 'fixture_sha256': 'same fixture', 'source_sha256': 'same source',
+                'reference_sha256': 'same reference', 'candidate_sha256': mode,
+                'capture_sha256': str(timestamp), 'profile': {'batch_serial': timestamp},
+                'comparison': 'PASS', 'run': dict.fromkeys(ENVIRONMENT, 'same environment')
+                | {'phase': phase, 'repeat': 1, 'seconds': 30},
+            }
+
+        controls = [evidence('cold', 46200.1, None), evidence('warm', 46200.2, None)]
+        natural = [evidence('cold', 46200.3, 'natural'), evidence('warm', 46200.4, 'natural')]
+        canary = evidence('cold', 46200.5, 'canary')
+        self.assertEqual(len(matched_results(controls, natural, canary)['matched_initial_observations']), 2)
+        canary['run']['excel_build'] = 'different build'
+        with self.assertRaisesRegex(ValueError, 'different excel_build'):
+            matched_results(controls, natural, canary)
+        canary['run']['excel_build'] = controls[0]['run']['excel_build']
+        natural[1]['profile']['batch_serial'] = controls[0]['profile']['batch_serial']
+        with self.assertRaisesRegex(ValueError, 'reused a saved capture or batch timestamp'):
+            matched_results(controls, natural, canary)
 
 
 if __name__ == '__main__':

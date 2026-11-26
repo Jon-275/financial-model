@@ -181,7 +181,7 @@ The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033
 
 ### Guarded Mac calculation experiment
 
-Use separate copies of the `full-0-125` 100-pair fixture and its independent reference. Prepare the full-first control with the existing stage profile command. Prepare the natural candidate and the fault-injection copy from untouched copies of the same fixture. The candidate attempts Excel's normal calculation first. If the existing financial checks reject the capture, it tries the original full calculation and then the original ordered recalculation. Recheck the same selector, assumptions, closing balances and capture on every attempt.
+Use separate copies of the `full-0-125` 100-pair fixture and its independent reference. Prepare the full-first control with the existing stage profile command. Prepare the natural candidate and the fault-injection copy from untouched copies of the same fixture. The candidate attempts Excel's normal calculation first. A balance mismatch or a suspect repeated ending triggers the original full calculation, then the original ordered recalculation if needed. Recheck the selector, assumptions and closing balances on every attempt. Hard calculation or input errors and invalid accepted capture records stop the run. The candidate's `primary_calculation` bucket includes normal and full fallback time.
 
 ```sh
 python3 tests/desktop_guarded_calculation.py prepare "$candidate_dir"
@@ -197,7 +197,16 @@ python3 tests/desktop_guarded_calculation.py record "$candidate_dir" capture-col
 python3 tests/desktop_guarded_calculation.py check "$candidate_dir/guarded-evidence-cold-01.json"
 ```
 
-For the canary, supply `--mode canary` when recording. It corrupts a captured value in memory on the first fictional trial after both normal and full calculation. A passing result requires the ordered retry, a fresh saved batch, and independent reconciliation. Measure performance with the natural candidate. Trial-specific reconciliation, fallback counts and the saved capture are required for each recorded run. This is a test-only Mac path. Windows remains unverified.
+For the canary, supply `--mode canary` when recording. It corrupts a captured value in memory on the first fictional trial after both normal and full calculation. A passing result requires the ordered retry, a fresh saved batch, and independent reconciliation. Measure performance with the natural candidate on the same fixture, independent reference and desktop build as the control. Use distinct saved captures and require a newer batch serial for every warm run in the same session. Trial-specific reconciliation, fallback counts and the saved capture are required for each recorded run. This is a test-only Mac path. Windows remains unverified.
+
+Replay the complete comparison before reporting the timing pairs. Pass cold and warm evidence in that order for each arm. The comparison writes a summary of the reconciled captures, timings and fallback counts. It reports canary evidence separately from the performance observations.
+
+```sh
+python3 tests/desktop_guarded_calculation.py compare \
+  --control "$control_dir/profile-evidence-cold-01.json" "$control_dir/profile-evidence-warm-01.json" \
+  --candidate "$candidate_dir/guarded-evidence-cold-01.json" "$candidate_dir/guarded-evidence-warm-01.json" \
+  --canary "$canary_dir/guarded-evidence-cold-01.json" --output guarded-comparison.json
+```
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
 

@@ -11,13 +11,17 @@ from typing import Any
 from desktop_benchmark import digest, load_fixture, read_json, write_json
 from desktop_evidence import capture_file, compare_capture, reference_file, validate_run
 from desktop_stage_profile import CANDIDATE, PROFILE, check_candidate, instrument, parse
+from desktop_stage_profile import check as check_control
 from desktop_stage_profile import prepare as prepare_profile
 from vba_declarations import audit_vba_declarations
 
 
 SCHEMA = 'GuardedCalculationEvidence/v1'
+COMPARISON = 'GuardedMacExperiment/v1'
 GUARDED_PROFILE = 'RunnerGuardedProfile/v1'
 MODES = ('natural', 'canary')
+ENVIRONMENT = ('platform', 'excel_build', 'excel_channel', 'excel_bitness', 'os_build',
+               'architecture', 'machine', 'macro_policy')
 FULL_BRANCH = (
     '        If attempt = 1 Then\n'
     '            MoveMarketRiskProfile ProfilePrimaryCalculation\n'
@@ -164,6 +168,51 @@ def check(path: Path) -> dict[str, Any]:
     return replay
 
 
+def matched_results(controls: list[dict], candidates: list[dict], canary: dict) -> dict:
+    """Compare the initial cold and warm pairs after replaying their evidence."""
+    if len(controls) != 2 or len(candidates) != 2:
+        raise ValueError('Provide one cold run and one warm run for each comparison arm.')
+    if (any(item.get('mode') != 'natural' for item in candidates) or canary.get('mode') != 'canary'
+            or (canary['run']['phase'], canary['run']['repeat']) != ('cold', 1)):
+        raise ValueError('The comparison requires natural timings and a separate cold canary.')
+    all_runs = [*controls, *candidates, canary]
+    provenance = ('fixture_sha256', 'source_sha256', 'reference_sha256')
+    for field in provenance:
+        if len({item[field] for item in all_runs}) != 1:
+            raise ValueError(f'The test arms used different {field}.')
+    for field in ENVIRONMENT:
+        if len({item['run'][field] for item in all_runs}) != 1:
+            raise ValueError(f'The test arms used different {field}.')
+    if (len({item['capture_sha256'] for item in all_runs}) != len(all_runs)
+            or len({item['profile']['batch_serial'] for item in all_runs}) != len(all_runs)):
+        raise ValueError('The test arms reused a saved capture or batch timestamp.')
+    for arm in (controls, candidates):
+        cold, warm = arm
+        if [(item['run']['phase'], item['run']['repeat']) for item in arm] != [('cold', 1), ('warm', 1)]:
+            raise ValueError('Pass the cold result before its warm repeat for each arm.')
+        if cold['profile']['batch_serial'] >= warm['profile']['batch_serial']:
+            raise ValueError('The warm run must have its own newer batch.')
+        if cold['candidate_sha256'] != warm['candidate_sha256']:
+            raise ValueError('Each arm must reuse its unchanged input template.')
+
+    def compact(item: dict) -> dict:
+        return {key: item[key] for key in ('candidate_sha256', 'capture_sha256', 'profile', 'comparison')}
+
+    return {
+        'schema': COMPARISON, 'experiment': 'full-0-125, 100 fictional pairs',
+        'environment': {field: canary['run'][field] for field in ENVIRONMENT},
+        **{field: canary[field] for field in provenance},
+        'matched_initial_observations': [
+            {'phase': control['run']['phase'], 'control_seconds': control['run']['seconds'],
+             'guarded_seconds': candidate['run']['seconds'], 'control': compact(control),
+             'guarded': compact(candidate)}
+            for control, candidate in zip(controls, candidates, strict=True)
+        ],
+        'ordered_recovery_canary': {**compact(canary), 'seconds': canary['run']['seconds']},
+        'windows_status': 'unverified',
+    }
+
+
 def main() -> int:
     """Prepare a local fixture, or record or replay a saved result."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -178,6 +227,12 @@ def main() -> int:
         write.add_argument(name, type=Path)
     verify = commands.add_parser('check')
     verify.add_argument('evidence', type=Path)
+    compare = commands.add_parser('compare')
+    for option in ('control', 'candidate'):
+        compare.add_argument(f'--{option}', type=Path, nargs=2, required=True,
+                             metavar=('COLD', 'WARM'))
+    compare.add_argument('--canary', type=Path, required=True)
+    compare.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.command == 'prepare':
         print(prepare(args.directory, args.mode))
@@ -186,8 +241,11 @@ def main() -> int:
                         args.counts.read_text(), args.mode)
         write_json(args.output, result)
         print(result['comparison'])
-    else:
+    elif args.command == 'check':
         print(check(args.evidence)['comparison'])
+    else:
+        write_json(args.output, matched_results([check_control(path) for path in args.control],
+                                                [check(path) for path in args.candidate], check(args.canary)))
     return 0
 
 
