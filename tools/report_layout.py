@@ -420,7 +420,9 @@ def summary_merges():
               'K22:K23','K25:K26','K27:K28','K31:K32',*input_record.merges()])
 
 
-def apply(name, root, style_ids, numbers, active_fill):
+def apply(name: str, root: E._Element, style_ids: dict, numbers: list[str], active_fill: int,
+          *, with_state_policy: bool = False) -> None:
+    """Apply report presentation, including reserved caption cells on explicit candidates."""
     view = root.find(f'{X}sheetViews/{X}sheetView')
     view.set('showGridLines', '0')
     view.set('zoomScale', '100')
@@ -456,7 +458,8 @@ def apply(name, root, style_ids, numbers, active_fill):
                             **dict.fromkeys((*range(input_record.FIRST_HEADERS+1,input_record.FIRST_HEADERS+13),
                                              *range(input_record.SECOND_HEADERS+1,input_record.SECOND_HEADERS+13)),23),
                             **dict.fromkeys(range(input_record.FIRST_ROW+25,input_record.FIRST_ROW+28),28)})
-        _merges(root,summary_merges())
+        policy_merge = ['B7:I7'] if with_state_policy else []
+        _merges(root, summary_merges() + policy_merge)
         for row in range(71, 74):
             suffix = '_alt' if row % 2 else ''
             for column, style in (('G', 'report_case_age'), ('H', 'report_money')):
@@ -524,7 +527,8 @@ def apply(name, root, style_ids, numbers, active_fill):
         _columns(root, (3, 15, 9, 15, 9, 15, 9, 15, 9, 15, 12, 4, 23, 20))
         _rows(root, 57, 21, {2: 39, 3: 25, 4: 27, 7: 32, 12: 27,
                                                25: 29, 27: 29, 34: 31, 39: 35, 57: 28})
-        _merges(root, [f'B{row}:I{row}' for row in (2, 3, 4, 5, 10, 11, 30, 32, 33, 34, 36, 37, 54, 55)]
+        policy_merge = ['B9:I9'] if with_state_policy else []
+        _merges(root, policy_merge + [f'B{row}:I{row}' for row in (2, 3, 4, 5, 10, 11, 30, 32, 33, 34, 36, 37, 54, 55)]
                 + [f'{left}{row}:{right}{row}' for row in (6, 7, 8)
                    for left, right in (('B', 'E'), ('F', 'I'))]
                 + [f'{left}{row}:{right}{row}' for row in range(12, 30)
