@@ -208,6 +208,23 @@ python3 tests/desktop_guarded_calculation.py compare \
   --canary "$canary_dir/guarded-evidence-cold-01.json" --output guarded-comparison.json
 ```
 
+### November 25, 2026 guarded Mac observations
+
+Both arms used the pinned fictional `full-0-125` workbook with 100 pairs and seed 2026, Excel for Mac 16.115.26112215 and the same independent reference. Each arm used one fresh Excel process followed by one repeat in the open workbook. Wall time covers synchronous macro dispatch through return.
+
+| Run | Full-first (s) | Smart-first (s) | Full fallbacks after smart | Ordered retries, full-first / smart-first |
+| --- | ---: | ---: | ---: | ---: |
+| Cold | 256.856 | 188.764 | 1 | 1 / 0 |
+| Warm | 275.567 | 207.077 | 5 | 5 / 0 |
+
+Each run independently reconciled 233 outcomes and 80,454 fields. Each smart-first run attempted 190 smart calculations and retained 46 verified reuses. These are initial paired observations. A production decision still requires repeated runs, the 1,000-pair workload, checks for internally consistent stale captures, and cancellation and publication recovery on the candidate. Windows remains unverified.
+
+The separate canary rejected both injected captures on the first trial, reached the ordered retry, and independently reconciled the fresh saved batch across the same 233 outcomes and 80,454 fields. It recorded two injected mismatches, two full fallbacks overall, and one ordered balance retry. Its timing is excluded from the paired comparison.
+
+Earlier full-first probes on this same fictional fixture observed brokerage closing mismatches at ages 112 and 118. At age 118 in trial 20, the live closing value exceeded the recomputation from opening balance, withdrawal, deposit and return by $102,062,082.42. Ordered recalculation recovered. An intentional cancellation after that trial preserved the previous 595,814 stored result fields. A large failed reconciliation requires calculation-order investigation. Keep the comparison and ordered retry in place while tracing the first stage at which the live closing and its operands disagree.
+
+### Performance release gate
+
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
 
 Set release latency budgets after collecting raw timings. Initial comparison targets are at least 25% better warm median for full-range 1,000 pairs, no more than 10% regression in any other fixture, and visible cancel acknowledgement within five seconds at normal yield points. Track median 100-pair time as the exploration outcome and require an explicit budget on each supported device before claiming the new fast path. Record the prior 8- and 33-minute figures as historical context. Investigate and correct the cause of every new reconciliation or recovery failure. Keep the candidate Mac-only if Windows evidence is absent and label the missing tests in the release decision.

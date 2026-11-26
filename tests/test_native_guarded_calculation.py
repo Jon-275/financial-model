@@ -3,8 +3,8 @@
 from pathlib import Path
 import unittest
 
-from desktop_guarded_calculation import (ENVIRONMENT, GUARDED_BRANCH, GUARDED_PROFILE, matched_results,
-                                         overlay, read_profile)
+from desktop_guarded_calculation import (ENVIRONMENT, GUARDED_BRANCH, GUARDED_PROFILE, MACRO_WALL_TIME,
+                                         MACRO_WALL_TIME_LABELS, matched_results, overlay, read_profile)
 from desktop_stage_profile import STAGES, instrument
 
 
@@ -52,18 +52,25 @@ class GuardedCalculationTests(unittest.TestCase):
 
     def test_matched_results_reject_mixed_environment_and_reused_batches(self) -> None:
         def evidence(phase: str, timestamp: float, mode: str | None) -> dict:
+            method = MACRO_WALL_TIME if mode is None else MACRO_WALL_TIME_LABELS[1]
             return {
                 'mode': mode, 'fixture_sha256': 'same fixture', 'source_sha256': 'same source',
                 'reference_sha256': 'same reference', 'candidate_sha256': mode,
                 'capture_sha256': str(timestamp), 'profile': {'batch_serial': timestamp},
                 'comparison': 'PASS', 'run': dict.fromkeys(ENVIRONMENT, 'same environment')
-                | {'phase': phase, 'repeat': 1, 'seconds': 30},
+                | {'phase': phase, 'repeat': 1, 'seconds': 30, 'timing_method': method},
             }
 
         controls = [evidence('cold', 46200.1, None), evidence('warm', 46200.2, None)]
         natural = [evidence('cold', 46200.3, 'natural'), evidence('warm', 46200.4, 'natural')]
         canary = evidence('cold', 46200.5, 'canary')
-        self.assertEqual(len(matched_results(controls, natural, canary)['matched_initial_observations']), 2)
+        result = matched_results(controls, natural, canary)
+        self.assertEqual(len(result['matched_initial_observations']), 2)
+        self.assertEqual(result['environment']['timing_method'], MACRO_WALL_TIME)
+        controls[0]['run']['timing_method'] = 'monotonic time through file save'
+        with self.assertRaisesRegex(ValueError, 'macro wall time through return'):
+            matched_results(controls, natural, canary)
+        controls[0]['run']['timing_method'] = MACRO_WALL_TIME
         canary['run']['excel_build'] = 'different build'
         with self.assertRaisesRegex(ValueError, 'different excel_build'):
             matched_results(controls, natural, canary)

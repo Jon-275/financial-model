@@ -22,6 +22,12 @@ GUARDED_PROFILE = 'RunnerGuardedProfile/v1'
 MODES = ('natural', 'canary')
 ENVIRONMENT = ('platform', 'excel_build', 'excel_channel', 'excel_bitness', 'os_build',
                'architecture', 'machine', 'macro_policy')
+MACRO_WALL_TIME = ('monotonic time from synchronous RunMarketRisk dispatch through return, '
+                   'excluding save and profile read')
+MACRO_WALL_TIME_LABELS = (
+    MACRO_WALL_TIME,
+    'monotonic wall time from synchronous RunMarketRisk dispatch through return',
+)
 FULL_BRANCH = (
     '        If attempt = 1 Then\n'
     '            MoveMarketRiskProfile ProfilePrimaryCalculation\n'
@@ -183,6 +189,8 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
     for field in ENVIRONMENT:
         if len({item['run'][field] for item in all_runs}) != 1:
             raise ValueError(f'The test arms used different {field}.')
+    if any(item['run']['timing_method'] not in MACRO_WALL_TIME_LABELS for item in all_runs):
+        raise ValueError('The comparison requires monotonic macro wall time through return.')
     if (len({item['capture_sha256'] for item in all_runs}) != len(all_runs)
             or len({item['profile']['batch_serial'] for item in all_runs}) != len(all_runs)):
         raise ValueError('The test arms reused a saved capture or batch timestamp.')
@@ -200,7 +208,7 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
 
     return {
         'schema': COMPARISON, 'experiment': 'full-0-125, 100 fictional pairs',
-        'environment': {field: canary['run'][field] for field in ENVIRONMENT},
+        'environment': {**{field: canary['run'][field] for field in ENVIRONMENT}, 'timing_method': MACRO_WALL_TIME},
         **{field: canary[field] for field in provenance},
         'matched_initial_observations': [
             {'phase': control['run']['phase'], 'control_seconds': control['run']['seconds'],
