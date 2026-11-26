@@ -337,13 +337,16 @@ class FundingSearchTests(unittest.TestCase):
         self.assertEqual((exact.status, exact.requested_draw, exact.conversion, exact.margin),
                          ('Unfunded', 50, 20, -60))
 
-    def test_projection_can_skip_unaffordable_conversion_comparison_cannot(self):
-        cash = replace(self.cash, opening_traditional=10000, requested_conversion=5000, conversion_allowed=True)
-        search = _FundingSearch(joint_2027(primary_age=59), TaxInputs(33000), cash)
+    def test_projection_can_skip_unaffordable_conversion_comparison_cannot(self) -> None:
+        """Verify public solver routing against the distinct branch margins."""
+        year = joint_2027(primary_age=59)
+        income = TaxInputs(33_000)
+        cash = replace(self.cash, opening_traditional=10_000, requested_conversion=5_000, conversion_allowed=True)
+        search = _FundingSearch(year, income, cash)
         self.assertEqual(max(search._grid(True).values()), -480)
         self.assertEqual(max(search._grid(False).values()), 0)
-        projection = search.solve(exact=False)
-        comparison = search.solve(exact=True)
+        projection = solve_funding(year, income, cash)
+        comparison = solve_funding(year, income, cash, exact=True)
         self.assertEqual(projection.conversion, 0)
         self.assertEqual(projection.status, "Funded")
         self.assertEqual(comparison.conversion, 5000)
