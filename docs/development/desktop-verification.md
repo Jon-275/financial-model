@@ -362,6 +362,22 @@ A separate native canary supplied trial 6's stale gross request to trial 7's age
 
 In a separate matched diagnostic, a one-time `CalculateFullRebuild` completed at preflight. Both its arm and the unchanged control still hit a brokerage mismatch within the first 81 fixed trials and preserved the prior 595,814 fields after cancellation. An explicit same-year solver-range calculation recovered the draw in the split-input trace after refreshing its localized inputs alone had left the 34 recorded numeric values and stale draw unchanged. The two text inputs were recorded by type. These diagnostics were excluded from timing.
 
+### Run both diagnostic arms through the Mac Excel API
+
+Use one local, prepared `full-0-125` fixture with 1,000 pairs and a completed independent reference. Close Excel before starting. The driver uses the host's existing macro policy and verifies the exact approved fixture before opening it. A failed operation preserves the saved evidence and stops the run. After successful replay, the driver closes only the disposable workbook and exits its original empty Excel process so the next arm starts cold.
+
+```sh
+export PYTHONPATH=tools:tests
+python tests/desktop_stage_profile.py prepare "$fixture"
+python tests/native_funding_proof_package.py "$fixture/desktop-input.xlsm" "$fixture/proof-bank.xlsm"
+python tests/native_funding_proof_overlay.py "$fixture/desktop-input.xlsm" "$fixture/proof-runner-input.xlsm"
+caffeinate -i python tests/mac_funding_proof_driver.py full-first "$fixture" "$control" --machine "$machine"
+caffeinate -i python tests/mac_funding_proof_driver.py funding-proof "$fixture" "$proof" --machine "$machine"
+python tests/desktop_funding_proof_replay.py "$control" "$proof" --output "$comparison"
+```
+
+Use new output directories for both arms and the same machine and Excel channel labels. The synchronous macro call is timed through return, with open, save and independent replay outside that interval. Keep the evidence bundles local. Repeat user-facing compatibility and distribution checks through the supported desktop route.
+
 ### Performance release gate
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
