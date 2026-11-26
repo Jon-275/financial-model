@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 from math import fsum, isfinite
 from os import link
 from pathlib import Path
@@ -116,7 +117,8 @@ def instrument(source: str) -> str:
     return result
 
 
-def check_candidate(directory: Path, *, path: Path | None = None) -> Path:
+def check_candidate(directory: Path, *, path: Path | None = None,
+                    transform: Callable[[str], str] = instrument) -> Path:
     """Bind the test build to the deterministic overlay and all original workbook parts."""
     original = directory / INPUT
     candidate = path if path is not None else directory / CANDIDATE
@@ -133,12 +135,12 @@ def check_candidate(directory: Path, *, path: Path | None = None) -> Path:
     if before_modules != after_modules or before_libraries != after_libraries:
         raise ValueError('The diagnostic input changed other VBA modules or libraries.')
     with ExcelFile(original) as before, ExcelFile(candidate) as after:
-        if instrument(before.get_module(RUNNER)).splitlines() != after.get_module(RUNNER).splitlines():
+        if transform(before.get_module(RUNNER)).splitlines() != after.get_module(RUNNER).splitlines():
             raise ValueError('The diagnostic input differs from the reviewed stage overlay.')
     return candidate
 
 
-def prepare(directory: Path) -> Path:
+def prepare(directory: Path, *, transform: Callable[[str], str] = instrument) -> Path:
     """Publish a new disposable diagnostic workbook without overwriting fixture files."""
     load_fixture(directory)
     original = directory / INPUT
@@ -149,14 +151,14 @@ def prepare(directory: Path) -> Path:
         package = Path(temporary) / 'package.xlsm'
         candidate = Path(temporary) / CANDIDATE
         with ExcelFile(original) as book:
-            code = instrument(book.get_module(RUNNER)).replace('\n', '\r\n')
+            code = transform(book.get_module(RUNNER)).replace('\n', '\r\n')
             book.set_module(RUNNER, code)
             book.save(package)
         with ZipFile(original) as before, ZipFile(package) as project, ZipFile(candidate, 'x') as after:
             for part in before.infolist():
                 contents = project.read(VBA_PART) if part.filename == VBA_PART else before.read(part)
                 after.writestr(part, contents)
-        check_candidate(directory, path=candidate)
+        check_candidate(directory, path=candidate, transform=transform)
         link(candidate, destination)
     return destination
 
