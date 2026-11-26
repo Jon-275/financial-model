@@ -71,7 +71,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
             source, destination = (Path(folder) / name for name in ('source.xlsm', 'proof.xlsm'))
             pinned = fixture(source)
             source_file = sha256(source.read_bytes()).hexdigest()
-            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256S', {pinned}):
                 self.assertEqual(prepare_package(source, destination), destination)
                 self.assertEqual(verify_package(source, destination), destination)
                 with self.assertRaises(FileExistsError):
@@ -95,7 +95,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
             pinned = fixture(source, overlap=True)
             with self.assertRaisesRegex(ValueError, 'pinned fictional'):
                 prepare_package(source, destination)
-            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256S', {pinned}):
                 with self.assertRaisesRegex(ValueError, 'overlap'):
                     prepare_package(source, destination)
             self.assertFalse(destination.exists())
@@ -105,7 +105,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
         with TemporaryDirectory() as folder:
             source, destination, modified = (Path(folder) / name for name in ('source.xlsm', 'proof.xlsm', 'edited.xlsm'))
             pinned = fixture(source)
-            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256S', {pinned}):
                 prepare_package(source, destination)
                 with ZipFile(destination) as before, ZipFile(modified, 'x') as after:
                     for info in before.infolist():
@@ -125,8 +125,26 @@ class NativeFundingProofPackageTests(unittest.TestCase):
                     rewritten.writestr(fresh_member, before.read(member), compress_type=ZIP_STORED)
             self.assertNotEqual(sha256(fresh.read_bytes()).digest(), sha256(source.read_bytes()).digest())
             self.assertEqual(package_content_sha256(fresh), pinned)
-            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256S', {pinned}):
                 self.assertEqual(prepare_package(fresh, destination), destination)
+
+    def test_admits_exact_content_fingerprints_for_both_pinned_sizes(self) -> None:
+        """Allow the two reproduced packages and deny content outside the pins."""
+        with TemporaryDirectory() as folder:
+            source = Path(folder) / 'source.xlsm'
+            fixture(source)
+            for pairs, fingerprint in (
+                (100, '91c4e1f7dc761baa67466164af45810bcf431f1b57367dac2cecb82d3fe6074b'),
+                (1000, '436ad05e2183840d54cf5f5347610e1886a6656133e414b2b7aea1ca373b5f2d'),
+            ):
+                with self.subTest(pairs=pairs):
+                    bank = Path(folder) / f'proof-{pairs}.xlsm'
+                    with patch('native_funding_proof_package.package_content_sha256', return_value=fingerprint):
+                        self.assertEqual(prepare_package(source, bank), bank)
+            with (patch('native_funding_proof_package.package_content_sha256', return_value='0' * 64),
+                  self.assertRaisesRegex(ValueError, 'pinned fictional')):
+                prepare_package(source, Path(folder) / 'unapproved.xlsm')
+            self.assertFalse((Path(folder) / 'unapproved.xlsm').exists())
 
     def test_pin_rejects_changed_payloads_names_and_duplicate_members(self) -> None:
         """Bind the original VBA and every worksheet to an unambiguous name."""
@@ -149,7 +167,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
                                     changed.writestr(updated_name, payload)
                                 else:
                                     changed.writestr(part, original.read(part))
-                        with (patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned),
+                        with (patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256S', {pinned}),
                               self.assertRaisesRegex(ValueError, 'pinned fictional')):
                             prepare_package(modified, directory / 'bank.xlsm')
             duplicate = directory / 'duplicate.xlsm'

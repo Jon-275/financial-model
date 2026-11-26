@@ -331,7 +331,7 @@ PYTHONPATH=tools python tests/native_funding_proof_package.py \
   "$proof_work/fixture/desktop-input.xlsm" "$proof_work/proof-bank.xlsm" --check
 ```
 
-The builder pins the names and decompressed bytes of every package part, including the original VBA. ZIP timestamps, compression and member ordering may differ. It changes only `Trial_Checks` worksheet XML. The check verifies the exact generated formulas and all original package parts before the separate diagnostic VBA is layered in. [Package builder](../../tests/native_funding_proof_package.py)
+For the 1,000-pair fixture, repeat the commands in a new temporary directory with `--pairs 1000`. The builder accepts only the two pinned fictional `full-0-125` fixtures. It verifies the names and decompressed bytes of every package part, including the original VBA. ZIP timestamps, compression and member ordering may differ. It changes only `Trial_Checks` worksheet XML. The check verifies the exact generated formulas and all original package parts before the separate diagnostic VBA is layered in. [Package builder](../../tests/native_funding_proof_package.py)
 
 The bank spans BA6:CP130. BA and BB read the selected solver status in AC and gross request in D. BC certifies numeric zero only when the current annual inputs preclude conversion, such as a zero request or an ineligible year. Unresolved years stay inconclusive. Calculate BA:BC, BD:BG, CM:CO, BH:CL and CP in that order after confirming the source year is current. BZ holds the independent margin. At projection row 126 the selected solver row is 14884.
 
