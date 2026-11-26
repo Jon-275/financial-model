@@ -84,6 +84,30 @@ class RiskWorkbookTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'does not track explicit state tax inputs'):
                 risk_workbook.validate_source(source)
 
+    def test_snapshot_writer_checks_raw_state_formula_before_assumptions(self) -> None:
+        """A calculated copy can hide the only remaining explicit-format signal."""
+        with TemporaryDirectory() as root:
+            source, calculated, destination = (Path(root) / name for name in (
+                'partial-state-layout.xlsx', 'legacy-looking-calculated.xlsx', 'snapshot.xlsx',
+            ))
+            book = Workbook()
+            inputs = book.active
+            inputs.title = 'Inputs'
+            book.create_sheet('Tax_Tables')
+            book.create_sheet(risk_workbook.SHEET)
+            risk_workbook.configure_freshness(
+                lambda name, address, value, *_: book[name].__setitem__(address, value))
+            inputs['B129'] = '=IF(EXACT($B$136,"CA"),"OK","Check state tax jurisdiction")'
+            book.save(source)
+            inputs['B129'] = 'Check state tax jurisdiction'
+            book.save(calculated)
+            book.close()
+
+            self.assertIn('AC2', risk_workbook._assumption_values(calculated))
+            with self.assertRaisesRegex(ValueError, 'does not track explicit state tax inputs'):
+                risk_workbook.write_snapshot(source, destination, calculated, self.scenario, self.report)
+            self.assertFalse(destination.exists())
+
     def test_publish_does_not_replace_output(self):
         with TemporaryDirectory() as root:
             output = Path(root) / 'report.xlsx'
