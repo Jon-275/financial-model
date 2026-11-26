@@ -3,6 +3,7 @@
 from dataclasses import replace
 import unittest
 
+from funding_selection_witness import earlier_feasible_draw
 from risk_engine.funding import FundingInputs, _FundingSearch, solve_funding
 from risk_engine.tax import TaxInputs, TaxTables
 
@@ -189,10 +190,160 @@ class FundingSearchTests(unittest.TestCase):
         self.assertEqual(result.tax.aca_magi, 100)
         self.assertEqual(result.premium_credit, 100)
 
+    def test_feasible_conversion_has_priority_over_a_smaller_no_conversion_draw(self) -> None:
+        """Hold the eligible conversion choice fixed when evaluating a lower draw."""
+        income = TaxInputs(33_200)
+        cash = replace(self.cash, cash_income=33_200, required_spending=34_200,
+                       taxable_available=20_000, basis_ratio=1, traditional_available=10_000,
+                       opening_traditional=10_000, requested_conversion=5_000, conversion_allowed=True)
+        selected = solve_funding(self.year, income, cash)
+        no_conversion = solve_funding(self.year, income, replace(cash, conversion_allowed=False))
+        # The $1,000 cash gap increases by $500 of federal tax on the conversion.
+        self.assertEqual((selected.status, selected.conversion, selected.tax.total_tax), ('Funded', 5_000, 500))
+        self.assertAlmostEqual(selected.requested_draw, 1_500)
+        self.assertAlmostEqual(no_conversion.requested_draw, 1_000)
+        quote = _FundingSearch(self.year, income, cash)
+        lower = selected.requested_draw - .01
+        self.assertAlmostEqual(quote._quote(lower, True)[0], -.01)
+        self.assertAlmostEqual(quote._quote(lower, False)[0], 499.99)
+        self.assertIsNone(earlier_feasible_draw(selected.requested_draw, lambda draw: quote._quote(draw, True)[0]))
+        self.assertIsNotNone(earlier_feasible_draw(selected.requested_draw,
+                                                  lambda draw: quote._quote(draw, False)[0]))
+
+    def test_same_mode_lower_draw_can_restore_conversion_when_the_claim_converts_zero(self) -> None:
+        """Distinguish zero converted at the draw from an ineligible conversion."""
+        income = TaxInputs(33_200)
+        base = replace(self.cash, cash_income=33_200, required_spending=37_700,
+                       requested_conversion=1_000, conversion_allowed=True)
+        for cash in (
+            replace(base, traditional_available=5_000, opening_traditional=5_000),
+            replace(base, traditional_available=10_000, opening_traditional=10_000,
+                    headroom=5_000, order=2, taxable_available=1_000, basis_ratio=1),
+        ):
+            with self.subTest(order=cash.order):
+                # The selected traditional draw exhausts the balance in order 1
+                # and fills the preferred bracket headroom in order 2.
+                prior = _FundingSearch(self.year, income, cash)
+                selected = prior.solve(exact=False)
+                self.assertTrue(prior.conversion)
+                self.assertGreaterEqual(max(prior._grid(True).values()), 0)
+                self.assertEqual((selected.status, selected.traditional_draw, selected.conversion),
+                                 ('Funded', 5_000, 0))
+                self.assertAlmostEqual(selected.requested_draw, 5_000)
+                lower = selected.requested_draw - .01
+                self.assertAlmostEqual(prior._draws(lower, True)[3], .01)
+                self.assertEqual(prior._draws(lower, False)[3], 0)
+                self.assertAlmostEqual(prior._quote(lower, True)[0], -.01)
+                self.assertIsNone(earlier_feasible_draw(selected.requested_draw,
+                                                       lambda draw: prior._quote(draw, True)[0]))
+
+                # With $100 less spending, the old gross draw still converts
+                # zero, while a lower same-mode quote funds and converts again.
+                current = _FundingSearch(self.year, income, replace(cash, required_spending=37_600))
+                actual = current.solve(exact=False)
+                self.assertEqual(actual.status, 'Funded')
+                self.assertAlmostEqual(actual.requested_draw, 4_900)
+                self.assertAlmostEqual(actual.conversion, 100)
+                self.assertEqual(current._draws(selected.requested_draw, True)[3], 0)
+                self.assertAlmostEqual(current._draws(lower, True)[3], .01)
+                witness = earlier_feasible_draw(selected.requested_draw, lambda draw: current._quote(draw, True)[0])
+                self.assertIsNotNone(witness)
+                assert witness is not None
+                self.assertAlmostEqual(witness[0], lower)
+                self.assertAlmostEqual(witness[1], 99.99)
+
+    def _aca_cutoff_search(self, spending: float, capacity: float = 410) -> _FundingSearch:
+        """Use small fictional amounts to isolate the tax-free ACA grid."""
+        return _FundingSearch(self.year, TaxInputs(90), replace(
+            self.cash, cash_income=90, required_spending=spending, taxable_available=capacity,
+            aca_actual=100, aca_benchmark=150, aca_fpl=100,
+        ))
+
+    def test_unfunded_choice_uses_best_margin_and_smallest_draw_within_tie(self) -> None:
+        """Compare the inclusive ACA cutoff with full capacity on the fresh grid."""
+        for improvement, expected in ((0, 310), (5e-8, 310), (2e-7, 410 + 2e-7)):
+            with self.subTest(improvement=improvement):
+                capacity = 410 + improvement
+                search = self._aca_cutoff_search(spending=560, capacity=capacity)
+                grid = search._grid(False)
+                cutoff_draws = {draw + offset for draw in (10, 43, 310) for offset in (-.00001, 0, .00001)}
+                self.assertTrue(cutoff_draws.issubset(grid))
+                # At a $310 draw, MAGI is exactly 400% of FPL and the credit
+                # is $100. Just above that point the entire credit is lost.
+                self.assertEqual(search._quote(310, False), (-60, 400))
+                self.assertAlmostEqual(grid[309.99999], -60.00001)
+                self.assertAlmostEqual(grid[310.00001], -159.99999)
+                self.assertAlmostEqual(grid[capacity] - grid[310], improvement, places=12)
+                self.assertEqual(max(grid.values()), grid[capacity])
+                self.assertTrue(all(margin < 0 for margin in grid.values()))
+                result = search.solve(exact=False)
+                self.assertEqual((result.status, result.requested_draw, result.lower_draw), ('Unfunded', expected, 0))
+                self.assertAlmostEqual(result.margin, grid[expected])
+
+    def test_grid_requires_nonnegative_cash_even_when_final_label_is_funded(self) -> None:
+        """Keep feasibility at zero separate from the final display threshold."""
+        for spending, feasible, label in ((500, True, 'Funded'), (500.004, False, 'Funded'),
+                                          (500.010001, False, 'Unfunded')):
+            with self.subTest(spending=spending):
+                search = self._aca_cutoff_search(spending)
+                grid = search._grid(False)
+                self.assertEqual(any(margin >= 0 for margin in grid.values()), feasible)
+                self.assertAlmostEqual(max(grid.values()), 500 - spending)
+                result = search.solve(exact=False)
+                self.assertEqual((result.status, result.requested_draw), (label, 310))
+                self.assertEqual(result.lower_draw > 0, feasible)
+
+        for spending, label in ((.009999, 'Funded'), (.0099990001, 'Unfunded')):
+            with self.subTest(spending=spending):
+                search = _FundingSearch(self.year, TaxInputs(0), replace(self.cash, required_spending=spending))
+                self.assertEqual(search._grid(False), {0: -spending})
+                result = search.solve(exact=False)
+                self.assertEqual((result.status, result.requested_draw, result.margin), (label, 0, -spending))
+
+    def test_witness_requires_more_than_half_a_cent_of_cash(self) -> None:
+        """A nonnegative lower quote may still be below the proof tolerance."""
+        for spending, expected in ((.005001, None), (.005, None), (.004999, (.01, .005001))):
+            with self.subTest(spending=spending):
+                cash = replace(self.cash, taxable_available=1, basis_ratio=1, required_spending=spending)
+                search = _FundingSearch(self.year, TaxInputs(0), cash)
+                self.assertGreater(search._quote(.01, False)[0], 0)
+                self.assertEqual(earlier_feasible_draw(.02, lambda draw: search._quote(draw, False)[0]), expected)
+
+    def test_funded_grid_bracket_must_still_converge_within_half_a_cent(self) -> None:
+        """Isolate the bracket-width check after the fixed bisection budget."""
+        # For these power-of-two capacities, 49 bisections leave exact widths
+        # of 1/256 and 1/128 dollars. Both upper draws can pay all costs.
+        for capacity, width, label in ((2**41, 1/256, 'Funded'),
+                                       (2**42, 1/128, 'Check funding convergence')):
+            with self.subTest(capacity=capacity):
+                cash = replace(self.cash, taxable_available=capacity, basis_ratio=1, required_spending=1_000.123)
+                result = solve_funding(self.year, TaxInputs(0), cash)
+                self.assertEqual((result.status, result.requested_draw), (label, 1_000.125))
+                self.assertEqual(result.requested_draw - result.lower_draw, width)
+                self.assertAlmostEqual(result.margin, .002)
+
+    def test_unfunded_regular_projection_uses_no_conversion_grid_margin(self) -> None:
+        """Preserve policy priority when both modes have a negative best margin."""
+        cash = replace(self.cash, cash_income=90, required_spending=300, taxable_available=50,
+                       basis_ratio=1, opening_traditional=20, requested_conversion=20, conversion_allowed=True,
+                       aca_actual=100, aca_benchmark=150, aca_fpl=100)
+        search = _FundingSearch(joint_2027(primary_age=59), TaxInputs(90), cash)
+        self.assertEqual(max(search._grid(True).values()), -60)
+        self.assertEqual(max(search._grid(False).values()), -160)
+        regular = search.solve(exact=False)
+        exact = search.solve(exact=True)
+        self.assertEqual((regular.status, regular.requested_draw, regular.conversion, regular.margin),
+                         ('Unfunded', 50, 0, -160))
+        self.assertEqual((exact.status, exact.requested_draw, exact.conversion, exact.margin),
+                         ('Unfunded', 50, 20, -60))
+
     def test_projection_can_skip_unaffordable_conversion_comparison_cannot(self):
         cash = replace(self.cash, opening_traditional=10000, requested_conversion=5000, conversion_allowed=True)
-        projection = solve_funding(self.year, TaxInputs(33000), cash)
-        comparison = solve_funding(self.year, TaxInputs(33000), cash, exact=True)
+        search = _FundingSearch(joint_2027(primary_age=59), TaxInputs(33000), cash)
+        self.assertEqual(max(search._grid(True).values()), -480)
+        self.assertEqual(max(search._grid(False).values()), 0)
+        projection = search.solve(exact=False)
+        comparison = search.solve(exact=True)
         self.assertEqual(projection.conversion, 0)
         self.assertEqual(projection.status, "Funded")
         self.assertEqual(comparison.conversion, 5000)
