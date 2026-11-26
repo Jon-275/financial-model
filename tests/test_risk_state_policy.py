@@ -5,7 +5,7 @@ import unittest
 
 from openpyxl import Workbook
 
-from risk_engine.scenario import ScenarioError, _workbook_state_policy
+from risk_engine.scenario import ScenarioError, _workbook_state_policy, workbook_has_explicit_state_policy
 from risk_engine.tax import TaxTables
 from state_policy import CALIFORNIA_POLICY, resolve_state_policy
 
@@ -104,3 +104,12 @@ class WorkbookStatePolicyTests(unittest.TestCase):
         self.raw['Inputs']['B129'] = '=IF(EXACT($B$136,"CA"),"OK","Check state tax jurisdiction")'
         with self.assertRaisesRegex(ScenarioError, 'Tax_Tables!B266'):
             _workbook_state_policy(self.raw, self.cached, selected=1)
+
+    def test_partial_workbook_markers_survive_a_missing_sheet(self) -> None:
+        """The snapshot guard still detects markers if one source sheet is missing."""
+        self.explicit()
+        del self.raw['Tax_Tables']
+        self.assertTrue(workbook_has_explicit_state_policy(self.raw))
+        self.raw.create_sheet('Tax_Tables')['B266'] = 'workbook-state-policy-v1'
+        del self.raw['Inputs']
+        self.assertTrue(workbook_has_explicit_state_policy(self.raw))

@@ -148,17 +148,18 @@ def _cell(cell, location: str) -> Cell:
 
 def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
     """Recognize both a complete state schema and a partially removed one."""
-    if not {'Inputs', 'Tax_Tables'} <= set(raw.sheetnames):
-        return False
-    inputs, tax_tables = raw['Inputs'], raw['Tax_Tables']
-    row = WORKBOOK_JURISDICTION_ROW
-    tax_check = inputs['B129'].value
-    references_jurisdiction = (isinstance(tax_check, str)
-                               and re.search(rf'\b[B-F]{row}\b', tax_check.upper().replace('$', '')) is not None)
-    return (references_jurisdiction or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF')
-            or any(tax_tables[address].value is not None for address in (
-                WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_CA_POLICY_VERSION_CELL,
-            )))
+    sheets = raw.sheetnames
+    if 'Inputs' in sheets:
+        inputs = raw['Inputs']
+        row = WORKBOOK_JURISDICTION_ROW
+        tax_check = inputs['B129'].value
+        references_jurisdiction = (isinstance(tax_check, str)
+                                   and re.search(rf'\b[B-F]{row}\b', tax_check.upper().replace('$', '')) is not None)
+        if references_jurisdiction or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF'):
+            return True
+    return 'Tax_Tables' in sheets and any(raw['Tax_Tables'][address].value is not None for address in (
+        WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_CA_POLICY_VERSION_CELL,
+    ))
 
 
 def _workbook_state_policy(raw: Workbook, cached: Workbook, *, selected: int) -> StatePolicy | None:
