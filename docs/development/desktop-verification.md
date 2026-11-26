@@ -310,6 +310,31 @@ The Mac canary intentionally reused trial 6's selected gross draw on trial 7's c
 
 This is evidence for the funding quote check and ordered correction in the controlled case. Release validation still needs that check integrated before capture with coverage for conversion decisions, discontinuities and unfunded paths. Canary input SHA-256 `6b3ecaaffda894bd7aa2cc6be5dd0e8aacfc6f1e670573d509eced04429d115b`. Saved capture SHA-256 `fda900ce432c54359f2e9655c84818dc60621041062dca968e9c0f55b57d5f51`.
 
+### Disposable native quote formulas
+
+Run `PYTHONPATH=tools python tests/native_funding_witness_formulas.py 126` to emit the quote formulas for trial projection row 126 as JSON. Omitting the row emits every annual row from 6 through 130. Place the formulas at those coordinates on a separate test worksheet. The generator reuses the native projection's candidate draw, conversion, tax and ACA formulas. It links directly to the annual sources, including pre-funding cash `Trial_Cash_Flow!AB`, and computes its own withdrawal breakpoints.
+
+Fill columns A, B and C with the claimed funding status, gross draw request and independently established conversion mode for that year. Keep the raw mode in the native trace. Mode 1 can produce a zero conversion when the current year has no eligible request. Leave C blank when the current policy branch is uncertain. An unfunded claim needs the applicable grid. A nonpositive or near-zero lower quote does not settle a claim, including when the quote crosses an ACA discontinuity. A fresh positive lower quote is a counterexample under the established policy.
+
+Refresh and verify the current trial's annual sources before calculating D and G, then the breakpoints AM:AO, then the candidate economics H:AL and the result AP. Read the repriced margin in Z. The Mac canaries first priced both requests using the original solver range, then independently repriced the generated row 126. The generated lower quote gave a $0.00872003 deficit for the recovered draw and a $200,440.85428905 surplus for the stale draw. It also exercised zero draw, unsupported conversion mode and the unfunded disposition. The prior batch was preserved after cancellation. The generated-row capture SHA-256 is `d4b334b80f0f76bd00569ee44baf3d73bc67288a07f097be6c209ab3c6c7f6c9`. [Formula generator](../../tests/native_funding_witness_formulas.py) · [Structure tests](../../tests/test_native_funding_witness_formulas.py)
+
+Prepare and verify a disposable full-span bank from the repository root.
+
+```sh
+proof_work=$(mktemp -d)
+python tests/desktop_benchmark.py prepare workbook/retirement-model.xlsm "$proof_work/fixture" \
+  --revision v1.0.0 --sha256 f5faea8318773c911800462d43488c5063dc20b9363f1121151454d5e8007af4 \
+  --fixture full-0-125 --pairs 100
+PYTHONPATH=tools python tests/native_funding_proof_package.py \
+  "$proof_work/fixture/desktop-input.xlsm" "$proof_work/proof-bank.xlsm"
+PYTHONPATH=tools python tests/native_funding_proof_package.py \
+  "$proof_work/fixture/desktop-input.xlsm" "$proof_work/proof-bank.xlsm" --check
+```
+
+The builder pins the names and decompressed bytes of every package part, including the original VBA. ZIP timestamps, compression and member ordering may differ. It changes only `Trial_Checks` worksheet XML. The check verifies the exact generated formulas and all original package parts before the separate diagnostic VBA is layered in. [Package builder](../../tests/native_funding_proof_package.py)
+
+The bank spans BA6:CP130. BA and BB read the selected solver status in AC and gross request in D. BC certifies numeric zero only when the current annual inputs preclude conversion, such as a zero request or an ineligible year. Unresolved years stay inconclusive. Calculate BA:BC, BD:BG, CM:CO, BH:CL and CP in that order after confirming the source year is current. BZ holds the independent margin. At projection row 126 the selected solver row is 14884. The generated worksheet still needs a combined native capture, recovery and full-batch comparison.
+
 ### Performance release gate
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
