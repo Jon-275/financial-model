@@ -19,6 +19,7 @@ import native_risk
 import native_layout
 import decision_layout
 import native_package
+from state_policy import WORKBOOK_JURISDICTION_ROW
 from openpyxl.formula.translate import Translator
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 
@@ -186,7 +187,7 @@ def main():
             report_layout.apply(layout_name, root, style_ids, number_formats, active_fill)
             native_layout.apply(n, root, style_ids, number_formats, active_fill)
             decision_layout.apply(n, root, style_ids, number_formats, baseline_strings)
-            input_validation.apply(n, root)
+            input_validation.apply(n, root, with_state_policy=n == 'Inputs' and f'B{WORKBOOK_JURISDICTION_ROW}' in edits)
             protection.apply(n, root)
             workbook_metadata.clear_revision_ids(root)
             changes[part]=pack(root); print(n,len(edits),flush=True)

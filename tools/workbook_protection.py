@@ -11,6 +11,7 @@ from risk_engine.scenario import (
     RISK_RETURN_BASIS_ROW, RISK_STRESS_ROWS, SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW,
     asset_profile_start,
 )
+from state_policy import WORKBOOK_JURISDICTION_ROW
 
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 
@@ -21,8 +22,12 @@ def _grid(columns, rows):
 
 def _entry_cells(name, root):
     if name == 'Inputs':
-        return ({'B4', 'B130', 'B131', 'B132'} | _grid('DEF', SCENARIO_INPUT_ROWS)
-                | _grid('ABC', ONE_TIME_EXPENSE_ROWS))
+        entries = ({'B4', 'B130', 'B131', 'B132'} | _grid('DEF', SCENARIO_INPUT_ROWS)
+                   | _grid('ABC', ONE_TIME_EXPENSE_ROWS))
+        row = WORKBOOK_JURISDICTION_ROW
+        if root.find(f'.//{X}c[@r="B{row}"]/{X}f') is not None:
+            entries.update(_grid('DEF', (row,)))
+        return entries
     if name == 'Summary':
         return {DOLLAR_VIEW_CELL, 'D90'}
     if name == 'Asset_Allocation':

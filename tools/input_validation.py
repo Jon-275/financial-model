@@ -2,6 +2,8 @@
 
 from lxml import etree as ET
 
+from state_policy import CALIFORNIA_POLICY, WORKBOOK_JURISDICTION_ROW
+
 X = '{http://schemas.openxmlformats.org/spreadsheetml/2006/main}'
 
 
@@ -102,10 +104,18 @@ RULES = {
 }
 
 
-def apply(name, root):
+def apply(name, root, *, with_state_policy: bool = False) -> None:
+    """Attach the input rules for this worksheet and authored policy schema."""
     rules = RULES.get(name)
     if not rules:
         return
+    if name == 'Inputs' and with_state_policy:
+        row = WORKBOOK_JURISDICTION_ROW
+        selected = f'D{row}'
+        rules = (*rules, _custom(f'{selected}:F{row}',
+                                 f'AND(EXACT({selected},"{CALIFORNIA_POLICY.jurisdiction}"),'
+                                 f'NOT(_xlfn.ISFORMULA({selected})))',
+                                 'Enter CA for a full-year California household.'))
     validations = root.find(X + 'dataValidations')
     if validations is None:
         validations = ET.Element(X + 'dataValidations')

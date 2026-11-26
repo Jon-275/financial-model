@@ -5,6 +5,7 @@ import re
 from openpyxl.formula.tokenizer import Tokenizer
 from openpyxl.utils.cell import get_column_letter as L
 from risk_engine.scenario import ONE_TIME_EXPENSE_ROWS
+from state_policy import WORKBOOK_JURISDICTION_ERROR, WORKBOOK_JURISDICTION_ROW
 
 import native_balance_checks
 import native_random
@@ -66,11 +67,12 @@ def _settings(m):
     m.put('Risk_Settings','A44','=IF(Market_Paths!AL3<>"OK",Market_Paths!AL3,IF(Risk_Data!Z9="","",Risk_Data!Z9))','report_caption')
 
 
-def _clone_annual(m, baseline):
+def _clone_annual(m, baseline, *, with_state_policy: bool = False):
     """Instantiate the compiled financial formulas; do not maintain a second policy."""
     for source, target in MODEL_SHEETS.items():
         if source == 'Inputs':
-            for row in range(4,134):
+            rows = (*range(4, 134), WORKBOOK_JURISDICTION_ROW) if with_state_policy else range(4, 134)
+            for row in rows:
                 if row in investment_results.RETIRED_ROWS:
                     continue
                 m.put(target,f'A{row}',f'=Inputs!A{row}','label')
@@ -105,7 +107,7 @@ def _clone_annual(m, baseline):
     m.put(trial_inputs,'B70',f'=IF(AND({CONTROL}>0,{MARKET}!J3="OK",Inputs!B70>1),{MARKET}!D3,0)','whole')
 
 
-def _calendar_and_returns(m):
+def _calendar_and_returns(m, *, with_state_policy: bool = False):
     put = lambda a,v,s=None:m.put(MARKET,a,v,s)
     put('A1','Market path and annual prices','detail_title')
     put('A2','Inspect the selected trial. Fixed and flexible policies share its returns and inflation.','report_caption')
@@ -121,7 +123,7 @@ def _calendar_and_returns(m):
     ):
         col = ord(address[0])-64
         put(address,label,'label');put(f'{L(col+1)}3',value,'input_active' if address=='A3' else 'whole')
-    put('AK3','Risk assumptions','label');put('AL3',_validation(),'report_caption')
+    put('AK3','Risk assumptions','label');put('AL3',_validation(with_state_policy=with_state_policy),'report_caption')
     headers = ('Year','Primary age','Spouse age','Stage','Inflation shock','Annual inflation','Price index',
                'Medical growth','Medical price index','Tax index',
                'Independent normal 1','Independent normal 2','Independent normal 3',
@@ -235,7 +237,7 @@ def _correlation(m):
         put(f'AS{row}',f'=IF({valid},IF(Risk_Settings!$B$9=1,0,-({logvar})/2),"Review asset returns")','decimal')
 
 
-def _validation():
+def _validation(*, with_state_policy: bool = False) -> str:
     number = lambda row,condition:f'IF(ISNUMBER(Risk_Settings!B{row}),{condition},FALSE())'
     checks = [
         number(5,'AND(Risk_Settings!B5=INT(Risk_Settings!B5),Risk_Settings!B5>=0,Risk_Settings!B5<=125)'),
@@ -253,10 +255,13 @@ def _validation():
     ]
     retirement_in_tests = 'MAX(Inputs!B53,105)>=MAX(Inputs!B10,Inputs!B8+1)'
     missing_budget = 'COUNT(INDEX(Inputs!D37:F37,1,Inputs!B4))<>1'
-    return ('=IF(Inputs!B70<2,"Extend or correct the plan",'
-            f'IFERROR(IF(AND({retirement_in_tests},{missing_budget}),'
-            '"Enter retirement spending on Inputs for the longer market tests.",'
-            f'IF(AND({",".join(checks)}),"OK","Review risk assumptions")),"Review risk assumptions"))')
+    validation = ('IF(Inputs!B70<2,"Extend or correct the plan",'
+                  f'IFERROR(IF(AND({retirement_in_tests},{missing_budget}),'
+                  '"Enter retirement spending on Inputs for the longer market tests.",'
+                  f'IF(AND({",".join(checks)}),"OK","Review risk assumptions")),"Review risk assumptions"))')
+    if with_state_policy:
+        validation = f'IF(Inputs!B129="{WORKBOOK_JURISDICTION_ERROR}",Inputs!B129,{validation})'
+    return '=' + validation
 
 
 def _bind_annual(m):
@@ -329,10 +334,10 @@ def _bind_annual(m):
             m.put(target,'A2','Choose a trial on Risk_Trials. Amounts use that trial’s future dollars.','report_caption')
 
 
-def configure(m, baseline):
+def configure(m, baseline, *, with_state_policy: bool = False):
     _settings(m)
-    _clone_annual(m,baseline)
-    _calendar_and_returns(m)
+    _clone_annual(m,baseline,with_state_policy=with_state_policy)
+    _calendar_and_returns(m,with_state_policy=with_state_policy)
     _bind_annual(m)
     native_balance_checks.configure(m)
     native_random.configure(m.put)
@@ -340,7 +345,7 @@ def configure(m, baseline):
     m.put(TRIAL,'A2','Enter a trial number in B3. Row 7 shows its results. Saved trials start in row 8. Enter 0 to return to the main plan.','report_caption')
     m.put(TRIAL,'A3','Trial to inspect','label');m.put(TRIAL,'B3',0,'input')
     m.put(TRIAL,'A4','Each pair has two saved rows. Random path 1 pairs with 1001 (add 1,000). Early-loss tests 2001–2013 pair with 2101–2113 (add 100). Tests 2201–2207 use fixed spending.','report_caption')
-    native_capture.configure(m,baseline)
+    native_capture.configure(m,baseline,with_state_policy=with_state_policy)
     native_funding_paths.configure(m)
     native_results.configure(m)
     m.MODULES.extend((*NATIVE_SHEETS,*MODEL_SHEETS.values()))

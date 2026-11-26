@@ -1,6 +1,7 @@
 """Recalculate the production input checks with valid, missing and pasted values."""
 
 import argparse
+from collections import defaultdict
 from pathlib import Path
 import subprocess
 import sys
@@ -13,6 +14,47 @@ sys.path.insert(0, str(ROOT / 'tools'))
 from example_inputs import example_cells
 import model_plan
 from risk_engine.scenario import SCENARIO_INPUT_ROWS
+import tax_policy
+
+
+def add_state_policy_cases(book: Workbook, horizon: str) -> dict[str, tuple[str, str]]:
+    """Use production formulas to exercise pasted values and active scenario changes."""
+    edits = defaultdict(dict)
+
+    def put(sheet: str, cell: str, value: str, style: str) -> None:
+        edits[sheet][cell] = value
+
+    tax_policy.configure_workbook_state_policy(put)
+    invalid = 'Check state tax jurisdiction'
+    cases = (
+        ('California', {}, {}, 'OK'),
+        ('Blank jurisdiction', {'D136': None}, {}, invalid),
+        ('Lowercase jurisdiction', {'D136': 'ca'}, {}, invalid),
+        ('Unsupported jurisdiction', {'D136': 'FL'}, {}, invalid),
+        ('Pasted jurisdiction formula', {'D136': '="CA"'}, {}, invalid),
+        ('Inactive unsupported jurisdiction', {'E136': 'FL'}, {}, 'OK'),
+        ('Select unsupported jurisdiction', {'B4': 2, 'E136': 'FL'}, {}, invalid),
+        ('Select third California scenario', {'B4': 3, 'D136': 'FL'}, {}, 'OK'),
+        ('Replaced selector formula', {'B136': 'CA'}, {}, invalid),
+        ('Missing workbook schema', {}, {'B266': None}, invalid),
+        ('Wrong policy version case', {}, {'B267': 'CA-INDIVIDUAL-V1'}, invalid),
+        ('Pasted policy version formula', {}, {'B267': '="ca-individual-v1"'}, invalid),
+        ('Invalid opening basis', {'B51': -1}, {}, 'Check tax inputs'),
+    )
+    valid_inputs = {'B4': 1, 'B8': 65, 'B11': 1, 'B25': 100, 'B51': 0, 'B53': 67, 'B70': horizon,
+                    **{f'B{row}': 'OK' for row in (71, 84, 99, 125, 133)},
+                    **{f'{column}{row}': value for column in 'BDEF'
+                       for row, value in ((126, .5), (127, 0), (128, 0))}}
+    checks = {}
+    for index, (name, inputs, metadata, status) in enumerate(cases):
+        sheet = book.create_sheet(f'State{index}')
+        tax = book.create_sheet(f'Tax{index}')
+        for cell, value in (edits['Tax_Tables'] | metadata).items():
+            tax[cell] = value
+        for cell, value in (valid_inputs | edits['Inputs'] | inputs).items():
+            sheet[cell] = value.replace('Tax_Tables!', f'{tax.title}!') if isinstance(value, str) else value
+        checks[sheet.title] = (name, status)
+    return checks
 
 
 def check(soffice):
@@ -72,6 +114,7 @@ def check(soffice):
         sheet['B71'] = edits['B71'].replace('Asset_Allocation!', asset_sheet.title + '!')
         sheet['B84'] = edits['B84']
     template.close()
+    state_cases = add_state_policy_cases(book, edits['B70'])
 
     # Use a dedicated profile so an unrelated office session cannot intercept the run.
     with tempfile.TemporaryDirectory() as directory:
@@ -89,8 +132,12 @@ def check(soffice):
                 actual = sheet[address].value
                 if not isinstance(actual, str) or not actual.startswith(expected):
                     raise AssertionError((name, address, actual, expected))
+        for sheet, (name, expected) in state_cases.items():
+            status, horizon = (result[sheet][cell].value for cell in ('B129', 'B70'))
+            if (status, horizon) != (expected, 3 if expected == 'OK' else 0):
+                raise AssertionError((name, status, horizon, expected))
         result.close()
-    print(f'PASS {len(cases)} calculated input-validation cases')
+    print(f'PASS {len(cases)} calculated input-validation cases and {len(state_cases)} state-policy cases')
 
 
 if __name__ == '__main__':
