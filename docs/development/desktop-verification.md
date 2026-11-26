@@ -274,6 +274,17 @@ The source workbook and runner are pinned to `6573e1e4bd86eb99bbce6678c6fdf9f575
 
 The warm run used the same open guarded workbook after the verified cold capture. Its saved batch timestamp matches the warm profile and follows the cold batch timestamp. The warm run retained 501 verified reuses.
 
+### Full-scale Mac control checkpoint
+
+On November 26, 2026 a fresh Excel for Mac 16.115.26112215 process ran the same pinned full-first `full-0-125` diagnostic with 1,000 pairs and seed 2026. The first warm repeat used the same open workbook after the cold save. Both saved batches independently reconciled 2,033 outcomes and 588,054 fields, with 501 verified flexible reuses. The control performed 1,535 primary full calculations in each pass.
+
+| Control pass | Macro wall time (s) | Ordered balance retries | Saved capture SHA-256 |
+| --- | ---: | ---: | --- |
+| Cold | 2,058.814 | 31 | `91634121b11b67e60ed25d8601be4abb0e92c3fb16a5b97e60692f2c2d59effe` |
+| Warm 1 | 2,262.924 | 71 | `6b5d95fad2af6c8bed0a518253035184a2628288264ebf65f3243b2b45f8eb29` |
+
+The diagnostic input and independent reference hashes match the full-scale observations above. These two passes establish the initial full-first checkpoint before the remaining warm controls and the separate integrated funding-proof series. Windows remains unverified.
+
 ### Brokerage calculation trace on Mac
 
 On November 26, 2026 the adaptive trace reproduced the first closing-balance rejection at trial 10, age 114, in `Trial_Checks!N119`. After writing selector 10 and before calculating, the observed brokerage cells still described trial 9. When `Application.CalculateFull` returned, the opening balance and return matched trial 10, while `Trial_Projection!BC119` and `V119` still matched trial 9's closing balance and withdrawal. The deposit retained its previous snapshot value and was within one cent of both independent paths. Those values persisted through capture-range recalculation and the closing check. The runner's stored guard residual and the subsequent cell read agreed at −$85,426,746.79. The existing ordered recalculation restored a consistent trial 10 and a zero residual.
