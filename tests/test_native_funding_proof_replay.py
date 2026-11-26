@@ -151,6 +151,16 @@ class MatchedFundingReplayTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, expected):
                     checker.replay(self.control, self.candidate)
 
+    def test_rejects_mismatched_provenance_between_otherwise_valid_arms(self) -> None:
+        """Require both four-run arms to bind the same fixture, source and reference."""
+        for field in checker.PROVENANCE:
+            with self.subTest(field=field):
+                self.control_replay.return_value = [
+                    ({**record, field: 'b' * 64}, receipt) for record, receipt in self.controls
+                ]
+                with self.assertRaisesRegex(ValueError, f'different {field}'):
+                    checker.replay(self.control, self.candidate)
+
     def test_rejects_unbound_api_receipts(self) -> None:
         """Verify both the opening policy flag and save hashes against replayed files."""
         rows = [read_json(self.candidate / f'evidence-{label}.json') for label in checker.LABELS]

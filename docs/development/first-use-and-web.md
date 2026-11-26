@@ -25,7 +25,9 @@ Start an acquisition timer on the product page and a separate primary timer when
 | Primary 1 | Find the age the person plans to retire, the age the plan covers, and whether spending and taxes are paid through then. | Example plan retires at 60 and covers costs through age 95. |
 | Primary 2 | Compare with retirement at 65. Does either plan fall short before the end, and where did you find the answer? | The later plan retires at 65 and covers costs to age 95. Both answers come from the base projection. Saved risk for the original scenario becomes stale after switching. |
 | Interpretation | In this second workbook, what first goes unpaid and when? Would the ending portfolio alone tell you? | $100 of spending first goes unpaid at age 55 in 2027. Later cash repays it. The $1,300 ending portfolio and the first shortfall describe different points in the plan. |
-| Risk and print | Show how you would make a quick market comparison and prepare a more thorough report. How would you know the results are current? | Use 100 and 1,000 pairs respectively, preserve seed for comparison, find current status and saved count, choose dollar view and preview. Stop before a lengthy run if needed. |
+| Risk and print | Show how you would make a quick market comparison and prepare a more thorough report. How would you know the results are current? | Use 100 and 1,000 pairs respectively, preserve seed for comparison, find current status and saved count, choose a dollar view and preview the active Summary sheet. |
+
+Use the same stopping point in the staff walkthrough and all five sessions. Ask the participant to show both pair settings, point to the seed, explain the current or stale status and saved count, then select a dollar view and open **Print → Active Sheets** on **Summary**. Stop before starting either simulation. Mark each action as performed, described or blocked. Record an Excel security restriction in the acquisition and risk observations when it blocks either task. Use this evidence alongside the separate primary five- and eight-minute cutoffs.
 
 ### Staff preparation
 
