@@ -206,7 +206,8 @@ def parse(payload: str, *, pairs: int, platform: str, seconds: float) -> dict[st
     }
 
 
-def record(directory: Path, name: str, timing: dict[str, Any], payload: str) -> dict[str, Any]:
+def record(directory: Path, name: str, timing: dict[str, Any], payload: str, *,
+           transform: Callable[[str], str] = instrument) -> dict[str, Any]:
     """Build evidence only for a matched capture, candidate, reference and batch."""
     validate_run(timing)
     if timing['excel_bitness'] != 64:
@@ -215,7 +216,7 @@ def record(directory: Path, name: str, timing: dict[str, Any], payload: str) -> 
     profile = parse(payload, pairs=fixture['pairs'], platform=timing['platform'], seconds=timing['seconds'])
     if name == CANDIDATE:
         raise ValueError('Save a distinct capture of the diagnostic workbook.')
-    candidate = check_candidate(directory)
+    candidate = check_candidate(directory, transform=transform)
     reference, capture = reference_file(directory, fixture), capture_file(directory, name)
     comparison, serial = compare_capture(directory, fixture, reference, capture, candidate=candidate,
                                          expected_reused=profile['counters']['reused'])

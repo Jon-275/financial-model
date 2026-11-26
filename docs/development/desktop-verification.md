@@ -162,6 +162,12 @@ The profile records computed and reused trial totals, all 33 stresses, three ran
 
 The diagnostic runner uses a monotonic raw clock on 64-bit Mac and requests the performance counter on 64-bit Windows. Leave Excel and system security policies in place. Record the diagnostics as unavailable if platform policy blocks the clock. Windows execution remains unverified. [Apple monotonic clock](https://developer.apple.com/documentation/kernel/1646199-mach_continuous_time) · [Windows performance counter](https://learn.microsoft.com/en-us/windows/win32/sysinfo/acquiring-high-resolution-time-stamps)
 
+### Separate the reuse timings
+
+Start with a new pinned fixture directory and its independent reference. Run `PYTHONPATH=tools python tests/desktop_reuse_profile.py prepare "$fixture_dir"`. After each timed run, save the normal `ReadMarketRiskProfile` result and call `ReadReuseVerificationProfile` in the same workbook. Save the second receipt as `reuse.txt` and keep both receipts outside the measured macro time.
+
+Run `PYTHONPATH=tools python tests/desktop_reuse_profile.py record "$fixture_dir" capture-cold-01.xlsm "$fixture_dir/timing.json" "$fixture_dir/profile.txt" "$fixture_dir/reuse.txt" --output reuse-evidence-cold-01.json`. Replay with `PYTHONPATH=tools python tests/desktop_reuse_profile.py check "$fixture_dir/reuse-evidence-cold-01.json"`. The two durations partition the original reuse stage into fixed-path proofs and partner admission. Their counts and the saved batch must reconcile before the receipt can be used.
+
 ### November 25, 2026 Mac stage profiles
 
 The diagnostic runner at `042d6a7593fa14485e22eef4e1967d844856d33e` profiled the pinned `v1.0.0` fictional `example-95` fixture with 100 pairs and seed 2026. The Mac and Excel build match the release matrix above. One cold run started in a fresh Excel process. The three warm repeats used that process and kept the workbook open. The timings are for the diagnostic fixture. Use the 24-run release matrix above for release-run timings.
