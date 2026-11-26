@@ -234,6 +234,13 @@ The `full-0-125` 1,000-pair fixture used seed 2026, Excel for Mac 16.115.2611221
 
 Each saved batch independently reconciled 2,033 outcomes and 588,054 fields, including three full ranked ledgers. The guarded cold run made 1,535 smart attempts and retained 501 verified reuses. The cold comparison is a 23.4% wall-time reduction. The profiled warm full-first control and a replicated warm median remain release gates. The existing 100-pair canary covers forced recovery, and the full-scale guarded cold run exercised ordered recovery on naturally observed mismatches. Windows remains unverified.
 
+The source workbook and runner are pinned to `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681`. The diagnostics and replay at `0c9c35c06045bdcce278a85b14b29cc82c0d1849` reproduced both diagnostic input hashes. The independent reference SHA-256 is `858c4723327a08c72c844c1b25c0150f75e6aec9afd69a7d209d8762267e2688`. The raw workbooks stay local.
+
+| Cold run | Diagnostic input SHA-256 | Saved capture SHA-256 |
+| --- | --- | --- |
+| Historical full-first | `4f0a3ca409e7aa477819c2495683d90efa60e16e8cd6aff1eade931953f77d5e` | `d566f0aedcfb4270ea10a5dd4a708dd10c09c988b9ca46bd8c777856f8c53f13` |
+| Guarded | `9ee1e57655b01140b2d6f74eec234ee90d67bf0c42b1374b8fa1230ed5315e77` | `aef39bd27e0e9596e68ecdabda8cd19b14eaad8ff4f5f0cd8961980e02b4e276` |
+
 The guarded warm macro returned after 1,604.108 seconds and reported 41 full fallbacks and zero ordered retries. The Mac session locked before the workbook could be saved. Treat the warm timing and counts as provisional until the saved batch independently reconciles. An adaptive brokerage trace is prepared with the 1,000-pair prior batch and independently replayable trial operands. Its extra workbook reads run in a separate diagnostic and are excluded from the performance observations. The stage at which the mixed-trial brokerage values first appear remains open.
 
 ### Performance release gate
