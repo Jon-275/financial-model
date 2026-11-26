@@ -79,7 +79,11 @@ Calc recalculated two disposable copies of the published reference from cleared 
 | Invalid-jurisdiction Calc input | `9d94056a2c6d21bf4f48444154a65b6a44902f73c4803e0760d30c4469972ac6` |
 | Invalid jurisdiction after Calc | `a6649664184c9421774014d8c6c0ce254ed30c23a3e391fce54380e50a15db42` |
 
-The packaged draft, both references and both prepared Calc inputs preserve the Summary print area and five manual breaks, the dynamic Annual Detail print area and its repeated row 5, and the original page settings and margins. The Calc outputs retain the print areas, titles and breaks. Calc changes the header margin from 0.18 to 0.511811 inches on both sheets. The native Excel caption matrix, Letter and A4 layout and PDF checks, distribution and Windows verification remain open. [Desktop report checks](../../tests/README.md#verify-the-california-v2-report-candidate)
+The packaged draft, both references and both prepared Calc inputs preserve the Summary print area and five manual breaks, the dynamic Annual Detail print area and its repeated row 5, and the original page settings and margins. The Calc outputs retain the print areas, titles and breaks. Calc changes the header margin from 0.18 to 0.511811 inches on both sheets.
+
+Desktop Excel for Mac 16.115.26112215 opened the two checksum-verified macro-free copies through the macOS file-open API. Excel recalculated and returned the expected current published and baseline captions, retained published scope and current risk in future dollars, and hid the risk caption in the stale and invalid states. Each live read verified 233 trial IDs and three ranked IDs. The published batch identity stayed constant through the dollar-view, stale and invalid exercises. The display was locked before and after each observation. The live receipt SHA-256 is `da3e5e5f95992cb0255405c541c69dab984a453d1b962c656ba6d620f1de06f8`.
+
+The native save and worksheet PDF requests produced no new file while locked. The separate macro-enabled caption workbook stalled in an Office VBA alert during open. A native rerun on that exact candidate, save and reopen, Letter and A4 layout and PDF, and distribution remain open. Windows remains unverified. [Desktop report checks](../../tests/README.md#verify-the-california-v2-report-candidate)
 
 #### California tax scenario parity
 
