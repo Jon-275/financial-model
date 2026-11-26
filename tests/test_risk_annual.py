@@ -14,11 +14,13 @@ from risk_engine.report import _allocations, _representative_trials, _result, ru
 from risk_engine.scenario import HSA_RETURN_ROWS, load_scenario
 
 
+_PUBLISHED_WORKBOOK = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'
+
+
 class AnnualRiskTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        default = Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'
-        cls.scenario = load_scenario(os.environ.get('RISK_TEST_WORKBOOK', default))
+        cls.scenario = load_scenario(os.environ.get('RISK_TEST_WORKBOOK', _PUBLISHED_WORKBOOK))
         cls.model = AnnualModel(cls.scenario)
 
     def test_baseline_reconciles_and_guardrail_does_not_cut_it(self):
@@ -89,11 +91,13 @@ class AnnualRiskTests(unittest.TestCase):
 
     def test_native_no_shock_retains_california_policy_and_reconciles(self) -> None:
         """Repricing a native path must preserve the effective state policy."""
-        calendar = NativeAnnualModel(self.scenario)
-        path = price_path(calendar, (self.scenario.inputs[14],) * len(calendar.periods))
-        self.assertIs(path.tables.state_policy, self.scenario.state_policy)
+        # Native repricing requires the published planning-input layout.
+        scenario = load_scenario(_PUBLISHED_WORKBOOK)
+        calendar = NativeAnnualModel(scenario)
+        path = price_path(calendar, (scenario.inputs[14],) * len(calendar.periods))
+        self.assertIs(path.tables.state_policy, scenario.state_policy)
         result = path.run(path.baseline_returns, audit=True)
-        self.assertEqual(reconcile(path, result)['years'], len(self.scenario.years))
+        self.assertEqual(reconcile(path, result)['years'], len(scenario.years))
 
     def test_hsa_export_uses_the_simulated_rate_in_both_stages(self):
         working_rate, retirement_rate = HSA_RETURN_ROWS
