@@ -13,7 +13,6 @@ from pyopenvba.cfb import CFB
 from pyopenvba.vba import decompress
 
 from risk_engine.scenario import workbook_has_explicit_state_policy
-from state_policy import WORKBOOK_STATE_POLICY_NATIVE_SCHEMA
 from vba_declarations import audit_vba_declarations
 
 
@@ -78,9 +77,7 @@ def package_macro(source: str | Path, destination: str | Path, *, test_runner_so
     if test_runner_source is None:
         draft = load_workbook(source, read_only=True, keep_links=False)
         try:
-            explicit_version = ('Risk_Data' in draft.sheetnames
-                                and draft['Risk_Data']['Z2'].value == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA)
-            if explicit_version or workbook_has_explicit_state_policy(draft):
+            if workbook_has_explicit_state_policy(draft):
                 raise ValueError('An explicit state policy workbook requires the test overlay.')
         finally:
             draft.close()

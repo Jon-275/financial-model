@@ -28,7 +28,7 @@ from risk_engine.native_annual import NativeAnnualModel, price_path
 from risk_engine.native_paths import NativeReturnModel
 from risk_engine.paths import Guardrail, RiskInputs
 from risk_engine.report import _first_shortfall, _outcome, _representative_trials
-from risk_engine.scenario import load_scenario
+from risk_engine.scenario import load_scenario, validate_native_state_policy_format
 from state_policy import (
     WORKBOOK_STATE_POLICY_NATIVE_CONTEXT, WORKBOOK_STATE_POLICY_NATIVE_SCHEMA, WORKBOOK_STATE_POLICY_NATIVE_SUFFIX,
 )
@@ -59,8 +59,14 @@ def _read_plan(calculated):
             raise ValueError(market_check or 'Review the market assumptions before building the template.')
         if book['Risk_Data']['Z1'].value != 'missing':
             raise ValueError('Build from a fresh template with empty market result areas.')
+        raw = load_workbook(calculated, read_only=True, keep_links=False)
+        try:
+            with_state_policy = validate_native_state_policy_format(raw, legacy_schema=SCHEMA)
+        finally:
+            raw.close()
+        if with_state_policy != (schema == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA):
+            raise ValueError('The native schema cache does not match the workbook.')
         context = book['Market_Paths']['BB3'].value
-        with_state_policy = schema == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA
         prefix = WORKBOOK_STATE_POLICY_NATIVE_CONTEXT if with_state_policy else trial.CONTEXT_PREFIX
         if not isinstance(context, str) or not context.startswith(prefix):
             raise ValueError('The calculated market assumption record is missing.')

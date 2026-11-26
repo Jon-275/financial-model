@@ -8,7 +8,7 @@ from openpyxl import load_workbook
 from native_capture import CONTEXT_PREFIX
 from native_results import ENGINE, SCHEMA
 from package_macro import SOURCE, package_macro
-from risk_engine.scenario import workbook_has_explicit_state_policy
+from risk_engine.scenario import validate_native_state_policy_format
 from state_policy import (
     CALIFORNIA_POLICY, LEGACY_CA_POLICY_HEADERS, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
     WORKBOOK_JURISDICTION_NOTE,
@@ -25,6 +25,12 @@ BEGIN = (
     '    results.Range("Z6").Value2 = "running"\n'
     '    results.Range("Z9").Value2 = "Running market risk. Use Cancel or press Esc to stop."\n'
 )
+PROTECT_OUTPUTS = (
+    '    PrepareProtection trials, trialProtection, preparedTrials\n'
+    '    PrepareProtection results, resultProtection, preparedResults\n'
+    '    If Not pathSheet Is trials And Not pathSheet Is results Then PrepareProtection pathSheet, pathProtection, preparedPaths\n'
+)
+RESET_SELECTOR = '    selectorTouched = True\n    selector.Value2 = 0\n'
 
 
 def declarations() -> str:
@@ -77,9 +83,9 @@ def overlay(source: str) -> str:
          '    Dim seed As Double, context As String, code As Long, index As Long, jurisdiction As String\n'),
         (schema + engine, engine + '    jurisdiction = ReadWorkbookStatePolicy(book)\n'),
         (calculation, calculation + '    RecalculateStateSelection book, jurisdiction\n'),
-        (BEGIN, ''),
+        (PROTECT_OUTPUTS + BEGIN + RESET_SELECTOR, ''),
         (context, context + '    RequireStatePolicyContext book, jurisdiction, context\n'
-         '    CheckCancelled\n' + BEGIN + '    results.Range("Z1").Calculate\n'),
+         '    CheckCancelled\n' + PROTECT_OUTPUTS + BEGIN + RESET_SELECTOR + '    results.Range("Z1").Calculate\n'),
         (cleanup, cleanup + '    RequireText ReadWorkbookStatePolicy(book), jurisdiction, '
          '"The state tax policy changed during the run."\n'
          '    RequireStatePolicyContext book, jurisdiction, AssumptionRecord(book)\n'),
@@ -100,21 +106,8 @@ def verify_pairing(draft: Path) -> None:
         required = {'Inputs', 'Tax_Tables', 'Projection', 'Risk_Data', 'Market_Paths'}
         if not required.issubset(workbook.sheetnames) or workbook['Risk_Data']['Z4'].value != ENGINE:
             raise ValueError('Use a native workbook draft that matches the test runner engine.')
-        schema = workbook['Risk_Data']['Z2'].value
-        if schema == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA:
-            tables = workbook['Tax_Tables']
-            expected = (*WORKBOOK_STATE_POLICY_TABLE_LABELS,
-                        (WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_SCHEMA),
-                        (WORKBOOK_CA_POLICY_VERSION_CELL, CALIFORNIA_POLICY.version))
-            if any(tables[address].value != value for address, value in expected):
-                raise ValueError('The v2 draft needs complete state tax schema and policy markers.')
-            prefix = WORKBOOK_STATE_POLICY_NATIVE_CONTEXT
-        elif schema == SCHEMA and not workbook_has_explicit_state_policy(workbook):
-            if any(workbook[sheet][address].value != value for sheet, address, value in LEGACY_CA_POLICY_HEADERS):
-                raise ValueError('Cannot identify the legacy California tax layout.')
-            prefix = CONTEXT_PREFIX
-        else:
-            raise ValueError('The test overlay requires a supported native schema for this workbook layout.')
+        explicit = validate_native_state_policy_format(workbook, legacy_schema=SCHEMA)
+        prefix = WORKBOOK_STATE_POLICY_NATIVE_CONTEXT if explicit else CONTEXT_PREFIX
         formula = workbook['Market_Paths']['BB3']
         if formula.data_type != 'f' or not formula.value.startswith(f'="{prefix}'):
             raise ValueError('The draft assumption record formula does not match the native risk schema.')

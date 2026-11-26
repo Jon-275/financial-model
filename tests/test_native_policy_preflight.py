@@ -5,11 +5,14 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from openpyxl import Workbook
+from openpyxl.workbook.defined_name import DefinedName
 from pyopenvba.apps.excel import ExcelApplication
 from pyopenvba.exceptions import VBARuntimeError
 
 from desktop_policy_preflight import overlay, prepare
 from native_bootstrap import _read_plan
+import native_capture as trial
+import native_funding_paths as funding
 from package_macro import SOURCE, package_macro, verify_project
 
 
@@ -63,11 +66,15 @@ class PolicyPreflightTests(unittest.TestCase):
             'jurisdiction = ReadWorkbookStatePolicy(book)',
             'SaveExcelState settings',
             'RecalculateStateSelection book, jurisdiction',
-            'selector.Value2 = 0',
             'Application.Calculate',
+            'marketCheck = book.Worksheets("Market_Paths")',
+            'count = WholeNumber(book.Worksheets("Risk_Settings")',
+            'seed = SeedNumber(book.Worksheets("Risk_Settings")',
             'RequireStatePolicyContext book, jurisdiction, context',
+            'PrepareProtection trials, trialProtection, preparedTrials',
             'runBegan = True',
             'results.Range("Z6").Value2 = "running"',
+            'selector.Value2 = 0',
         )
         positions = [run.index(marker) for marker in markers]
         self.assertEqual(positions, sorted(positions))
@@ -164,14 +171,16 @@ class PolicyPreflightTests(unittest.TestCase):
         """Require the matching policy suffix before Python creates a v2 saved batch."""
         with TemporaryDirectory() as folder:
             path = Path(folder) / 'calculated.xlsx'
-            for explicit, context, error in (
-                (False, LEGACY_CONTEXT, ''),
-                (True, POLICY_CONTEXT, ''),
-                (True, LEGACY_CONTEXT, 'market assumption record is missing'),
-                (True, POLICY_CONTEXT.replace('tCA|', 'tFL|'), 'does not contain the California policy'),
-                (False, POLICY_CONTEXT, 'market assumption record is missing'),
+            for explicit, context, edit, error in (
+                (False, LEGACY_CONTEXT, None, ''),
+                (True, POLICY_CONTEXT, None, ''),
+                (True, LEGACY_CONTEXT, None, 'market assumption record is missing'),
+                (True, POLICY_CONTEXT.replace('tCA|', 'tFL|'), None, 'does not contain the California policy'),
+                (False, POLICY_CONTEXT, None, 'market assumption record is missing'),
+                (False, LEGACY_CONTEXT, ('Inputs', 'D136', 'CA'), 'supported native schema'),
+                (False, POLICY_CONTEXT, ('Risk_Data', 'Z2', POLICY_SCHEMA), 'complete state tax schema'),
             ):
-                with self.subTest(explicit=explicit, context=context):
+                with self.subTest(explicit=explicit, context=context, edit=edit):
                     book = fixture(explicit=explicit)
                     book['Risk_Data']['Z1'] = 'missing'
                     book['Market_Paths']['AL3'], book['Market_Paths']['BB3'] = 'OK', context
@@ -179,12 +188,58 @@ class PolicyPreflightTests(unittest.TestCase):
                     settings = book.create_sheet('Risk_Settings')
                     for row, value in enumerate((1, 2026, 1, 0, .015, .5, -.02, .10), 29):
                         settings[f'B{row}'] = value
+                    if edit is not None:
+                        sheet, address, value = edit
+                        book[sheet][address] = value
                     book.save(path)
                     if error:
                         with self.assertRaisesRegex(ValueError, error):
                             _read_plan(path)
                     else:
                         self.assertEqual(_read_plan(path)[1], context)
+
+    def test_full_runner_rejects_calculated_context_before_taking_over_inspection(self) -> None:
+        """Preserve a nonzero selector, its inspection and the batch after late preflight rejection."""
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / 'policy.xlsx'
+            book = fixture(explicit=True)
+            trials = book['Risk_Trials']
+            trials['A7'] = '=B3'
+            trials['B8'] = 'prior-trial'
+            risk = book['Risk_Data']
+            risk['Z9'] = 'prior-completion-note'
+            book['Market_Paths']['AL3'] = 'OK'
+            book['Market_Paths']['BB3'] = f'="{LEGACY_CONTEXT}"'
+            settings = book.create_sheet('Risk_Settings')
+            settings['B29'], settings['B30'] = 1, 2026
+            book.create_sheet(funding.DATA_SHEET)['B8'] = 'prior-path'
+            names = {
+                'RiskTrialCurrent': f"'{trial.SHEET}'!$B$7:${trial.SIGNATURE}$7",
+                'RiskTrialResults': f"'{trial.SHEET}'!$B${trial.FIRST}:${trial.SIGNATURE}${trial.LAST}",
+                'RiskTrialIDs': f"'{trial.SHEET}'!$A${trial.FIRST}:$A${trial.LAST}",
+                'RiskPathCurrent': f"'{funding.DATA_SHEET}'!$B${funding.CURRENT_ROW}:${funding.SIGNATURE}${funding.CURRENT_ROW}",
+                'RiskPathResults': f"'{funding.DATA_SHEET}'!$B${funding.FIRST_ROW}:${funding.SIGNATURE}${funding.LAST_ROW}",
+                'RiskPathTrials': f"'{funding.DATA_SHEET}'!$A${funding.FIRST_ROW}:$A${funding.LAST_ROW}",
+            }
+            for name, reference in names.items():
+                trials.defined_names.add(DefinedName(name, attr_text=reference))
+            book.save(path)
+            app = ExcelApplication.open(path, with_vba=False)
+            code = overlay(SOURCE.read_text(encoding='ascii'))
+            # The interpreter does not coerce a Long to an Excel enum in a user-defined type.
+            for field in ('XlCalculation', 'XlEnableCancelKey', 'XlMousePointer'):
+                code = code.replace(f' As {field}\n', ' As Long\n')
+            app.add_module(code, name='MarketRiskRunner')
+            app.run('RunMarketRisk')
+            dialog = app.interpreter.dialogs[-1][1]
+            self.assertEqual(dialog, 'Run stopped: The assumption record version does not match the native risk schema.')
+            for sheet, address, expected in (
+                ('Inputs', 'B136', 'CA'), ('Risk_Trials', 'B3', 17), ('Risk_Trials', 'A7', 17),
+                ('Risk_Trials', 'B8', 'prior-trial'), (funding.DATA_SHEET, 'B8', 'prior-path'),
+                ('Risk_Data', 'Z6', 'complete'), ('Risk_Data', 'Z7', 46200),
+                ('Risk_Data', 'Z8', 'prior-record'), ('Risk_Data', 'Z9', 'prior-completion-note'),
+            ):
+                self.assertEqual(app.evaluate(f'Worksheets("{sheet}").Range("{address}").Value2'), expected)
 
     def test_package_is_confirmed_as_scratch_and_refuses_overwrite(self) -> None:
         """Use the normal package verifier with an explicitly generated overlay source."""
