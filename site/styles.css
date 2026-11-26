@@ -168,6 +168,10 @@ p {
   font-weight:650;
   font-size:.94rem;
 }
+.checksum {
+  display:block;
+  margin-top:8px;
+}
 .hero-report {
   padding:16px;
   background:var(--paper);
@@ -241,6 +245,13 @@ p {
 }
 .section-heading .eyebrow {
   margin-bottom:22px;
+}
+.report-example {
+  max-width:680px;
+  margin-bottom:35px;
+}
+.report-example p:last-child {
+  margin-bottom:0;
 }
 .report-grid {
   display:grid;

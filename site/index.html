@@ -25,7 +25,7 @@
         <a href="https://github.com/Jon-275/financial-model">GitHub</a>
       </nav>
     </header>
-    <main id="main">
+    <main id="main" tabindex="-1">
       <section class="hero wrap">
         <div class="hero-copy">
           <p class="eyebrow">Retirement planner for Excel</p>
@@ -35,8 +35,9 @@
             <a class="button primary" href="downloads/retirement-model.xlsm" download>Download for Excel for Mac</a>
             <a class="button secondary" href="downloads/retirement-plan-example.pdf">Preview the report</a>
           </div>
-          <p class="requirements">Version 1.0.0 · Verified on desktop Excel for Mac 16.115<br>Market analysis requires macros · Fictional examples · Apache 2.0</p>
+          <p class="requirements">Version 1.0.0 · Verified on desktop Excel for Mac 16.115<br>Review the base plan first. Market risk requires macros permitted by your organization.</p>
           <a class="text-link" href="#compatibility">Check compatibility and model scope</a>
+          <a class="text-link checksum" href="https://github.com/Jon-275/financial-model/releases/download/v1.0.0/SHA256SUMS.txt">Release checksums</a>
         </div>
         <figure class="hero-report">
           <div class="report-label">
@@ -80,6 +81,11 @@
           </div>
           <p>The six-page report includes results, risks and the inputs used. These previews use fictional figures.</p>
         </div>
+        <div class="report-example">
+          <h3>What the fictional plan shows</h3>
+          <p><strong>Base plan.</strong> With retirement at age 60, the plan covers spending and taxes through age 95 and ends with $2,378,481 in opening-year dollars. The reported portfolio is before estimated tax on traditional savings.</p>
+          <p><strong>Market simulation.</strong> Under the example assumptions, 999 of 1,000 simulated fixed-spending paths paid all costs on time. The chart shows the middle 80% of simulated balances at each age.</p>
+        </div>
         <div class="report-grid">
           <figure>
             <a href="assets/market-risk.png">
@@ -113,11 +119,11 @@
           <ol class="steps">
             <li>
               <h3>Open a private copy</h3>
-              <p>Download the workbook, keep its .xlsm format and select the fictional example on Inputs.</p>
+              <p>Download the workbook and keep its .xlsm format. From Start Here, open Inputs and select Example plan.</p>
             </li>
             <li>
-              <h3>Review, then compare</h3>
-              <p>Read Summary. Try the later-retirement or lower-spending scenario and compare the base projection.</p>
+              <h3>Compare retirement ages</h3>
+              <p>Read the base plan on Summary. Return to Inputs, choose Retire at 65 and open Summary again. Check the planned retirement age and whether the bills are covered through age 95.</p>
             </li>
             <li>
               <h3>Explore market risk</h3>
@@ -125,7 +131,7 @@
             </li>
             <li>
               <h3>Keep your report</h3>
-              <p>Choose today’s or future dollars, then print Summary or save all six pages as a PDF.</p>
+              <p>Choose Dollar view on Summary. In File → Print, select Active Sheets with only Summary selected. Preview all six pages before printing or saving a PDF.</p>
             </li>
           </ol>
         </div>

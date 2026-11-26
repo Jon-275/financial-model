@@ -2,6 +2,14 @@
 
 Use desktop Excel for Mac. Keep a private `.xlsm` copy and use fictional figures when asking for help.
 
+## What do you want to do?
+
+- [Try the fictional plan](getting-started.md) and compare retirement at 60 and 65.
+- [Read the report](model-guide.md#summary), including the first shortfall and the figures behind it.
+- [Explore market risk](risk-analysis.md#run-the-analysis) when you have a base plan you want to test.
+- [Print or save a PDF](model-guide.md#print-your-plan) after choosing a dollar view.
+- [Get help](getting-started.md#if-something-does-not-work) with blocked macros, input messages, out-of-date risk or printing.
+
 ## Follow the workbook
 
 | Workbook tab | Guide |
