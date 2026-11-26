@@ -77,7 +77,7 @@ Timing uses a monotonic clock from starting the synchronous Excel command for `R
 
 **Mac matrix coverage is 24 of 24 independently reconciled runs.** Windows remains unverified.
 
-The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.26110837. The Excel update channel was unobserved.
+The fictional `v1.0.0` workbook at `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681` uses seed 2026. The test Mac was a MacBook Pro with Apple M5 Pro, 24 GB RAM, macOS 26.7.3 (25G342), and 64-bit Excel 16.115.2 (16.115.26112215). The Excel update channel was unobserved. Process samples identify the Excel build for the November 25 matrix and profiles.
 
 | Fixture | Pairs | Cold (s) | Warm 1 (s) | Warm 2 (s) | Warm 3 (s) | Warm median (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -175,7 +175,9 @@ The diagnostic runner at `042d6a7593fa14485e22eef4e1967d844856d33e` profiled the
 
 Each saved batch independently reconciled 233 outcomes and 80,454 fields, with 187 computed outcomes, 46 verified reuses, 33 stresses, three ranked histories and zero ordered retries. The warm median wall time was 150.119 seconds. Across the three warm runs, median full calculation was 55.029 seconds, median trial preparation was 38.701 seconds and median reuse verification was 38.947 seconds. These are medians for individual stages. Preparation and reuse verification each include multiple operations, so use finer probes to choose what to optimize.
 
-The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033a0cc537b335cac4f16e3`. Capture hashes, the fault exercises and follow-up profiling are recorded with the reviewed source. The raw workbooks stay local. Windows remains unverified. [PR #37 evidence](https://github.com/Jon-275/financial-model/pull/37)
+On disposable copies of the saved cold batch, an injected cancellation at the second progress yield and an injected failure after the publication writes each preserved 595,814 stored result fields and restored inspection, application controls and worksheet protection. A profiling-clock fault yielded unavailable diagnostics and a fresh financial batch that reconciled. All three subsequent retries published fresh current batches and reconciled all 233 outcomes. The cancellation exercise invoked the runner directly. D3 still covers the visible Cancel button, Esc and print behavior.
+
+The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033a0cc537b335cac4f16e3`. Capture hashes and follow-up profiling are recorded with the reviewed source. The raw workbooks stay local. Windows remains unverified. [PR #37 evidence](https://github.com/Jon-275/financial-model/pull/37)
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
 
