@@ -50,10 +50,21 @@ class GuardedCalculationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             read_profile(profile(0), 'GuardedCalculation/v1|46200|1|2', seconds=30, mode='canary')
 
+    def test_profile_counts_reconcile_to_the_declared_full_scale_fixture(self) -> None:
+        times = [1] * len(STAGES)
+        payload = '|'.join(map(str, (GUARDED_PROFILE, 'complete', 'mac-raw', 46200, *times,
+                                     1532, 501, 33, 3, 1535, 1, 0)))
+        counts = 'GuardedCalculation/v1|46200|4|0'
+        result = read_profile(payload, counts, seconds=30, mode='natural', pairs=1000)
+        self.assertEqual(result['counters']['smart_attempts'], 1535)
+        with self.assertRaisesRegex(ValueError, 'counts do not reconcile'):
+            read_profile(payload, counts, seconds=30, mode='natural', pairs=100)
+
     def test_matched_results_reject_mixed_environment_and_reused_batches(self) -> None:
         def evidence(phase: str, timestamp: float, mode: str | None) -> dict:
             method = MACRO_WALL_TIME if mode is None else MACRO_WALL_TIME_LABELS[1]
             return {
+                'fixture': 'full-0-125', 'pairs': 1000,
                 'mode': mode, 'fixture_sha256': 'same fixture', 'source_sha256': 'same source',
                 'reference_sha256': 'same reference', 'candidate_sha256': mode,
                 'capture_sha256': str(timestamp), 'profile': {'batch_serial': timestamp},
@@ -65,6 +76,7 @@ class GuardedCalculationTests(unittest.TestCase):
         natural = [evidence('cold', 46200.3, 'natural'), evidence('warm', 46200.4, 'natural')]
         canary = evidence('cold', 46200.5, 'canary')
         result = matched_results(controls, natural, canary)
+        self.assertEqual(result['experiment'], 'full-0-125, 1000 fictional pairs')
         self.assertEqual(len(result['matched_initial_observations']), 2)
         self.assertEqual(result['environment']['timing_method'], MACRO_WALL_TIME)
         controls[0]['run']['timing_method'] = 'monotonic time through file save'
