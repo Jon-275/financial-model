@@ -179,6 +179,52 @@ On disposable copies of the saved cold batch, an injected cancellation at the se
 
 The diagnostic workbook SHA-256 is `19fdee2f6b84cf0965622b66af4395aa1eaf548ee033a0cc537b335cac4f16e3`. Capture hashes and follow-up profiling are recorded with the reviewed source. The raw workbooks stay local. Windows remains unverified. [PR #37 evidence](https://github.com/Jon-275/financial-model/pull/37)
 
+### Guarded Mac calculation experiment
+
+Use separate copies of the `full-0-125` 100-pair fixture and its independent reference. Prepare the full-first control with the existing stage profile command. Prepare the natural candidate and the fault-injection copy from untouched copies of the same fixture. The candidate attempts Excel's normal calculation first. A balance mismatch or a suspect repeated ending triggers the original full calculation, then the original ordered recalculation if needed. Recheck the selector, assumptions and closing balances on every attempt. Hard calculation or input errors and invalid accepted capture records stop the run. The candidate's `primary_calculation` bucket includes normal and full fallback time.
+
+```sh
+python3 tests/desktop_guarded_calculation.py prepare "$candidate_dir"
+python3 tests/desktop_guarded_calculation.py prepare "$canary_dir" --mode canary
+```
+
+Open a working copy of the prepared workbook as the sole open workbook. Use a fresh Excel process for each cold control or candidate run. Measure through the return of `RunMarketRisk`. Before saving, read `ReadMarketRiskProfile` and `ReadGuardedCalculationCounts` from the same workbook and save each returned string separately. Use the D1 timing format and keep the verified template separate from the fresh capture.
+
+```sh
+python3 tests/desktop_guarded_calculation.py record "$candidate_dir" capture-cold-01.xlsm \
+  "$candidate_dir/timing.json" "$candidate_dir/profile.txt" "$candidate_dir/counts.txt" \
+  "$candidate_dir/guarded-evidence-cold-01.json"
+python3 tests/desktop_guarded_calculation.py check "$candidate_dir/guarded-evidence-cold-01.json"
+```
+
+For the canary, supply `--mode canary` when recording. It corrupts a captured value in memory on the first fictional trial after both normal and full calculation. A passing result requires the ordered retry, a fresh saved batch, and independent reconciliation. Measure performance with the natural candidate on the same fixture, independent reference and desktop build as the control. Use distinct saved captures and require a newer batch serial for every warm run in the same session. Trial-specific reconciliation, fallback counts and the saved capture are required for each recorded run. This is a test-only Mac path. Windows remains unverified.
+
+Replay the complete comparison before reporting the timing pairs. Pass cold and warm evidence in that order for each arm. The comparison writes a summary of the reconciled captures, timings and fallback counts. It reports canary evidence separately from the performance observations.
+
+```sh
+python3 tests/desktop_guarded_calculation.py compare \
+  --control "$control_dir/profile-evidence-cold-01.json" "$control_dir/profile-evidence-warm-01.json" \
+  --candidate "$candidate_dir/guarded-evidence-cold-01.json" "$candidate_dir/guarded-evidence-warm-01.json" \
+  --canary "$canary_dir/guarded-evidence-cold-01.json" --output guarded-comparison.json
+```
+
+### November 25, 2026 guarded Mac observations
+
+Both arms used the pinned fictional `full-0-125` workbook with 100 pairs and seed 2026, Excel for Mac 16.115.26112215 and the same independent reference. Each arm used one fresh Excel process followed by one repeat in the open workbook. Wall time covers synchronous macro dispatch through return.
+
+| Run | Full-first (s) | Smart-first (s) | Full fallbacks after smart | Ordered retries, full-first / smart-first |
+| --- | ---: | ---: | ---: | ---: |
+| Cold | 256.856 | 188.764 | 1 | 1 / 0 |
+| Warm | 275.567 | 207.077 | 5 | 5 / 0 |
+
+Each run independently reconciled 233 outcomes and 80,454 fields. Each smart-first run attempted 190 smart calculations and retained 46 verified reuses. These are initial paired observations. A production decision still requires repeated runs, the 1,000-pair workload, checks for internally consistent stale captures, and cancellation and publication recovery on the candidate. Windows remains unverified.
+
+The separate canary rejected both injected captures on the first trial, reached the ordered retry, and independently reconciled the fresh saved batch across the same 233 outcomes and 80,454 fields. It recorded two injected mismatches, two full fallbacks overall, and one ordered balance retry. Its timing is excluded from the paired comparison.
+
+Earlier full-first probes on this same fictional fixture observed brokerage closing mismatches at ages 112 and 118. At age 118 in trial 20, the live closing value exceeded the recomputation from opening balance, withdrawal, deposit and return by $102,062,082.42. Ordered recalculation recovered. An intentional cancellation after that trial preserved the previous 595,814 stored result fields. A large failed reconciliation requires calculation-order investigation. Keep the comparison and ordered retry in place while tracing the first stage at which the live closing and its operands disagree.
+
+### Performance release gate
+
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
 
 Set release latency budgets after collecting raw timings. Initial comparison targets are at least 25% better warm median for full-range 1,000 pairs, no more than 10% regression in any other fixture, and visible cancel acknowledgement within five seconds at normal yield points. Track median 100-pair time as the exploration outcome and require an explicit budget on each supported device before claiming the new fast path. Record the prior 8- and 33-minute figures as historical context. Investigate and correct the cause of every new reconciliation or recovery failure. Keep the candidate Mac-only if Windows evidence is absent and label the missing tests in the release decision.
