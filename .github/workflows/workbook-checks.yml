@@ -14,15 +14,16 @@ concurrency:
   group: workbook-checks-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTHONPATH: tools
+  RISK_TEST_WORKBOOK: workbook/retirement-model.xlsm
+
 jobs:
-  workbook:
-    name: Workbook checks
+  structure_and_reports:
+    name: Workbook structure and reports
     runs-on: ubuntu-24.04
     timeout-minutes: 90
-    env:
-      PYTHONDONTWRITEBYTECODE: '1'
-      PYTHONPATH: tools
-      RISK_TEST_WORKBOOK: workbook/retirement-model.xlsm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -63,16 +64,81 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libreoffice-calc
           soffice --version
+      - name: Verify survivor income and medical costs
+        run: python tests/survivor_floor_acceptance.py "$RISK_TEST_WORKBOOK"
+      - name: Verify market results and report formulas
+        run: |
+          python tests/report_formula_acceptance.py
+          python tests/native_integrity_acceptance.py
+          python tests/native_closing_acceptance.py "$RISK_TEST_WORKBOOK"
+          python tests/native_flexible_policy_acceptance.py "$RISK_TEST_WORKBOOK"
+          python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes pairs
+          python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes 1,1001,2205
+
+  inputs_and_healthcare:
+    name: Workbook inputs and healthcare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: python -m pip install -r tools/requirements.txt
+      - name: Install LibreOffice Calc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-calc
+          soffice --version
       - name: Check input validation in Calc
         run: |
           python tests/input_validation_acceptance.py
           python tests/phase_readiness_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Verify Marketplace credits under variable inflation
         run: python tests/aca_inflation_acceptance.py "$RISK_TEST_WORKBOOK"
-      - name: Verify survivor income and medical costs
-        run: python tests/survivor_floor_acceptance.py "$RISK_TEST_WORKBOOK"
+
+  one_time_expenses:
+    name: Workbook one-time expenses
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: python -m pip install -r tools/requirements.txt
+      - name: Install LibreOffice Calc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-calc
+          soffice --version
       - name: Verify one-time expenses in market trials
         run: python tests/one_time_expense_acceptance.py "$RISK_TEST_WORKBOOK"
+
+  scenarios:
+    name: Workbook representative scenarios
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: python -m pip install -r tools/requirements.txt
+      - name: Install LibreOffice Calc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-calc
+          soffice --version
       - name: Recalculate representative scenarios
         run: |
           python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase2-fixtures.json --compact --ledger \
@@ -98,11 +164,26 @@ jobs:
             --case social_security_does_not_fall_after_claim_during_deflation \
             --case existing_social_security_benefit_keeps_its_opening_level
           python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase3-fixtures.json --compact --ledger
-      - name: Verify market results and report formulas
+
+  workbook:
+    # Keep this check name stable for the main branch ruleset.
+    name: Workbook checks
+    needs: [structure_and_reports, inputs_and_healthcare, one_time_expenses, scenarios]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require each workbook job to succeed
+        env:
+          STRUCTURE: ${{ needs.structure_and_reports.result }}
+          INPUTS: ${{ needs.inputs_and_healthcare.result }}
+          EXPENSES: ${{ needs.one_time_expenses.result }}
+          SCENARIOS: ${{ needs.scenarios.result }}
         run: |
-          python tests/report_formula_acceptance.py
-          python tests/native_integrity_acceptance.py
-          python tests/native_closing_acceptance.py "$RISK_TEST_WORKBOOK"
-          python tests/native_flexible_policy_acceptance.py "$RISK_TEST_WORKBOOK"
-          python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes pairs
-          python tests/native_capture_acceptance.py "$RISK_TEST_WORKBOOK" --codes 1,1001,2205
+          printf '%s\n' "Structure and reports: $STRUCTURE" "Inputs and healthcare: $INPUTS" \
+            "One-time expenses: $EXPENSES" "Representative scenarios: $SCENARIOS"
+          if [[ "$STRUCTURE" != success || "$INPUTS" != success ||
+                "$EXPENSES" != success || "$SCENARIOS" != success ]]; then
+            echo '::error::Every workbook job must succeed.'
+            exit 1
+          fi

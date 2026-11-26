@@ -1,0 +1,1 @@
+- **Run independent workbook checks in parallel.** The required Workbook checks result passes when all four jobs succeed.
