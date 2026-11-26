@@ -282,14 +282,18 @@ The warm run used the same open guarded workbook after the verified cold capture
 
 ### Full-scale Mac control checkpoint
 
-On November 26, 2026 a fresh Excel for Mac 16.115.26112215 process ran the same pinned full-first `full-0-125` diagnostic with 1,000 pairs and seed 2026. The first warm repeat used the same open workbook after the cold save. Both saved batches independently reconciled 2,033 outcomes and 588,054 fields, with 501 verified flexible reuses. The control performed 1,535 primary full calculations in each pass.
+On November 26, 2026 a fresh Excel for Mac 16.115.26112215 process ran the same pinned full-first `full-0-125` diagnostic with 1,000 pairs and seed 2026. The three warm repeats used the same open workbook after the cold save. Each saved batch independently reconciled 2,033 outcomes and 588,054 fields, with 501 verified flexible reuses. The control performed 1,535 primary full calculations in each pass.
 
 | Control pass | Macro wall time (s) | Ordered balance retries | Saved capture SHA-256 |
 | --- | ---: | ---: | --- |
 | Cold | 2,058.814 | 31 | `91634121b11b67e60ed25d8601be4abb0e92c3fb16a5b97e60692f2c2d59effe` |
 | Warm 1 | 2,262.924 | 71 | `6b5d95fad2af6c8bed0a518253035184a2628288264ebf65f3243b2b45f8eb29` |
+| Warm 2 | 2,039.901 | 71 | `8201f2c9af7cd8c089f8f9143406a809ded69afff153c4affa4669ca8dbcaca1` |
+| Warm 3 | 2,184.715 | 100 | `46f75bbe5dd7a8c04106b72507ded3767116f61faf47c8d6f01a91db2326d2b6` |
 
-The diagnostic input and independent reference hashes match the full-scale observations above. These two passes establish the initial full-first checkpoint before the remaining warm controls and the separate integrated funding-proof series. Windows remains unverified.
+The control warm median was **2,184.715 seconds**. The diagnostic input and independent reference hashes match the full-scale observations above. A separate, fresh Excel process ran the integrated proof candidate's cold pass in **1,516.167 seconds**. It recorded 17 proof rejections, 40 full fallbacks and one ordered balance retry. Its saved batch independently reconciled the same 2,033 outcomes and 588,054 fields, with 501 verified flexible reuses.
+
+Excel's API opened the exact pinned working copy under its existing macro policy. It saved the current batch and restored the prior display-alert setting. The display was unlocked at those two observations. The integrated proof input SHA-256 is `a7e85eb7dfce6524b7a7c2c6e97be537a3840a26531c60abbf764e3d23d8a0ae` and its cold capture SHA-256 is `56f1a0d925db30b86a250c67d411f21aff41785ebef30f64b20c58967c66b7f7`. The replicated candidate warm median and production branch coverage remain open. Windows remains unverified.
 
 ### Brokerage calculation trace on Mac
 
