@@ -37,7 +37,7 @@ Use `PYTHONPATH=tools python tests/desktop_policy_preflight.py DRAFT.xlsx NEW_TE
 
 On November 26, 2026 Excel for Mac 16.115.26112215 on macOS 26.7.3 ran the fictional v2 workbook built at `16b7eb9484e8386c9beb01112ebe5d610f5221be`. The exact `CA` selection produced a fresh current batch. Its saved assumption record exactly matched the live California schema and policy record. The independent reference reconciled all 233 outcomes from 100 paired paths and 33 stresses across 80,454 fields, including all three ranked funding histories. The runner verified 46 flexible-path reuses.
 
-In a separate copy the selected scenario contained lowercase `ca` alongside the prior completed batch. The native runner displayed `Run stopped: Enter the literal state tax jurisdiction CA in the selected scenario.` The report became `invalid`, and both the input and market preflight checks requested a valid jurisdiction. The prior batch metadata, idle inspection and all 595,814 stored trial and funding fields were preserved. Both saved VBA projects matched the audited test overlay. Active-inspection interruption, broader parity, report and distribution validation remain open. Windows remains unverified.
+In a separate copy the selected scenario contained lowercase `ca` alongside the prior completed batch. The native runner displayed `Run stopped: Enter the literal state tax jurisdiction CA in the selected scenario.` The report became `invalid`, and both the input and market preflight checks requested a valid jurisdiction. The prior batch metadata, idle inspection and all 595,814 stored trial and funding fields were preserved. Both saved VBA projects matched the audited test overlay. Active-inspection interruption, report and distribution validation remain open. Windows remains unverified.
 
 | Test | Prepared workbook SHA-256 | Saved capture SHA-256 |
 | --- | --- | --- |
@@ -45,6 +45,12 @@ In a separate copy the selected scenario contained lowercase `ca` alongside the 
 | Lowercase `ca` | `cd501d9450e52d82f38f5c593a407e069877fbe0b77dfecc75d328195c3eda2f` | `e98d77e7011a8eaf581ec2340d6e866b54c4e5c8dfdd0a83fa8d4075a04cefff` |
 
 The independent reference SHA-256 is `48bad0ced1adbc062f05cdf01bf07e11d46c619bceb6c7e42c0b81601993dc36`. The fictional workbooks remain local.
+
+#### California tax scenario parity
+
+Run `python tests/california_policy_parity.py DRAFT.xlsx` on the independently bootstrapped v2 draft. Add `--case california_published_surtax_at_threshold` to run just the threshold case with the 4% inflation stress. Each fixture recalculates a disposable copy in LibreOffice, checks the hand-calculated base results, and reconciles the base and inspected trial annual ledgers against Python. The matrix covers both table modes, joint and single payroll, federal and California loss carryforwards, the published SDI rate, three points around the modeled exemption-credit and surtax thresholds, and one inflation stress. Desktop interruption and the release report have separate acceptance checks. [Parity runner](../../tests/california_policy_parity.py)
+
+On November 26, 2026 all 13 cases passed in Calc using the independent v2 reference above. The suite reconciled 1,344 base-plan values and 1,344 inspected-trial values, including the 4% inflation stress. The largest absolute difference was below $0.00000001.
 
 #### California release validation
 
