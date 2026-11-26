@@ -117,6 +117,45 @@ End Function
 '''
 
 
+CANARY_PROCEDURES = '''
+Private Function ReadProofWithStaleClaim(ByVal proof As Worksheet, ByVal lastRow As Long) As Variant
+    Dim claim As Range, priorFormula As String, shield As Variant, protectedForTest As Boolean, written As Boolean
+    Dim failure As Long, failureText As String, protectionError As String, cleanupFailure As Long
+    Set claim = proof.Range("BB126")
+    priorFormula = claim.Formula
+    On Error GoTo TestError
+    PrepareProtection proof, shield, protectedForTest
+    proof.Range("BA6:BC" & lastRow).Calculate
+    claim.Value2 = 3991289.26141221
+    written = True
+    proof.Range("BD6:BG" & lastRow).Calculate
+    proof.Range("CM6:CO" & lastRow).Calculate
+    proof.Range("BH6:CL" & lastRow).Calculate
+    proof.Range("CP6:CP" & lastRow).Calculate
+    ReadProofWithStaleClaim = proof.Range("BA6:CP" & lastRow).Value2
+    GoTo CleanupClaim
+TestError:
+    failure = Err.Number
+    failureText = Err.Description
+    Resume CleanupClaim
+CleanupClaim:
+    On Error Resume Next
+    If written Then claim.Formula = priorFormula
+    cleanupFailure = Err.Number
+    On Error GoTo 0
+    If protectedForTest Then protectionError = RestoreProtection(proof, shield)
+    If cleanupFailure <> 0 Then RaiseRunError "The injected quote formula was not restored."
+    If Len(protectionError) > 0 Then RaiseRunError protectionError
+    If failure <> 0 Then Err.Raise failure, "StaleFundingClaimCanary", failureText
+    mProofCanaryInjected = mProofCanaryInjected + 1
+End Function
+
+Public Function ReadFundingProofInjectionCount() As String
+    If mRunning Then Exit Function
+    ReadFundingProofInjectionCount = CStr(mProofCanaryInjected)
+End Function
+'''
+
 def replace(source: str, before: str, after: str) -> str:
     """Require exactly one match for each reviewed runner anchor."""
     if source.count(before) != 1:
@@ -153,6 +192,23 @@ def instrument(source: str) -> str:
     return vba
 
 
+def instrument_canary(source: str) -> str:
+    """Inject only into the disposable proof claim before exercising the real capture gate."""
+    source = instrument(source)
+    source = replace(source, 'Private mFundingProofReady As Boolean\n',
+                     'Private mFundingProofReady As Boolean\nPrivate mProofCanaryInjected As Long\n')
+    source = replace(source, '    mFundingProofReady = False\n',
+                     '    mFundingProofReady = False\n    mProofCanaryInjected = 0\n')
+    old = '    With proof\n        .Range("BA6:BC" & lastRow).Calculate\n'
+    source = replace(source, old, '    If code = 7 And lastRow >= 126 And mProofCanaryInjected < 2 Then\n'
+                     '        observed = ReadProofWithStaleClaim(proof, lastRow)\n'
+                     '    Else\n        With proof\n            .Range("BA6:BC" & lastRow).Calculate\n')
+    source = replace(source, '    End With\n    If Not FundingProofTrialMatches(book, code) Then\n',
+                     '        End With\n    End If\n    If Not FundingProofTrialMatches(book, code) Then\n')
+    result = source + '\n' + CANARY_PROCEDURES
+    audit_vba_declarations(result)
+    return result
+
 def parse_counts(payload: str) -> dict[str, int]:
     """Require complete and internally consistent native proof counters."""
     fields = payload.split('|')
@@ -169,7 +225,7 @@ def parse_counts(payload: str) -> dict[str, int]:
     return counts
 
 
-def prepare_candidate(source: Path, destination: Path) -> None:
+def prepare_candidate(source: Path, destination: Path, *, canary: bool = False) -> None:
     """Build a new proof workbook with a verified bank and isolated runner."""
     if destination.exists() or destination.is_symlink():
         raise FileExistsError(destination)
@@ -178,7 +234,8 @@ def prepare_candidate(source: Path, destination: Path) -> None:
         prepare_package(source, bank)
         verify_package(source, bank)
         with ExcelFile(bank) as original:
-            expected = instrument(guarded_overlay(original.get_module(RUNNER), mode='natural'))
+            transform = instrument_canary if canary else instrument
+            expected = transform(guarded_overlay(original.get_module(RUNNER), mode='natural'))
             original.set_module(RUNNER, expected.replace('\n', '\r\n'))
             original.save(project)
         with ZipFile(bank) as before, ZipFile(project) as compiled, ZipFile(candidate, 'x') as output:
@@ -205,6 +262,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path)
     parser.add_argument('destination', type=Path)
+    parser.add_argument('--canary', action='store_true', help='exercise two injected stale quote claims')
     opts = parser.parse_args()
-    prepare_candidate(opts.source, opts.destination)
+    prepare_candidate(opts.source, opts.destination, canary=opts.canary)
     print(f'{opts.destination}\nInput SHA-256 {digest(opts.destination)}')
