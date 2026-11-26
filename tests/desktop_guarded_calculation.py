@@ -6,6 +6,7 @@ import argparse
 from functools import partial
 from pathlib import Path
 import re
+from statistics import median
 from typing import Any
 
 from desktop_benchmark import PAIR_COUNTS, digest, load_fixture, read_json, write_json
@@ -18,10 +19,13 @@ from vba_declarations import audit_vba_declarations
 
 SCHEMA = 'GuardedCalculationEvidence/v1'
 COMPARISON = 'GuardedMacExperiment/v1'
+WARM_COMPARISON = 'GuardedMacWarmExperiment/v1'
 GUARDED_PROFILE = 'RunnerGuardedProfile/v1'
 MODES = ('natural', 'canary')
 ENVIRONMENT = ('platform', 'excel_build', 'excel_channel', 'excel_bitness', 'os_build',
                'architecture', 'machine', 'macro_policy')
+PROVENANCE = ('fixture_sha256', 'source_sha256', 'reference_sha256')
+WARM_SEQUENCE = (('cold', 1), ('warm', 1), ('warm', 2), ('warm', 3))
 MACRO_WALL_TIME = ('monotonic time from synchronous RunMarketRisk dispatch through return, '
                    'excluding save and profile read')
 MACRO_WALL_TIME_LABELS = (
@@ -175,6 +179,21 @@ def check(path: Path) -> dict[str, Any]:
     return replay
 
 
+def require_matched_runs(all_runs: list[dict], environment: tuple[str, ...] = ENVIRONMENT) -> None:
+    """Require independent saved batches from a common fixture and environment."""
+    for field in PROVENANCE:
+        if len({item[field] for item in all_runs}) != 1:
+            raise ValueError(f'The test arms used different {field}.')
+    for field in environment:
+        if len({item['run'][field] for item in all_runs}) != 1:
+            raise ValueError(f'The test arms used different {field}.')
+    if any(item['run']['timing_method'] not in MACRO_WALL_TIME_LABELS for item in all_runs):
+        raise ValueError('The comparison requires monotonic macro wall time through return.')
+    if (len({item['capture_sha256'] for item in all_runs}) != len(all_runs)
+            or len({item['profile']['batch_serial'] for item in all_runs}) != len(all_runs)):
+        raise ValueError('The test arms reused a saved capture or batch timestamp.')
+
+
 def matched_results(controls: list[dict], candidates: list[dict], canary: dict) -> dict:
     """Compare the initial cold and warm pairs after replaying their evidence."""
     if len(controls) != 2 or len(candidates) != 2:
@@ -186,19 +205,7 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
     if (any(item.get('mode') != 'natural' for item in candidates) or canary.get('mode') != 'canary'
             or (canary['run']['phase'], canary['run']['repeat']) != ('cold', 1)):
         raise ValueError('The comparison requires natural timings and a separate cold canary.')
-    all_runs = [*controls, *candidates, canary]
-    provenance = ('fixture_sha256', 'source_sha256', 'reference_sha256')
-    for field in provenance:
-        if len({item[field] for item in all_runs}) != 1:
-            raise ValueError(f'The test arms used different {field}.')
-    for field in ENVIRONMENT:
-        if len({item['run'][field] for item in all_runs}) != 1:
-            raise ValueError(f'The test arms used different {field}.')
-    if any(item['run']['timing_method'] not in MACRO_WALL_TIME_LABELS for item in all_runs):
-        raise ValueError('The comparison requires monotonic macro wall time through return.')
-    if (len({item['capture_sha256'] for item in all_runs}) != len(all_runs)
-            or len({item['profile']['batch_serial'] for item in all_runs}) != len(all_runs)):
-        raise ValueError('The test arms reused a saved capture or batch timestamp.')
+    require_matched_runs([*controls, *candidates, canary])
     for arm in (controls, candidates):
         cold, warm = arm
         if [(item['run']['phase'], item['run']['repeat']) for item in arm] != [('cold', 1), ('warm', 1)]:
@@ -214,7 +221,7 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
     return {
         'schema': COMPARISON, 'experiment': f'{fixture}, {pairs} fictional pairs',
         'environment': {**{field: canary['run'][field] for field in ENVIRONMENT}, 'timing_method': MACRO_WALL_TIME},
-        **{field: canary[field] for field in provenance},
+        **{field: canary[field] for field in PROVENANCE},
         'matched_initial_observations': [
             {'phase': control['run']['phase'], 'control_seconds': control['run']['seconds'],
              'guarded_seconds': candidate['run']['seconds'], 'control': compact(control),
@@ -224,6 +231,85 @@ def matched_results(controls: list[dict], candidates: list[dict], canary: dict) 
         'ordered_recovery_canary': {**compact(canary), 'seconds': canary['run']['seconds']},
         'windows_status': 'unverified',
     }
+
+
+def warm_session(records: list[tuple[dict, dict]], *, guarded: bool) -> list[dict]:
+    """Bind each native timing to the unchanged open Excel session and its saved predecessor."""
+    if len(records) != len(WARM_SEQUENCE):
+        raise ValueError('Provide a cold run and three warm repeats for each arm.')
+    first, first_receipt = records[0]
+    expected_pid = first_receipt.get('excel_pid')
+    if not isinstance(expected_pid, str) or not re.fullmatch(r'[1-9][0-9]*', expected_pid):
+        raise ValueError('The timing receipt needs an Excel process ID.')
+    candidate_hash = preceding_hash = first['candidate_sha256']
+    preceding_batch = 0.0
+    result = []
+    for (evidence, receipt), (phase, repeat) in zip(records, WARM_SEQUENCE, strict=True):
+        run = evidence['run']
+        validate_run(run)
+        if (run['phase'], run['repeat']) != (phase, repeat):
+            raise ValueError('File order must be cold, then warm repeats 1, 2 and 3.')
+        if run['platform'] != 'mac' or run['excel_bitness'] != 64:
+            raise ValueError('The matched warm experiment requires 64-bit Excel for Mac.')
+        if evidence.get('mode') != ('natural' if guarded else None):
+            raise ValueError('The warm arms require a full-first control and natural smart-first candidate.')
+        if receipt.get('excel_pid') != expected_pid:
+            raise ValueError('A warm arm must stay in the same Excel process as its cold run.')
+        if receipt.get('starting_sha256') != preceding_hash:
+            raise ValueError('A warm run must follow its preceding saved capture.')
+        profile = evidence['profile_text' if guarded else 'payload']
+        counts = evidence['count_text'] if guarded else ''
+        if (receipt.get('timing') != run or receipt.get('profile') != profile
+                or receipt.get('counts') != counts):
+            raise ValueError('The timing receipt and independently replayed evidence disagree.')
+        batch = evidence['profile']['batch_serial']
+        if evidence['candidate_sha256'] != candidate_hash or batch <= preceding_batch:
+            raise ValueError('The unchanged arm must publish a distinct newer batch for each run.')
+        result.append(evidence)
+        preceding_hash, preceding_batch = evidence['capture_sha256'], batch
+    return result
+
+
+def matched_warm_results(controls: list[tuple[dict, dict]], candidates: list[tuple[dict, dict]]) -> dict:
+    """Report warm medians only after all matched capture and timing replays."""
+    control = warm_session(controls, guarded=False)
+    guarded = warm_session(candidates, guarded=True)
+    fixture, pairs = control[0]['fixture'], control[0]['pairs']
+    if (fixture != 'full-0-125' or pairs not in PAIR_COUNTS
+            or any((item['fixture'], item['pairs']) != (fixture, pairs) for item in (*control, *guarded))):
+        raise ValueError('Use matched full-0-125 arms at a single allowed pair count.')
+    if controls[0][1]['excel_pid'] == candidates[0][1]['excel_pid']:
+        raise ValueError('Each cold arm requires its own fresh Excel process.')
+    require_matched_runs([*control, *guarded], (*ENVIRONMENT, 'distribution'))
+    data = {}
+    medians = {}
+    for label, arm in (('control', control), ('guarded', guarded)):
+        data[label] = [
+            {key: item[key] for key in ('run', 'candidate_sha256', 'capture_sha256', 'profile', 'comparison')}
+            for item in arm
+        ]
+        medians[label] = median(item['run']['seconds'] for item in arm[1:])
+    return {
+        'schema': WARM_COMPARISON, 'experiment': f'{fixture}, {pairs} fictional pairs',
+        **{field: control[0][field] for field in PROVENANCE},
+        'arms': data, 'warm_median_seconds': medians,
+        'warm_improvement_percent': (medians['control'] - medians['guarded']) / medians['control'] * 100,
+        'windows_status': 'unverified',
+    }
+
+
+def replay_warm_arm(paths: list[Path], *, guarded: bool) -> list[tuple[dict, dict]]:
+    """Replay each workbook capture and load its corresponding native timing receipt."""
+    replay = check if guarded else check_control
+    result = []
+    for path, (phase, repeat) in zip(paths, WARM_SEQUENCE, strict=True):
+        evidence = replay(path)
+        if guarded:
+            fixture = matched_fixture(path.parent)
+            evidence = evidence | {'fixture': fixture['fixture'], 'pairs': fixture['pairs']}
+        receipt = read_json(path.with_name(f'raw-{phase}-{repeat:02}.json'))
+        result.append((evidence, receipt))
+    return result
 
 
 def main() -> int:
@@ -246,6 +332,11 @@ def main() -> int:
                              metavar=('COLD', 'WARM'))
     compare.add_argument('--canary', type=Path, required=True)
     compare.add_argument('--output', type=Path, required=True)
+    warm = commands.add_parser('compare-warm')
+    for option in ('control', 'candidate'):
+        warm.add_argument(f'--{option}', type=Path, nargs=4, required=True,
+                          metavar=('COLD', 'WARM1', 'WARM2', 'WARM3'))
+    warm.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.command == 'prepare':
         print(prepare(args.directory, args.mode))
@@ -256,9 +347,12 @@ def main() -> int:
         print(result['comparison'])
     elif args.command == 'check':
         print(check(args.evidence)['comparison'])
-    else:
+    elif args.command == 'compare':
         write_json(args.output, matched_results([check_control(path) for path in args.control],
                                                 [check(path) for path in args.candidate], check(args.canary)))
+    else:
+        write_json(args.output, matched_warm_results(replay_warm_arm(args.control, guarded=False),
+                                                     replay_warm_arm(args.candidate, guarded=True)))
     return 0
 
 
