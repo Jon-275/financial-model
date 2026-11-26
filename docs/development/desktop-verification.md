@@ -293,7 +293,24 @@ On November 26, 2026 a fresh Excel for Mac 16.115.26112215 process ran the same 
 
 The control warm median was **2,184.715 seconds**. The diagnostic input and independent reference hashes match the full-scale observations above. A separate, fresh Excel process ran the integrated proof candidate's cold pass in **1,516.167 seconds**. It recorded 17 proof rejections, 40 full fallbacks and one ordered balance retry. Its saved batch independently reconciled the same 2,033 outcomes and 588,054 fields, with 501 verified flexible reuses.
 
-Excel's API opened the exact pinned working copy under its existing macro policy. It saved the current batch and restored the prior display-alert setting. The display was unlocked at those two observations. The integrated proof input SHA-256 is `a7e85eb7dfce6524b7a7c2c6e97be537a3840a26531c60abbf764e3d23d8a0ae` and its cold capture SHA-256 is `56f1a0d925db30b86a250c67d411f21aff41785ebef30f64b20c58967c66b7f7`. The replicated candidate warm median and production branch coverage remain open. Windows remains unverified.
+Excel's API opened the exact pinned working copy under its existing macro policy. It saved the current batch and restored the prior display-alert setting. The display was unlocked at those two observations. The integrated proof input SHA-256 is `a7e85eb7dfce6524b7a7c2c6e97be537a3840a26531c60abbf764e3d23d8a0ae` and its cold capture SHA-256 is `56f1a0d925db30b86a250c67d411f21aff41785ebef30f64b20c58967c66b7f7`. The complete warm comparison appears below. Production branch coverage remains open. Windows remains unverified.
+
+### Replicated 1,000-pair Mac funding proof comparison
+
+The integrated proof arm ran on the same pinned fixture and Mac build as the full-first control, with a fresh Excel process for each cold run. Each of the eight captures independently reconciled 2,033 outcomes and 588,054 fields. Every pass retained 501 verified flexible reuses, all 33 stresses and three complete ranked ledgers.
+
+| Proof pass | Macro wall time (s) | Full fallbacks | Ordered retries | Proof rejections | Saved capture SHA-256 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Cold | 1,516.167 | 40 | 1 | 17 | `56f1a0d925db30b86a250c67d411f21aff41785ebef30f64b20c58967c66b7f7` |
+| Warm 1 | 1,704.412 | 73 | 2 | 24 | `8622a6a2fe06b4006947ca45969300a31e4bcac02e4b503fd8ed9d8802245d26` |
+| Warm 2 | 1,682.782 | 97 | 2 | 36 | `cf1c3d2a97e39355df34cf9fbf979ea63013410dc5cf73a0ed77c779cca3d640` |
+| Warm 3 | 1,624.939 | 74 | 2 | 38 | `910200398c5c66fb131876e6d982d9e3804a55ef5e2cc1d5cfb12ae9cbfaac8e` |
+
+The warm medians were **2,184.715 seconds** for the full-first control and **1,682.782 seconds** for the proof runner. The candidate median was **22.97% lower** and missed the 25% target for this workload. The calculation still needs qualification on the other fixtures, production coverage for conversion and unfunded years, and full publication recovery before release. Windows remains unverified.
+
+The Mac API opened the pinned candidate and saved each batch after the native macro returned. It restored the prior alert setting after each save. Excel used its existing automation-security setting. The display was unlocked at the API open and save observations. Same-process CPU samples advanced during the macOS screen lock. [Local evidence replay](../../tests/desktop_funding_proof_replay.py)
+
+The comparison JSON SHA-256 is `be4cce57a1ede65d1b0f3b51c2adc94782882df425e5041e718e6ac896d42dad`. The source, independent reference and diagnostic hashes are retained with the eight capture records. The raw workbooks stay local.
 
 ### Brokerage calculation trace on Mac
 
