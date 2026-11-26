@@ -22,7 +22,7 @@ from openpyxl.utils.exceptions import InvalidFileException
 from state_policy import (
     CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
     WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA, WORKBOOK_STATE_POLICY_SCHEMA_CELL,
-    StatePolicy, resolve_state_policy,
+    WORKBOOK_STATE_POLICY_TABLE_LABELS, StatePolicy, resolve_state_policy,
 )
 
 
@@ -157,9 +157,14 @@ def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
                                    and re.search(rf'\b[B-F]{row}\b', tax_check.upper().replace('$', '')) is not None)
         if references_jurisdiction or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF'):
             return True
-    return 'Tax_Tables' in sheets and any(raw['Tax_Tables'][address].value is not None for address in (
-        WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_CA_POLICY_VERSION_CELL,
-    ))
+    if 'Tax_Tables' not in sheets:
+        return False
+    tables = raw['Tax_Tables']
+    return (
+        any(tables[address].value is not None
+            for address in (WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_CA_POLICY_VERSION_CELL))
+        or any(tables[address].value == label for address, label in WORKBOOK_STATE_POLICY_TABLE_LABELS)
+    )
 
 
 def _workbook_state_policy(raw: Workbook, cached: Workbook, *, selected: int) -> StatePolicy | None:

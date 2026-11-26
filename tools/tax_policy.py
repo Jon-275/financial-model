@@ -6,7 +6,16 @@ the standard deduction, and MFJ/single filing. Unsupported tax features are not
 implicitly added to a scenario. See the accompanying tax policy notes.
 """
 
+from collections.abc import Callable
+
+from openpyxl.utils.cell import absolute_coordinate
+
 import published_tax
+from state_policy import (
+    CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_ERROR,
+    WORKBOOK_JURISDICTION_LABEL, WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA,
+    WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_TABLE_LABELS,
+)
 
 EXTRA_HEADERS = {
     "FedCapitalIncome": "Federal capital income in AGI",
@@ -28,6 +37,10 @@ CA_CREDIT_MFJ_THRESHOLD = 'Tax_Tables!$B$192'
 CA_CREDIT_SINGLE_THRESHOLD = 'Tax_Tables!$B$193'
 CA_CREDIT_STEP = 'Tax_Tables!$B$194'
 CA_CREDIT_REDUCTION = 'Tax_Tables!$B$195'
+
+_TAX_INPUT_CHECK = ('IFERROR(IF(AND(COUNT(INDEX(D126:F128,0,B4))=3,B126>=0,B126<=1,'
+                    'MIN(B127:B128)>=0,OR(B11=1,B11=2),ISNUMBER(B51),B51>=0,OR(B25>0,B51=0)),'
+                    '"OK","Check tax inputs"),"Check tax inputs")')
 
 
 def opening_loss_refs(r):
@@ -163,6 +176,34 @@ def candidate_formulas(ref):
     }
 
 
+def configure_workbook_state_policy(put: Callable[[str, str, str, str], None]) -> None:
+    """Author the candidate California selector and gate before annual calculations run."""
+    row = WORKBOOK_JURISDICTION_ROW
+    code = CALIFORNIA_POLICY.jurisdiction
+    selected = f'INDEX($D${row}:$F${row},1,$B$4)'
+    put('Inputs', f'A{row}', WORKBOOK_JURISDICTION_LABEL, 'label')
+    put('Inputs', f'B{row}', f'=IFERROR(IF(ISBLANK({selected}),"",{selected}),"")', 'input_active')
+    for column in 'DEF':
+        put('Inputs', f'{column}{row}', code, 'input')
+    put('Inputs', f'G{row}', 'Use CA for a full-year California household.', 'note')
+
+    schema_ref = f'Tax_Tables!{absolute_coordinate(WORKBOOK_STATE_POLICY_SCHEMA_CELL)}'
+    version_ref = f'Tax_Tables!{absolute_coordinate(WORKBOOK_CA_POLICY_VERSION_CELL)}'
+    put('Tax_Tables', WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_SCHEMA, 'note')
+    put('Tax_Tables', WORKBOOK_CA_POLICY_VERSION_CELL, CALIFORNIA_POLICY.version, 'note')
+    for cell, label in WORKBOOK_STATE_POLICY_TABLE_LABELS:
+        put('Tax_Tables', cell, label, 'label')
+
+    scenario_formulas = ','.join(f'_xlfn.ISFORMULA(${column}${row})' for column in 'DEF')
+    checks = (f'EXACT($A${row},"{WORKBOOK_JURISDICTION_LABEL}"),_xlfn.ISFORMULA($B${row}),'
+              f'EXACT($B${row},"{code}"),EXACT({selected},"{code}"),'
+              f'NOT(CHOOSE($B$4,{scenario_formulas})),'
+              f'NOT(_xlfn.ISFORMULA({schema_ref})),EXACT({schema_ref},"{WORKBOOK_STATE_POLICY_SCHEMA}"),'
+              f'NOT(_xlfn.ISFORMULA({version_ref})),EXACT({version_ref},"{CALIFORNIA_POLICY.version}")')
+    error = f'"{WORKBOOK_JURISDICTION_ERROR}"'
+    put('Inputs', 'B129', f'=IFERROR(IF(AND({checks}),{_TAX_INPUT_CHECK},{error}),{error})', 'note')
+
+
 def configure(m, wb):
     """Write Phase 2 tax inputs, sources, non-candidate payroll and basis ledger."""
     s = 'Inputs'
@@ -179,7 +220,7 @@ def configure(m, wb):
         m.put(s,f'G{r}',note,'note')
         m.put(s,f'H{r}',f'=IF(AND(D{r}=E{r},E{r}=F{r}),"","VARIES")','note')
     m.put(s,'A129','Tax inputs','label')
-    m.put(s,'B129','=IFERROR(IF(AND(COUNT(INDEX(D126:F128,0,B4))=3,B126>=0,B126<=1,MIN(B127:B128)>=0,OR(B11=1,B11=2),ISNUMBER(B51),B51>=0,OR(B25>0,B51=0)),"OK","Check tax inputs"),"Check tax inputs")','note')
+    m.put(s,'B129','='+_TAX_INPUT_CHECK,'note')
     m.put(s,'G129','A positive opening cost basis requires a positive opening taxable balance.','note')
     m.put(s,'G51','Enter adjusted basis. It may exceed market value. Sales release basis in proportion to the amount sold.','note')
 

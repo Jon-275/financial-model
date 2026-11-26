@@ -1,5 +1,7 @@
 """Compile the annual funding and Roth worksheet formulas from the horizon baseline."""
+import argparse
 from collections import defaultdict
+from collections.abc import Sequence
 from pathlib import Path
 import json, sys
 from openpyxl import load_workbook
@@ -523,12 +525,26 @@ def guidance(start_sheet):
             put(sheet, address, text)
 
 
-def main():
-    src,out=map(Path,sys.argv[1:3]); wb=load_workbook(src,data_only=False)
+def _arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    """Keep explicit state policy opt-in until the release gates are complete."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('source', type=Path)
+    parser.add_argument('output', type=Path)
+    parser.add_argument('--test-california-policy', action='store_true',
+                        help='Author the explicit California policy in a disposable test candidate.')
+    return parser.parse_args(argv)
+
+
+def main() -> None:
+    """Compile a plan for the workbook packager."""
+    options = _arguments()
+    wb=load_workbook(options.source,data_only=False)
     if any(s in wb.sheetnames for s in MODULES): raise SystemExit('Use the pre-phase-1 horizon workbook as the build baseline.')
     m=sys.modules[__name__]
     inputs(wb); cash_ledger(); roth(); funding(wb); projection(wb); reporting(); risk_cleanup.configure(m, wb); reconciliation()
     tax_policy.configure(m,wb)
+    if options.test_california_policy:
+        tax_policy.configure_workbook_state_policy(put)
     published_tax.configure(m)
     roth_contributions.configure(m)
     tax_policy.bind_projection(m,lambda r,k:fd(funding_search.columns(tax_policy)[k],group(r)+STEPS-1))
@@ -567,14 +583,14 @@ def main():
         value = cells['Tax_Tables'].get(address, wb['Tax_Tables'][address].value)
         return isinstance(value, str) and value.startswith('=')
     risk_workbook.configure_freshness(put, is_tax_formula=is_tax_formula)
-    native_risk.configure(m, wb)
+    native_risk.configure(m, wb, with_state_policy=options.test_california_policy)
     plan_report.configure_index(put)
     input_record.configure(put)
     workbook_guide.configure(put)
     workbook_layout.write_scenarios(put)
     order = workbook_layout.sheet_order([s for s in wb.sheetnames if s not in risk_cleanup.LEGACY_SHEETS] + MODULES)
-    out.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared,
-                              'native_names':getattr(m,'native_names',{})},separators=(',',':')))
+    options.output.write_text(json.dumps({'order':order,'cells':cells,'styles':styles,'shared':shared,
+                                         'native_names':getattr(m,'native_names',{})},separators=(',',':')))
     print('Authored cells by module:',{s:len(c) for s,c in cells.items()})
 
 if __name__=='__main__': main()

@@ -3,10 +3,14 @@
 The runner changes only Risk_Trials!B3. The current output row links to the
 second instance of the annual financial compiler. The main plan stays fixed.
 """
-from openpyxl.utils.cell import get_column_letter as L
+from openpyxl.utils.cell import absolute_coordinate, get_column_letter as L
 
 import investment_results
 from risk_engine.scenario import SCENARIO_INPUT_ROWS, ASSET_ROWS, TAX_TABLE_LAST_ROW
+from state_policy import (
+    WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL, WORKBOOK_JURISDICTION_ROW,
+    WORKBOOK_STATE_POLICY_SCHEMA_CELL,
+)
 
 SHEET='Risk_Trials'
 MARKET='Market_Paths'
@@ -43,7 +47,7 @@ FIELDS=(
 )
 
 
-def _context(m,baseline):
+def _context(m,baseline, *, with_state_policy: bool = False):
     """Compare all financial drivers, including numeric tax data, without a hash."""
     refs=[('Active scenario','Inputs!B4')]
     refs.extend((f'Selected input {row}',f'INDEX(Inputs!D{row}:F{row},1,Inputs!B4)')
@@ -70,6 +74,13 @@ def _context(m,baseline):
             value=m.cells['Tax_Tables'].get(address,baseline['Tax_Tables'][address].value)
             if type(value) in (int,float) or isinstance(value,str) and value.startswith('='):
                 refs.append((f'Tax data {address}',f'Tax_Tables!{address}'))
+    if with_state_policy:
+        row = WORKBOOK_JURISDICTION_ROW
+        refs.extend((
+            (WORKBOOK_JURISDICTION_LABEL, f'Inputs!$B${row}'),
+            ('State tax workbook schema', f'Tax_Tables!{absolute_coordinate(WORKBOOK_STATE_POLICY_SCHEMA_CELL)}'),
+            ('State tax policy version', f'Tax_Tables!{absolute_coordinate(WORKBOOK_CA_POLICY_VERSION_CELL)}'),
+        ))
     put=lambda a,v,s='report_caption':m.put(MARKET,a,v,s)
     put('BA1','Assumptions used by the simulation','detail_title')
     put('BA2','Current typed values are compared with the completed run and its captured trials.','report_caption')
@@ -141,8 +152,8 @@ def _outputs(m):
         m.put('Trial_Projection',f'CJ{row}',f'=IF({row}-4<={n},BR{row}/G{row},"")','money')
 
 
-def configure(m,baseline):
-    _context(m,baseline)
+def configure(m,baseline, *, with_state_policy: bool = False):
+    _context(m,baseline,with_state_policy=with_state_policy)
     _outputs(m)
     m.put(SHEET,'A7','=B3','whole')
     # The runner writes a contiguous batch: fixed, flexible, early-loss and

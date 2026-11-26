@@ -6,8 +6,13 @@ from dataclasses import dataclass
 WORKBOOK_STATE_POLICY_SCHEMA = 'workbook-state-policy-v1'
 WORKBOOK_STATE_POLICY_SCHEMA_CELL = 'B266'
 WORKBOOK_CA_POLICY_VERSION_CELL = 'B267'
+WORKBOOK_STATE_POLICY_TABLE_LABELS = (
+    ('A266', 'State tax workbook schema'),
+    ('A267', 'California state tax policy version'),
+)
 WORKBOOK_JURISDICTION_ROW = 136
 WORKBOOK_JURISDICTION_LABEL = 'State tax jurisdiction'
+WORKBOOK_JURISDICTION_ERROR = 'Check state tax jurisdiction'
 
 
 @dataclass(frozen=True, slots=True)
