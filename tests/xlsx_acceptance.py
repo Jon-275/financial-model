@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections.abc import Callable
 import concurrent.futures
 import json
 import math
@@ -203,7 +204,9 @@ def check_rows(wb, rules: dict, tolerance: float) -> None:
                 raise AssertionError(f"{sheet.title} row {row}, age {age}: {rule['name']} has residual {value:.6f}")
 
 
-def run_case(args, case: dict, shared: dict, row_rules: dict) -> str:
+def run_case(args: argparse.Namespace, case: dict, shared: dict, row_rules: dict,
+             *, verify_result: Callable[[Path], None] | None = None) -> str:
+    """Recalculate one temporary fixture and verify its saved results before cleanup."""
     name = case["name"]
     if not re.fullmatch(r"[a-zA-Z0-9_-]+", name):
         raise ValueError(f"Unsafe fixture name {name!r}")
@@ -223,9 +226,11 @@ def run_case(args, case: dict, shared: dict, row_rules: dict) -> str:
             if args.phase1:
                 from model_acceptance import validate_model
                 validate_model(wb, args.tolerance)
-            if args.keep:
-                args.keep.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(result, args.keep / f"{name}.xlsx")
+        if verify_result is not None:
+            verify_result(result)
+        if args.keep:
+            args.keep.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(result, args.keep / f"{name}.xlsx")
     return name
 
 

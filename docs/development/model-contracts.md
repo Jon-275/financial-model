@@ -46,6 +46,12 @@ In a separate copy the selected scenario contained lowercase `ca` alongside the 
 
 The independent reference SHA-256 is `48bad0ced1adbc062f05cdf01bf07e11d46c619bceb6c7e42c0b81601993dc36`. The fictional workbooks remain local.
 
+#### California tax scenario parity
+
+Run `python tests/california_policy_parity.py DRAFT.xlsx` on the independently bootstrapped v2 draft. Add `--case california_published_surtax_at_threshold` to run just the threshold case with the 4% inflation stress. Each fixture recalculates a disposable copy in LibreOffice, checks the hand-calculated base results, and reconciles the base and inspected trial annual ledgers against Python. The matrix covers both table modes, joint and single payroll, federal and California loss carryforwards, the published SDI rate, three points around the modeled exemption-credit and surtax thresholds, and one inflation stress. Desktop interruption and the release report have separate acceptance checks. [Parity runner](../../tests/california_policy_parity.py)
+
+The first v2 Calc run passed the exact surtax threshold case. It reconciled 96 base and 96 stress-trial values, each with a maximum difference below $0.00000001. The remaining matrix cases still need to run.
+
 #### California release validation
 
 1. Pin California golden outputs before changing formulas. Include legacy tables, current tables, joint years, a single survivor, gains and losses, HSA add-back, the exemption-credit phaseout, the surcharge and working-year employee SDI. Add edge cases immediately below, at and above relevant thresholds. Compare to the pinned workbook and Python fixtures. [Tax engineering tests](../../tests/test_risk_tax_funding.py) · [Annual tax review](../annual-tax-review.md)
