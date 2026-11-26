@@ -231,17 +231,25 @@ The `full-0-125` 1,000-pair fixture used seed 2026, Excel for Mac 16.115.2611221
 | --- | ---: | ---: | ---: |
 | Historical full-first cold | 1,989.144 | 1,535 | 40 |
 | Guarded cold | 1,523.699 | 40 fallbacks | 3 |
+| Guarded warm | 1,604.108 | 41 fallbacks | 0 |
 
 Each saved batch independently reconciled 2,033 outcomes and 588,054 fields, including three full ranked ledgers. The guarded cold run made 1,535 smart attempts and retained 501 verified reuses. The cold comparison is a 23.4% wall-time reduction. The profiled warm full-first control and a replicated warm median remain release gates. The existing 100-pair canary covers forced recovery, and the full-scale guarded cold run exercised ordered recovery on naturally observed mismatches. Windows remains unverified.
 
 The source workbook and runner are pinned to `6573e1e4bd86eb99bbce6678c6fdf9f575c2b681`. The diagnostics and replay at `0c9c35c06045bdcce278a85b14b29cc82c0d1849` reproduced both diagnostic input hashes. The independent reference SHA-256 is `858c4723327a08c72c844c1b25c0150f75e6aec9afd69a7d209d8762267e2688`. The raw workbooks stay local.
 
-| Cold run | Diagnostic input SHA-256 | Saved capture SHA-256 |
+| Run | Diagnostic input SHA-256 | Saved capture SHA-256 |
 | --- | --- | --- |
 | Historical full-first | `4f0a3ca409e7aa477819c2495683d90efa60e16e8cd6aff1eade931953f77d5e` | `d566f0aedcfb4270ea10a5dd4a708dd10c09c988b9ca46bd8c777856f8c53f13` |
-| Guarded | `9ee1e57655b01140b2d6f74eec234ee90d67bf0c42b1374b8fa1230ed5315e77` | `aef39bd27e0e9596e68ecdabda8cd19b14eaad8ff4f5f0cd8961980e02b4e276` |
+| Guarded cold | `9ee1e57655b01140b2d6f74eec234ee90d67bf0c42b1374b8fa1230ed5315e77` | `aef39bd27e0e9596e68ecdabda8cd19b14eaad8ff4f5f0cd8961980e02b4e276` |
+| Guarded warm | `9ee1e57655b01140b2d6f74eec234ee90d67bf0c42b1374b8fa1230ed5315e77` | `342050dab9f9040b7d58777854c8a74f3e9d8e390775de798ef0ebf143179a0a` |
 
-The guarded warm macro returned after 1,604.108 seconds and reported 41 full fallbacks and zero ordered retries. The Mac session locked before the workbook could be saved. Treat the warm timing and counts as provisional until the saved batch independently reconciles. An adaptive brokerage trace is prepared with the 1,000-pair prior batch and independently replayable trial operands. Its extra workbook reads run in a separate diagnostic and are excluded from the performance observations. The stage at which the mixed-trial brokerage values first appear remains open.
+The warm run used the same open guarded workbook after the verified cold capture. Its saved batch timestamp matches the warm profile and follows the cold batch timestamp. The warm run retained 501 verified reuses.
+
+### Brokerage calculation trace on Mac
+
+On November 26, 2026 the adaptive trace reproduced the first closing-balance rejection at trial 10, age 114, in `Trial_Checks!N119`. After writing selector 10 and before calculating, the observed brokerage cells still described trial 9. When `Application.CalculateFull` returned, the opening balance and return matched trial 10, while `Trial_Projection!BC119` and `V119` still matched trial 9's closing balance and withdrawal. The deposit retained its previous snapshot value and was within one cent of both independent paths. Those values persisted through capture-range recalculation and the closing check. The runner's stored guard residual and the subsequent cell read agreed at −$85,426,746.79. The existing ordered recalculation restored a consistent trial 10 and a zero residual.
+
+The trace identifies the full-calculation return as the first sampled point with mixed-trial values. The Excel-internal dependency or scheduling cause remains open. Both frozen and reread residuals and the independent trial replay support the observation. The separate diagnostic stopped after fixed trial 81 and independently verified the prior inspection, inactive funding detail and all 595,814 stored result fields. Its reads were excluded from performance measurements. Trace input SHA-256 `50bb370cebe964408ac1467a158f77a8d655840bdfde212c3145bae8afb67865`. Saved capture SHA-256 `ccad2bad445d4bdda4eef416dbcfc2067b806dbe8a4cede1c05a49a4a5bbe6bd`.
 
 ### Performance release gate
 
