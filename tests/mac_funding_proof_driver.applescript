@@ -3,14 +3,25 @@ on run argv
     set expectedName to item 2 of argv
     set expectedPath to item 3 of argv
     set expectedHfs to (POSIX file expectedPath) as text
+    set timeoutSeconds to 180
+    if actionName is "save" then set timeoutSeconds to 240
+    if actionName is "run" then set timeoutSeconds to 7200
     if actionName is "open" then
         set expectedHash to item 4 of argv
         set hashLine to do shell script "/usr/bin/shasum -a 256 " & quoted form of expectedPath
         if hashLine does not start with (expectedHash & "  ") then error "The exact session workbook fingerprint differs."
         set excelBundle to POSIX path of (path to application "Microsoft Excel")
     end if
-    with timeout of 7200 seconds
+    with timeout of timeoutSeconds seconds
         tell application "Microsoft Excel"
+            if actionName is "quit-empty" then
+                if (count workbooks) is not 0 then error "Excel is not empty. It was left open."
+                my requireExcelProcess(item 4 of argv)
+                ignoring application responses
+                    quit
+                end ignoring
+                return "quit-requested"
+            end if
             if actionName is "open" then
                 if (count workbooks) is not 0 then error "Use a new empty Excel process."
                 set securityBefore to automation security
@@ -23,6 +34,12 @@ on run argv
             if (name of book) is not expectedName or (actualPath is not expectedPath and actualPath is not expectedHfs) then error "The open workbook does not match the verified session path."
 
             if actionName is "open" then return "policy-unchanged|" & excelBundle
+            if actionName is "close" then
+                my requireExcelProcess(item 4 of argv)
+                close book saving no
+                if (count workbooks) is not 0 then error "Excel is not empty after closing the session workbook."
+                return "closed"
+            end if
             if actionName is "run" then
                 run VB Macro ("'" & expectedName & "'!RunMarketRisk")
                 return "returned"
@@ -57,3 +74,8 @@ on run argv
         end tell
     end timeout
 end run
+
+on requireExcelProcess(expectedPid)
+    set runningPid to do shell script "/usr/bin/pgrep -x 'Microsoft Excel'"
+    if runningPid is not expectedPid then error "The original benchmark Excel process changed."
+end requireExcelProcess

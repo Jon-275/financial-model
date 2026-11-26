@@ -1,1 +1,1 @@
-Add a Mac API driver for pinned synthetic benchmark runs that preserves Excel’s configured macro security and records the cold run, warm repeats, and verified saves.
+Add a Mac API driver for pinned synthetic benchmark runs that preserves Excel’s configured macro security, records the cold and warm captures, and closes the verified session before the next arm.

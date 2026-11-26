@@ -7,9 +7,9 @@ import platform
 import plistlib
 import re
 from shutil import copyfileobj
-from subprocess import CalledProcessError, check_output, run
+from subprocess import CalledProcessError, TimeoutExpired, check_output, run
 import sys
-from time import perf_counter
+from time import monotonic, perf_counter, sleep
 from typing import Any
 
 from desktop_benchmark import INPUT, digest, write_json
@@ -24,6 +24,7 @@ ARMS = ('full-first', 'funding-proof')
 SCRIPT = Path(__file__).with_suffix('.applescript')
 SESSION = 'native-mac-test-session.xlsm'
 CONFIRMED_SAVE = 'Risk results are current.'
+EXIT_TIMEOUT = 20.0
 
 
 @dataclass(frozen=True)
@@ -43,7 +44,7 @@ class MacExcel:
 
     def pid(self) -> str | None:
         """Return the sole Excel process ID or fail when it is ambiguous."""
-        found = run(['/usr/bin/pgrep', '-x', 'Microsoft Excel'], capture_output=True, text=True)
+        found = run(['/usr/bin/pgrep', '-x', 'Microsoft Excel'], capture_output=True, text=True, timeout=5)
         process = found.stdout.strip()
         if found.returncode == 1 and not process:
             return None
@@ -51,10 +52,10 @@ class MacExcel:
             raise ValueError('Expected at most one Microsoft Excel process.')
         return process
 
-    def call(self, action: str, workbook: Path, expected_hash: str = '') -> str:
+    def call(self, action: str, workbook: Path, expected_identity: str = '') -> str:
         """Send a scoped Apple event and return its text receipt."""
         return check_output(['/usr/bin/osascript', str(SCRIPT), action, workbook.name, str(workbook),
-                             expected_hash], text=True).strip()
+                             expected_identity], text=True).strip()
 
     def environment(self, bundle: Path, machine: str, channel: str) -> dict[str, Any]:
         """Record the installed build and configured session metadata for both arms."""
@@ -122,6 +123,24 @@ def invoke(excel: MacExcel, action: str, working: Path, pid: str) -> str:
     result = excel.call(action, working)
     same_process(excel, pid)
     return result
+
+
+def close_session(excel: MacExcel, working: Path, pid: str) -> None:
+    """Close only the session workbook and wait for its original Excel process to leave."""
+    same_process(excel, pid)
+    if excel.call('close', working, pid) != 'closed':
+        raise ValueError('Excel did not confirm closure of the exact session workbook.')
+    same_process(excel, pid)
+    if excel.call('quit-empty', working, pid) != 'quit-requested':
+        raise ValueError('Excel did not confirm the empty-process quit request.')
+    deadline = monotonic() + EXIT_TIMEOUT
+    while (remaining_pid := excel.pid()) is not None:
+        if remaining_pid != pid:
+            raise ValueError('Another Excel process started during the benchmark handoff.')
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            raise ValueError('The original Excel process did not quit within the handoff timeout.')
+        sleep(min(0.25, remaining))
 
 
 def run_session(source: Path, destination: Path, arm: str, *, machine: str, channel: str,
@@ -204,12 +223,17 @@ def run_session(source: Path, destination: Path, arm: str, *, machine: str, chan
         records.append(record)
         preceding_hash, preceding_batch = saved_hash, batch
         print(f'{arm} {label}: verified {elapsed:.3f} seconds', flush=True)
+    if session.working.is_symlink() or digest(session.working) != preceding_hash:
+        raise ValueError('The closed-session handoff requires the exact final saved workbook.')
+    close_session(excel, session.working, pid)
     return records
 
 
 def main() -> int:
     """Run one complete disposable arm on macOS with its current trust configuration."""
-    parser = ArgumentParser(description=__doc__, epilog='Close Excel before the cold run. A trusted macro must already be available under the installed Excel setting.')
+    parser = ArgumentParser(description=__doc__, epilog=(
+        'Close Excel before the cold run. A trusted macro must already be available under the installed Excel setting. '
+        'A successful arm closes its session and exits Excel before returning.'))
     parser.add_argument('arm', choices=ARMS)
     parser.add_argument('source', type=Path, help='prepared evidence bundle containing the pinned input and reference')
     parser.add_argument('destination', type=Path, help='new directory for the isolated session and its receipts')
@@ -221,7 +245,7 @@ def main() -> int:
     try:
         run_session(args.source, args.destination, args.arm, machine=args.machine, channel=args.excel_channel,
                     excel=MacExcel())
-    except (OSError, ValueError, CalledProcessError, KeyError) as error:
+    except (OSError, ValueError, CalledProcessError, TimeoutExpired, KeyError) as error:
         parser.error(str(error))
     return 0
 

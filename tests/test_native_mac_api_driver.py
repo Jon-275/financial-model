@@ -5,7 +5,7 @@ from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, call, patch
 
 import mac_funding_proof_driver as driver
 from desktop_benchmark import digest, read_json
@@ -21,6 +21,7 @@ class MemoryExcel(driver.MacExcel):
         self.actions: list[str] = []
         self.runs = 0
         self.failure = ''
+        self.closed = False
 
     def pid(self) -> str | None:
         """Return the simulated host identity."""
@@ -34,12 +35,12 @@ class MemoryExcel(driver.MacExcel):
                 'distribution': 'local guarded diagnostic fixture', 'macro_policy': 'existing Excel automation security',
                 'timing_method': driver.MACRO_WALL_TIME}
 
-    def call(self, action: str, workbook: Path, expected_hash: str = '') -> str:
+    def call(self, action: str, workbook: Path, expected_identity: str = '') -> str:
         """Refuse alternate paths and write only the emulated session workbook."""
         assert workbook == self.directory / driver.SESSION
         self.actions.append(action)
         if action == 'open':
-            assert digest(workbook) == expected_hash
+            assert digest(workbook) == expected_identity
             self.process = '71'
             return 'wrong policy' if self.failure == 'open' else 'policy-unchanged|/fixture/Excel.app'
         if action == 'run':
@@ -67,6 +68,18 @@ class MemoryExcel(driver.MacExcel):
                 raise ValueError('Unavailable native save')
             workbook.write_text(f'capture {self.runs}', encoding='ascii')
             return driver.CONFIRMED_SAVE
+        if action == 'close':
+            prefix = 'evidence' if self.arm == 'funding-proof' else 'profile-evidence'
+            assert (self.directory / f'{prefix}-warm-03.json').is_file()
+            assert expected_identity == self.process and not self.closed
+            self.closed = True
+            if self.failure == 'close-pid':
+                self.process = '72'
+            return 'closed'
+        if action == 'quit-empty':
+            assert self.closed and expected_identity == self.process
+            self.process = None
+            return 'quit-requested'
         return f'{action}-{self.runs}'
 
 
@@ -114,6 +127,9 @@ class MacDriverTests(unittest.TestCase):
                 results = self.execute(excel, directory)
                 self.assertEqual(len(results), 4)
                 self.assertEqual(excel.actions[:2], ['open', 'profile'])
+                self.assertEqual(excel.actions[-2:], ['close', 'quit-empty'])
+                self.assertIsNone(excel.pid())
+                self.assertEqual(excel.actions.count('save'), 4)
                 proof = arm == 'funding-proof'
                 prefix = 'evidence' if proof else 'profile-evidence'
                 candidate = driver.PROOF if proof else driver.CONTROL
@@ -163,6 +179,8 @@ class MacDriverTests(unittest.TestCase):
                 if failure == 'receipt':
                     self.assertNotIn('save', excel.actions)
                 self.assertFalse((directory / 'capture-cold-01.xlsm').exists())
+                self.assertNotIn('close', excel.actions)
+                self.assertNotIn('quit-empty', excel.actions)
 
     def test_working_copy_must_match_the_immediate_saved_predecessor(self) -> None:
         """Detect a changed working file even when the first independent replay passed."""
@@ -178,6 +196,38 @@ class MacDriverTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'verified predecessor'):
             self.execute(excel)
         self.assertEqual(excel.runs, 1)
+        self.assertNotIn('close', excel.actions)
+
+    def test_handoff_refuses_a_different_process_after_close(self) -> None:
+        """Leave the replacement process alone and preserve all verified files."""
+        excel = MemoryExcel(self.destination, 'funding-proof')
+        excel.failure = 'close-pid'
+        with self.assertRaisesRegex(ValueError, 'changed Excel processes'):
+            self.execute(excel)
+        self.assertEqual(excel.actions[-1], 'close')
+        self.assertEqual(excel.pid(), '72')
+        self.assertTrue((self.destination / 'evidence-warm-03.json').is_file())
+
+    def test_handoff_waits_for_exit_and_times_out_if_excel_stays_running(self) -> None:
+        """Wait only for the original process, propagating a failed handoff without closing anything else."""
+        working = self.destination / driver.SESSION
+        for remaining, elapsed, error in ((None, 1, ''), ('71', driver.EXIT_TIMEOUT, 'handoff timeout'),
+                                           ('72', 1, 'Another Excel process')):
+            with self.subTest(remaining=remaining):
+                excel = Mock(spec=driver.MacExcel)
+                excel.pid.side_effect = ['71', '71', '71', remaining]
+                excel.call.side_effect = ['closed', 'quit-requested']
+                with (patch.object(driver, 'monotonic', side_effect=(0, elapsed)),
+                      patch.object(driver, 'sleep') as sleep):
+                    if error:
+                        with self.assertRaisesRegex(ValueError, error):
+                            driver.close_session(excel, working, '71')
+                    else:
+                        driver.close_session(excel, working, '71')
+                        self.assertEqual(excel.pid.call_count, 4)
+                        sleep.assert_called_once()
+                self.assertEqual(excel.call.call_args_list, [call('close', working, '71'),
+                                                           call('quit-empty', working, '71')])
 
     def test_applescript_checks_paths_and_restores_only_save_alerts(self) -> None:
         """Guard the tracked host code without compiling it against a live Excel installation."""
@@ -187,6 +237,13 @@ class MacDriverTests(unittest.TestCase):
         path_check = source.index('actualPath is not expectedPath')
         self.assertLess(path_check, source.index('run VB Macro'))
         self.assertLess(path_check, source.index('save book'))
+        self.assertLess(path_check, source.index('close book saving no'))
+        self.assertIn('my requireExcelProcess(item 4 of argv)\n                close book saving no', source)
+        quit_branch = source.split('if actionName is "quit-empty" then', 1)[1].split('return "quit-requested"', 1)[0]
+        self.assertLess(quit_branch.index('(count workbooks) is not 0'), quit_branch.index('            quit'))
+        self.assertLess(quit_branch.index('requireExcelProcess'), quit_branch.index('            quit'))
+        self.assertIn('if actionName is "run" then set timeoutSeconds to 7200', source)
+        self.assertNotIn('with timeout of 7200', source)
         save = source[source.index('set alertsBefore to display alerts'):]
         self.assertEqual(save.count('set display alerts to alertsBefore'), 2)
         self.assertLess(save.index('on error saveText'), save.index('set display alerts to alertsBefore'))
