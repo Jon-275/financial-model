@@ -232,6 +232,24 @@ The comparison replays all eight saves, checks each warm run against the precedi
 
 The separate canary rejected both injected captures on the first trial, reached the ordered retry, and independently reconciled the fresh saved batch across the same 233 outcomes and 80,454 fields. It recorded two injected mismatches, two full fallbacks overall, and one ordered balance retry. Its timing is excluded from the paired comparison.
 
+### Replicated 100-pair warm Mac comparison
+
+On November 26, 2026, the full-first control and the guarded candidate each ran the pinned `full-0-125` fixture with 100 pairs and seed 2026. The same M5 Pro ran Excel for Mac 16.115.26112215 on macOS 26.7.3 (25G342). Each arm started in a fresh Excel process and kept its one diagnostic workbook open across one cold run and three warm repeats. The replay linked each warm timing to the preceding save in its arm. Each of the eight saved batches reconciled 233 outcomes and 80,454 fields, with 46 verified flexible reuses and three ranked ledgers.
+
+| Run | Full-first wall time (s) | Guarded wall time (s) | Full-first ordered retries | Guarded full fallbacks | Guarded ordered retries |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Cold | 251.650 | 197.415 | 1 | 4 | 1 |
+| Warm 1 | 273.308 | 212.114 | 2 | 5 | 0 |
+| Warm 2 | 276.899 | 204.315 | 8 | 11 | 0 |
+| Warm 3 | 263.036 | 208.584 | 9 | 13 | 0 |
+| Warm median | 273.308 | 208.584 | | | |
+
+The guarded warm median was 23.7% lower for this 100-pair fixture. The matching tool reverified all eight evidence records and native run receipts. These measurements apply to the existing diagnostic overlay. Replicated 1,000-pair timing and production repair validation remain open. Windows remains unverified.
+
+Independent reference SHA-256 `ce8b2f723f8eeff9bdba8637431f28a73fb94b85f6a743c62f6680770132cf7d`. Full-first diagnostic input SHA-256 `59cfcbd256ce5870fc2069f904236978c0c8da17874891f45adfbf8f61f71164`. Guarded input SHA-256 `82dd6338e98add64085cb23f25e93dd9216089f3f5b298bb38a0fb39705b92a5`. The aggregate comparison SHA-256 is `278c4f843bac2fe020cbb056da1900b96368cd30abc2d48e1e42876e743e17e8`.
+
+### Earlier full-horizon brokerage probes
+
 Earlier full-first probes on this same fictional fixture observed brokerage closing mismatches at ages 112 and 118. At age 118 in trial 20, the live closing value exceeded the recomputation from opening balance, withdrawal, deposit and return by $102,062,082.42. Ordered recalculation recovered. An intentional cancellation after that trial preserved the previous 595,814 stored result fields. A large failed reconciliation requires calculation-order investigation. Keep the comparison and ordered retry in place while tracing the first stage at which the live closing and its operands disagree.
 
 ### Full-scale guarded Mac observations
@@ -285,6 +303,12 @@ In a separate fictional trace, trial 7 at age 121 retained trial 6's gross reque
 Offline repricing using only trial 7's pinned income, account and tax inputs gave a $200,440.86300932 cash margin on the stale request and approximately zero on the recovered request. One cent below the stale request still funded the year with a $200,440.85428906 margin. One cent below the recovered request left a $0.00872003 deficit. A fresh funded quote below the requested draw by more than the solver's half-cent convergence tolerance refutes an earliest-funded selection within the same effective conversion policy. A missing witness leaves the selection open, including at zero, within numerical tolerance, or near an ACA discontinuity. Verify unfunded choices against the applicable grid, checking whether a funded candidate exists and otherwise checking best margin and the smaller-draw tie rule.
 
 Run `PYTHONPATH=tools:tests python -m unittest test_risk_funding_witness -v` to reproduce the offline comparison. The test uses pinned fictional inputs and the existing Python funding solver. [Funding witness tests](../../tests/test_risk_funding_witness.py)
+
+#### Native coherent-stale canary
+
+The Mac canary intentionally reused trial 6's selected gross draw on trial 7's current age-121 inputs. After recalculating the selected brokerage withdrawal and close, `Trial_Checks!N126` read zero. Pricing one cent below that stale draw left a $200,440.85 cash surplus. Pricing one cent below the independently recovered draw left a $0.00872003 deficit under the same conversion policy. The native quotes agreed with the Python reference. The test restored the solver formula and sheet protection, reran the ordered calculation, then cancelled before publishing. The saved cancellation independently reconciled the restored inspection, inactive funding detail and 595,814 stored fields.
+
+This is evidence for the funding quote check and ordered correction in the controlled case. Release validation still needs that check integrated before capture with coverage for conversion decisions, discontinuities and unfunded paths. Canary input SHA-256 `6b3ecaaffda894bd7aa2cc6be5dd0e8aacfc6f1e670573d509eced04429d115b`. Saved capture SHA-256 `fda900ce432c54359f2e9655c84818dc60621041062dca968e9c0f55b57d5f51`.
 
 ### Performance release gate
 
