@@ -43,7 +43,7 @@ In a separate copy the selected scenario contained lowercase `ca` alongside the 
 
 On November 26, 2026, Excel for Mac 16.115.26112215 saved the prior California v2 batch with stress trial 2205 selected through age 105. The disposable runner cancelled at its second progress yield. It restored the prior inspection and Excel application settings, returned the workbook to its prior protection state, and displayed `cancelled`. The saved workbook reopened in that state. The independent restoration check verified the policy-bound prior batch, inactive funding detail and 595,814 stored fields.
 
-An unarmed retry kept trial 2205 selected, restored application settings and protection, and published a fresh California v2 batch at 100 pairs and seed 2026. Its 233 outcomes and 80,454 fields independently reconciled, including 46 verified flexible reuses and all three ranked ledgers. All three captures matched the audited VBA overlay. Report scope, distribution and Windows verification remain open.
+An unarmed retry kept trial 2205 selected, restored application settings and protection, and published a fresh California v2 batch at 100 pairs and seed 2026. Its 233 outcomes and 80,454 fields independently reconciled, including 46 verified flexible reuses and all three ranked ledgers. All three captures matched the audited VBA overlay. Windows remains unverified.
 
 | Saved checkpoint | SHA-256 |
 | --- | --- |
@@ -57,6 +57,12 @@ An unarmed retry kept trial 2205 selected, restored application settings and pro
 | Lowercase `ca` | `cd501d9450e52d82f38f5c593a407e069877fbe0b77dfecc75d328195c3eda2f` | `e98d77e7011a8eaf581ec2340d6e866b54c4e5c8dfdd0a83fa8d4075a04cefff` |
 
 The independent reference SHA-256 is `48bad0ced1adbc062f05cdf01bf07e11d46c619bceb6c7e42c0b81601993dc36`. The fictional workbooks remain local.
+
+#### California saved report data parity on Mac
+
+The read-only comparison used the native retry capture `1a000d1fc8b15f19c57a5c8ea68d9643f9f79db27615ccb49f392d184304baf6` and independent v2 reference `48bad0ced1adbc062f05cdf01bf07e11d46c619bceb6c7e42c0b81601993dc36`. All 1,021 populated `Report_Data` cells and 360 of 363 populated **Summary** cells matched within the existing comparison tolerance. The three expected differences were `Summary!B6`, with the preparation date changing from November 25 to 26, 2026, and `Summary!B31` and `Summary!K24`, with the saved run time changing from `2026-11-25 22:19` to `2026-11-26 09:47`. Neither sheet had cached Excel errors. The retry shows the plan funded through age 95, a projected $2,378,480.92 ending portfolio in opening-year dollars and all 100 fixed-spending paths paying their required costs.
+
+The selected jurisdiction `CA`, the `ca-individual-v1` rules version and the complete policy-bound risk signature matched the reference. **Tax_Tables** retained published mode, the 2026 California income-tax table and the 2027 disability insurance rate. The saved **Summary**, **Risk Results** and **Annual Detail** bodies do not show the selected jurisdiction, policy version or effective table years. Summary retains its `$B$2:$I$189` print area, manual breaks after rows 32, 64, 96, 128 and 160, and the generic California footer. Native display of the policy scope, Letter and A4 print layout, PDF verification and distribution remain open.
 
 #### California tax scenario parity
 
