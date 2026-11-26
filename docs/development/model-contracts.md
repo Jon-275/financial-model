@@ -37,7 +37,19 @@ Use `PYTHONPATH=tools python tests/desktop_policy_preflight.py DRAFT.xlsx NEW_TE
 
 On November 26, 2026 Excel for Mac 16.115.26112215 on macOS 26.7.3 ran the fictional v2 workbook built at `16b7eb9484e8386c9beb01112ebe5d610f5221be`. The exact `CA` selection produced a fresh current batch. Its saved assumption record exactly matched the live California schema and policy record. The independent reference reconciled all 233 outcomes from 100 paired paths and 33 stresses across 80,454 fields, including all three ranked funding histories. The runner verified 46 flexible-path reuses.
 
-In a separate copy the selected scenario contained lowercase `ca` alongside the prior completed batch. The native runner displayed `Run stopped: Enter the literal state tax jurisdiction CA in the selected scenario.` The report became `invalid`, and both the input and market preflight checks requested a valid jurisdiction. The prior batch metadata, idle inspection and all 595,814 stored trial and funding fields were preserved. Both saved VBA projects matched the audited test overlay. Active-inspection interruption, report and distribution validation remain open. Windows remains unverified.
+In a separate copy the selected scenario contained lowercase `ca` alongside the prior completed batch. The native runner displayed `Run stopped: Enter the literal state tax jurisdiction CA in the selected scenario.` The report became `invalid`, and both the input and market preflight checks requested a valid jurisdiction. The prior batch metadata, idle inspection and all 595,814 stored trial and funding fields were preserved. Both saved VBA projects matched the audited test overlay. Windows remains unverified.
+
+#### California active-inspection recovery on Mac
+
+On November 26, 2026, Excel for Mac 16.115.26112215 saved the prior California v2 batch with stress trial 2205 selected through age 105. The disposable runner cancelled at its second progress yield. It restored the prior inspection and Excel application settings, returned the workbook to its prior protection state, and displayed `cancelled`. The saved workbook reopened in that state. The independent restoration check verified the policy-bound prior batch, inactive funding detail and 595,814 stored fields.
+
+An unarmed retry kept trial 2205 selected, restored application settings and protection, and published a fresh California v2 batch at 100 pairs and seed 2026. Its 233 outcomes and 80,454 fields independently reconciled, including 46 verified flexible reuses and all three ranked ledgers. All three captures matched the audited VBA overlay. Report scope, distribution and Windows verification remain open.
+
+| Saved checkpoint | SHA-256 |
+| --- | --- |
+| Before interruption | `8b25b06fab9ae3cbb79a93c9c5df304ef1ec3e22a11ea563d8c18451b27a867b` |
+| Cancelled and reopened | `6f5dad7f233db4eba82f6a801ac3fae2b1e4c0be7a659f1cdeec8f6e9e964cb6` |
+| Retried with inspection active | `1a000d1fc8b15f19c57a5c8ea68d9643f9f79db27615ccb49f392d184304baf6` |
 
 | Test | Prepared workbook SHA-256 | Saved capture SHA-256 |
 | --- | --- | --- |
