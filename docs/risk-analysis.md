@@ -32,9 +32,19 @@ Use a cut you could sustain. Read the number of paths and years needing cuts alo
 2. On **Summary**, choose **Run market risk** with macros permitted in desktop Excel. Follow your organization's macro policy.
 3. Watch the status bar. Wait for **Risk results are current** before reading or printing the results.
 
-The documented 1,000-pair example took about **8 minutes**; the full age range took **33 minutes**. Runtime depends on your Mac and plan. Use **Cancel** to stop a run and wait for confirmation.
+Use **Cancel** to stop a run and wait for confirmation.
 
 If a run fails, read **Risk_Settings A44**, correct the issue and rerun. Editing plan assumptions makes old results out of date. A failed, cancelled or incomplete run does not provide current results. Changing the dollar view does not require a new run.
+
+## Measured runtime
+
+These are the median times from three warm repeats on the released v1.0.0 workbook. The November 25, 2026 tests used a MacBook Pro with an M5 Pro chip, 24 GB RAM, macOS 26.7.3 and desktop Excel for Mac 16.115.2. Runtime depends on your Mac, plan and number of pairs. [Desktop timing evidence](development/desktop-verification.md#november-25-2026-mac-matrix)
+
+| Fictional test plan | Pairs | Median time |
+| --- | ---: | ---: |
+| Guided example through age 95 | 100 | 2 min 15 sec |
+| Guided example through age 95 | 1,000 | 18 min 29 sec |
+| Full-range test from age 0 through 125 | 1,000 | 41 min 49 sec |
 
 ## Read the Summary
 
