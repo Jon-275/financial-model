@@ -10,7 +10,7 @@ Follow the tabs from left to right. Use **Inputs** to enter figures and **Summar
 
 Save a private copy of the workbook in `.xlsm` format. Open it in desktop Excel for Mac and keep calculation set to **Automatic**. Choose **Open Inputs**, or select the **Inputs** tab directly.
 
-Macros are needed for **Run market risk**. Follow your organization's macro policy. Excel for the web can show saved results but cannot run the analysis. Windows and other spreadsheet apps are not verified release targets.
+Macros are needed for **Run market risk**. Follow your organization's macro policy. Excel for the web can show saved results but cannot run the analysis. Release v1.0.0 was verified on desktop Excel for Mac 16.115. Windows is unverified.
 
 <a id="enter-income-spending-and-savings"></a>
 <a id="enter-retirement-account-details"></a>
@@ -93,7 +93,7 @@ Finish reviewing the assumptions, including **Tax_Tables**, then close other wor
 
 The runner recalculates all open workbooks. Keeping only your plan open avoids extra work during each trial.
 
-The documented 1,000-pair example took about 8 minutes; the full age range took 33 minutes. Runtime depends on your Mac and plan. [Settings and results](risk-analysis.md)
+Runtime depends on your Mac and plan. [Measured runtimes](risk-analysis.md#measured-runtime)
 
 ## Tax_Tables
 

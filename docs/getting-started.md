@@ -2,13 +2,13 @@
 
 Use fictional figures for your first run. You do not need Python or a copy of the source code.
 
-[Download for Excel for Mac](https://github.com/Jon-275/financial-model/releases/latest/download/retirement-model.xlsm) · [View the example report](examples/retirement-plan-example.pdf)
+[Download v1.0.0 for Excel for Mac](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-model.xlsm) · [View the v1.0.0 example report](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-plan-example.pdf)
 
 ## Start Here: save a copy
 
 Open the workbook in desktop Excel for Mac and save a private copy in `.xlsm` format. Keep calculation set to **Automatic**. Macros are required to run market risk; follow your organization's policy.
 
-Choose **Open Inputs**. If a navigation button does not work, select the sheet tab directly. Excel for the web can show saved results but cannot run the analysis. Windows and other spreadsheet apps are not verified release targets.
+Choose **Open Inputs**. If a navigation button does not work, select the sheet tab directly. Excel for the web can show saved results but cannot run the analysis. Release v1.0.0 was verified on desktop Excel for Mac 16.115. Windows is unverified.
 
 ## Inputs: choose a scenario
 
@@ -26,7 +26,7 @@ Review the investment mix on **Asset_Allocation**. On **Risk_Settings**, choose 
 
 Close other workbooks, then return to **Summary** and choose **Run market risk**. Watch Excel's status bar and wait for **Risk results are current**. [Settings and result definitions](risk-analysis.md)
 
-Use 1,000 pairs for a final report. The documented final example took about 8 minutes; the full age range took 33 minutes. Your Mac and plan affect runtime.
+Use 1,000 pairs for a final report. Runtime depends on your Mac and plan. [Measured runtimes](risk-analysis.md#measured-runtime)
 
 ## Summary: save the report
 

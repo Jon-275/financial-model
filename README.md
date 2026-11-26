@@ -4,7 +4,7 @@ Test whether income and savings can cover spending and taxes through retirement.
 
 The model estimates US federal and California taxes for couples, with an option to model a surviving spouse. It is for educational use and includes fictional examples. [Scope and limits](docs/model-guide.md#items-to-estimate-separately)
 
-**[Download the workbook](https://github.com/Jon-275/financial-model/releases/latest/download/retirement-model.xlsm)** · **[View the website](https://jon-275.github.io/financial-model/)** · **[Preview the report](docs/examples/retirement-plan-example.pdf)**
+**[Download the workbook](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-model.xlsm)** · **[View the website](https://jon-275.github.io/financial-model/)** · **[Preview the report](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-plan-example.pdf)**
 
 <a href="docs/examples/retirement-plan-example.pdf"><img src="docs/images/summary.png" alt="Fictional retirement report showing the outlook and simulated portfolio balances" width="680"></a>
 
@@ -12,10 +12,10 @@ The model estimates US federal and California taxes for couples, with an option 
 
 ## Before you start
 
-- Use **desktop Excel for Mac** and keep the `.xlsm` file format. Windows and other spreadsheet apps are not verified release targets.
+- Release **v1.0.0** was verified on **desktop Excel for Mac 16.115**. Keep the `.xlsm` file format. Windows is unverified. [Release notes](https://github.com/Jon-275/financial-model/releases/tag/v1.0.0)
 - **Run market risk** requires macros. Follow your organization's macro policy. Excel for the web can show saved results but cannot run the analysis.
 - Keep calculation set to **Automatic**. The base projection updates when you edit inputs.
-- Use **100 paired paths** while trying changes or **1,000** for a final report. The documented final example took about 8 minutes; the full age range took 33 minutes. Your Mac and plan affect runtime.
+- Use **100 paired paths** while trying changes or **1,000** for a final report. Runtime depends on your Mac and plan. [Measured runtimes](docs/risk-analysis.md#measured-runtime)
 
 You do not need Python or a copy of the source code. Save a private copy before entering personal figures.
 
