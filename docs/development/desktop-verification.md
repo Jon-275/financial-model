@@ -223,6 +223,19 @@ The separate canary rejected both injected captures on the first trial, reached 
 
 Earlier full-first probes on this same fictional fixture observed brokerage closing mismatches at ages 112 and 118. At age 118 in trial 20, the live closing value exceeded the recomputation from opening balance, withdrawal, deposit and return by $102,062,082.42. Ordered recalculation recovered. An intentional cancellation after that trial preserved the previous 595,814 stored result fields. A large failed reconciliation requires calculation-order investigation. Keep the comparison and ordered retry in place while tracing the first stage at which the live closing and its operands disagree.
 
+### Full-scale guarded Mac observations
+
+The `full-0-125` 1,000-pair fixture used seed 2026, Excel for Mac 16.115.26112215 and macOS 26.7.3 on an M5 Pro. The profiled historical full-first cold run and the guarded cold run used the same fixture and independent reference. Wall time ends when the synchronous macro returns.
+
+| Run | Wall time (s) | Full calculations | Ordered balance retries |
+| --- | ---: | ---: | ---: |
+| Historical full-first cold | 1,989.144 | 1,535 | 40 |
+| Guarded cold | 1,523.699 | 40 fallbacks | 3 |
+
+Each saved batch independently reconciled 2,033 outcomes and 588,054 fields, including three full ranked ledgers. The guarded cold run made 1,535 smart attempts and retained 501 verified reuses. The cold comparison is a 23.4% wall-time reduction. The profiled warm full-first control and a replicated warm median remain release gates. The existing 100-pair canary covers forced recovery, and the full-scale guarded cold run exercised ordered recovery on naturally observed mismatches. Windows remains unverified.
+
+The guarded warm macro returned after 1,604.108 seconds and reported 41 full fallbacks and zero ordered retries. The Mac session locked before the workbook could be saved. Treat the warm timing and counts as provisional until the saved batch independently reconciles. An adaptive brokerage trace is prepared with the 1,000-pair prior batch and independently replayable trial operands. Its extra workbook reads run in a separate diagnostic and are excluded from the performance observations. The stage at which the mixed-trial brokerage values first appear remains open.
+
 ### Performance release gate
 
 Take one optimization per PR. If recalculation dominates, evaluate scoped calculation using the proven dependency order. Keep primary full calculation for the baseline and retain it as a recovery path only after proving the scoped path, with the existing ordered retry available. If marshaling dominates, batch reads and writes at the same verified boundary. If ranking dominates, preserve exact tie breakers and revalidate the three complete funding ledgers. Compare the baseline and candidate on each platform where the change will be enabled. A recurring fallback has an investigated cause and a regression case. Narrowed calculation may become the default only after the regular and fallback paths independently reconcile, including cancel and failure recovery. Retain the baseline runner strategy for rollback while the candidate is under evaluation.
