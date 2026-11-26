@@ -27,7 +27,11 @@ Start an acquisition timer on the product page and a separate primary timer when
 | Interpretation | In this second workbook, what first goes unpaid and when? Would the ending portfolio alone tell you? | $100 of spending first goes unpaid at age 55 in 2027. Later cash repays it. The $1,300 ending portfolio and the first shortfall describe different points in the plan. |
 | Risk and print | Show how you would make a quick market comparison and prepare a more thorough report. How would you know the results are current? | Use 100 and 1,000 pairs respectively, preserve seed for comparison, find current status and saved count, choose dollar view and preview. Stop before a lengthy run if needed. |
 
-The first answer comes from the tagged workbook. The later-retirement and shortfall answers were checked using the repository's Calc fixture path. Repeat the answer-key check in desktop Excel during the dry run and after each change to a workbook or fixture.
+### Staff preparation
+
+On November 25, 2026, Excel for Mac 16.115.26112215 reproduced both retirement answers and marked the saved risk stale after switching scenarios. The separate fixture showed the $100 spending shortfall at age 55 in 2027 and an ending portfolio of $1,300. Repeat the answer-key check during the native staff walkthrough and after each workbook or fixture change. Windows remains unverified.
+
+The moderator tabletop rehearsal tested a pass at the five-minute cutoff and an assisted completion during the eight-minute follow-up. Nominations are available. Screen the cohort, run the full staff walkthrough with the acquisition and task timers, then obtain consent and conduct the five sessions. Track recruitment counts separately from coded session notes.
 
 | Code | Excel/OS build and input mode | Acquisition seconds | First correct answer seconds | Both answers seconds | Correct with workbook evidence | Hints | Shortfall and stale-risk understanding | Report mode and dollar view | Blocker and observation |
 | --- | --- | ---: | ---: | ---: | --- | --- | --- | --- | --- |
