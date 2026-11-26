@@ -14,7 +14,7 @@ import published_tax
 from state_policy import (
     CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_ERROR,
     WORKBOOK_JURISDICTION_LABEL, WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA,
-    WORKBOOK_STATE_POLICY_SCHEMA_CELL,
+    WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_TABLE_LABELS,
 )
 
 EXTRA_HEADERS = {
@@ -191,8 +191,8 @@ def configure_workbook_state_policy(put: Callable[[str, str, str, str], None]) -
     version_ref = f'Tax_Tables!{absolute_coordinate(WORKBOOK_CA_POLICY_VERSION_CELL)}'
     put('Tax_Tables', WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_SCHEMA, 'note')
     put('Tax_Tables', WORKBOOK_CA_POLICY_VERSION_CELL, CALIFORNIA_POLICY.version, 'note')
-    put('Tax_Tables', f'A{WORKBOOK_STATE_POLICY_SCHEMA_CELL[1:]}', 'State tax workbook schema', 'label')
-    put('Tax_Tables', f'A{WORKBOOK_CA_POLICY_VERSION_CELL[1:]}', 'California state tax policy version', 'label')
+    for cell, label in WORKBOOK_STATE_POLICY_TABLE_LABELS:
+        put('Tax_Tables', cell, label, 'label')
 
     scenario_formulas = ','.join(f'_xlfn.ISFORMULA(${column}${row})' for column in 'DEF')
     checks = (f'EXACT($A${row},"{WORKBOOK_JURISDICTION_LABEL}"),_xlfn.ISFORMULA($B${row}),'

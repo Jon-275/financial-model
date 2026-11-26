@@ -105,6 +105,22 @@ class WorkbookStatePolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(ScenarioError, 'Tax_Tables!B266'):
             _workbook_state_policy(self.raw, self.cached, selected=1)
 
+    def test_current_table_labels_prevent_fallback_when_state_values_are_removed(self) -> None:
+        """Each surviving state policy label identifies a damaged explicit workbook."""
+        for cell, label in (
+            ('A266', 'State tax workbook schema'),
+            ('A267', 'California state tax policy version'),
+        ):
+            with self.subTest(cell=cell):
+                self.raw['Tax_Tables'][cell] = label
+                self.assertTrue(workbook_has_explicit_state_policy(self.raw))
+                with self.assertRaisesRegex(ScenarioError, 'Tax_Tables!B266'):
+                    _workbook_state_policy(self.raw, self.cached, selected=1)
+                self.raw['Tax_Tables'][cell] = 'Unrelated reference note'
+                self.assertFalse(workbook_has_explicit_state_policy(self.raw))
+                self.assertIsNone(_workbook_state_policy(self.raw, self.cached, selected=1))
+            self.raw['Tax_Tables'][cell] = None
+
     def test_partial_workbook_markers_survive_a_missing_sheet(self) -> None:
         """The snapshot guard still detects markers if one source sheet is missing."""
         self.explicit()

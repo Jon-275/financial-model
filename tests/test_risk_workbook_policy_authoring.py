@@ -61,10 +61,12 @@ class WorkbookPolicyAuthoringTests(unittest.TestCase):
         self.assertIn('COUNT(INDEX(D126:F128,0,B4))=3', check)
         self.assertIn('OR(B25>0,B51=0)', check)
         self.assertIn('Check state tax jurisdiction', check)
+        self.assertEqual(raw['Tax_Tables']['A266'].value, 'State tax workbook schema')
+        self.assertEqual(raw['Tax_Tables']['A267'].value, 'California state tax policy version')
 
         # B129 by itself must still identify the new format after accidental stripping.
         for name, addresses in [('Inputs', ('A136', 'B136', 'D136', 'E136', 'F136')),
-                                ('Tax_Tables', ('B266', 'B267'))]:
+                                ('Tax_Tables', ('A266', 'B266', 'A267', 'B267'))]:
             for address in addresses:
                 raw[name][address] = None
         self.assertTrue(workbook_has_explicit_state_policy(raw))
