@@ -42,7 +42,6 @@ def check_refresh(workbook, office, timeout):
         profile_weight = book['Asset_Allocation'][f'B{profile_start}'].value
         assert book[RISK]['BB3'].value == inputs['B7'].value
         assert book[RISK]['BB5'].value == 1000
-        assert book['Summary']['F12'].value == book[RISK]['BB8'].value
 
     with TemporaryDirectory(prefix='retirement-risk-acceptance-') as temp:
         work = Path(temp)

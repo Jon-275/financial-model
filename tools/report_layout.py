@@ -35,6 +35,7 @@ FORMATS = {
     'report_section': (13, INK, True, None, None),
     'report_amount': (19, INK, True, None, "report_currency"),
     'report_percent_amount': (19, ACCENT, True, None, 10),
+    'report_count': (16, ACCENT, True, None, None),
     'report_body': (11, INK, False, None, None),
     'report_caption': (10, MUTED, False, None, None),
     'report_kicker': (10, ACCENT, True, None, None),
@@ -125,7 +126,7 @@ def install_styles(root, style_ids):
             align.set('horizontal', 'left')
             align.set('indent', '1')
             align.set('wrapText', '1')
-        if name in ('report_amount', 'report_percent_amount'):
+        if name in ('report_amount', 'report_percent_amount', 'report_count'):
             align.set('horizontal', 'left')
         if name in ('report_money', 'report_money_alt', 'report_cost', 'report_cost_alt'):
             align.set('horizontal', 'right')
@@ -440,7 +441,7 @@ def apply(name: str, root: E._Element, style_ids: dict, numbers: list[str], acti
         _select_top(root, 'B3')
         from start_here import CONTENT, LINKS
         _merges(root, [f'{address}:I{address[1:]}' for address in CONTENT])
-        _rows(root, 20, 18, {3: 38, 5: 30, 8: 30, 11: 34, 15: 36, 19: 30})
+        _rows(root, 20, 18, {3: 38, 5: 30, 8: 38, 11: 44, 15: 44, 19: 34})
         _link(root, LINKS)
         root.find(X + 'dimension').set('ref', 'A1:I20')
     elif name == 'Inputs':
@@ -470,7 +471,7 @@ def apply(name: str, root: E._Element, style_ids: dict, numbers: list[str], acti
             'K8':'Summary!K29','K9':'Summary!B98','K10':"'Annual Detail'!B2",
             'K11': 'Appendix!B3', 'K12': "'Risk Results'!B2",
             'K13': 'Cash_Flow!A1', 'K14': 'Roth_Access!A1',
-            'K15':'Risk_Settings!A1','K34':f'Summary!B{input_record.FIRST_ROW+1}',
+            'K15':'Risk_Settings!A1', 'K20': "'Risk Results'!B55", 'K34':f'Summary!B{input_record.FIRST_ROW+1}',
             'K35':f'Summary!B{input_record.SECOND_ROW+1}',
             'K36':'Asset_Allocation!A1','K37':'Income_Targeting!A1',
             'K38':f'{METRICS_REF}A1','K39':'Tax_Tables!A1',

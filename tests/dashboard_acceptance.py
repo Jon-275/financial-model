@@ -131,6 +131,18 @@ def _validate_stress_page(summary, risk, status, future_view):
             assert unpaid == expected, f'Stress shortfall on row {row} uses the wrong amount or price year.'
 
 
+def validate_fixed_headline(summary, fixed: float, trials: int) -> None:
+    """Verify the completed result in both the released and count-first reports."""
+    result = summary['F12'].value
+    count = f'{round(fixed * trials):,} of {trials:,} paths'
+    if isinstance(result, str):
+        assert result == count
+        assert summary['F13'].value == f'Paid all modeled costs on time ({fixed:.2%}).'
+    else:
+        assert isclose(result, fixed, abs_tol=1e-14)
+        assert summary['F13'].value == f'{count} paid all costs'
+
+
 def _validate_risk_report(results, risk, inputs, projection, data, summary, horizon, tolerance, arranged):
     status = risk['Z1'].value
     assert status in ('current','stale','missing','invalid','running','cancelled','failed','incomplete'), 'Unknown market risk result status.'
@@ -174,10 +186,9 @@ def _validate_risk_report(results, risk, inputs, projection, data, summary, hori
     fixed, flexible = risk['BB8' if arranged else 'AF8'].value, risk['BB9' if arranged else 'AF9'].value
     trials = risk['BB5' if arranged else 'AF5'].value
     assert horizon >= 2 and 0 <= fixed <= 1 and 0 <= flexible <= 1 and trials >= 1
-    assert isclose(summary['F12'].value, fixed, abs_tol=1e-14)
+    validate_fixed_headline(summary, fixed, trials)
     assert isclose(results['B7'].value, fixed, abs_tol=1e-14)
     assert isclose(results['F7'].value, flexible, abs_tol=1e-14)
-    assert summary['F13'].value == f'{round(fixed * trials):,} of {trials:,} paths paid all costs'
     for printed, source in zip(range(71, 74), range(21, 24)):
         source_case=source-16 if arranged else source
         end_factor=risk[f'AZ{source_case}'].value if native and future_view else factor(horizon-1)
@@ -237,7 +248,9 @@ def _validate_report(wb, data, summary, status, horizon, retirement, cash_count,
             assert value == expected or expected is None and value in (None, ''), (source, reported)
     headline = summary['B8'].value
     if status == 'YES':
-        assert headline == f"Projected spending and taxes are covered through age {wb['Inputs']['B53'].value}."
+        age = inputs['B53'].value
+        assert headline in (f'Projected spending and taxes are covered through age {age}.',
+                            f'Base plan covers spending and taxes through age {age}.')
     elif status == 'NO - cash shortfall':
         metrics, metric_col = planning_metrics(wb)
         row = metrics[f'{metric_col}26'].value - projection['B5'].value + 5

@@ -411,9 +411,10 @@ def guidance(start_sheet):
     notes = {
         'Inputs': {
             'A1': 'Set up your plan',
-            'A2': 'Choose a scenario. Edit its shaded input cells. Open Summary when your figures are ready.',
-            'A3': '=IF(B71="OK","",B71)',
-            'A4': 'Scenario to edit (1–3)',
+            'A2': 'Try the fictional Example plan first. Open Summary to see whether it pays spending and taxes through age 95.',
+            'A3': ('=IF(B71<>"OK",B71,IF(B70=0,\'Planning Metrics\'!$B$25,'
+                   '"For the example, choose 2 in B4 to compare retirement at 65. Edit shaded inputs for your own plan."))'),
+            'A4': 'Scenario to view or edit (1–3)',
             'C4': '=IFERROR(B7,"Choose a scenario")',
             'G4': 'Open Summary',
             'G7': 'Rename the scenario if you change its purpose.',

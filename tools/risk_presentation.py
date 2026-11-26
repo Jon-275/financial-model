@@ -40,13 +40,13 @@ def display(value, fallback='""'):
 
 def status_message():
     return (
-        f'IF({STATUS}="running","Market risk is running.",'
-        f'IF({STATUS}="stale","Choose Run market risk to update the results.",'
-        f'IF({STATUS}="invalid","Review the plan and risk assumptions.",'
+        f'IF({STATUS}="running","Market risk is running. Wait for the completed run.",'
+        f'IF({STATUS}="stale","Risk results are out of date. Run market risk to update them.",'
+        f'IF({STATUS}="invalid","Risk results are unavailable. Review the plan and risk assumptions.",'
         f'IF({STATUS}="cancelled","Run cancelled. Choose Run market risk to try again.",'
         f'IF({STATUS}="failed","Run failed. Review the message on Risk Settings.",'
         f'IF({STATUS}="incomplete","The risk run is incomplete. Run it again.",'
-        '"Choose Run market risk to see this scenario’s results."))))))'
+        '"Market risk has not been run. Run market risk to include results."))))))'
     )
 
 
@@ -99,6 +99,16 @@ def success_count(rate):
     return f'ROUND({result(rate)}*{result("AF5")},0)'
 
 
+def success_fraction(rate: str) -> str:
+    """Display the successful count and the size of its completed sample."""
+    return f'TEXT({success_count(rate)},"#,##0")&" of "&TEXT({result("AF5")},"#,##0")'
+
+
+def short_scenario_name(reference: str) -> str:
+    """Fit the scenario label to the report without changing the input name."""
+    return f'IF(LEN({reference})>32,LEFT({reference},31)&"…",{reference})'
+
+
 def volatility_notice():
     setting = result('AF16')
     return (f'IF({setting}=1,"",IF({setting}=0,"No market variation in this run.",'
@@ -115,7 +125,7 @@ def configure(put, display_dollars, price_index_at, future_view):
 
     cell('B2', 'Market risk details', 'report_title')
     cell('B3', display(
-        f'"Scenario "&{result("AF3")}&" • Through age "&{result("AF4")}&" • Run "&{result("AF2")}',
+        f'"Scenario "&{short_scenario_name(result("AF3"))}&" • Through age "&{result("AF4")}&" • Run "&{result("AF2")}',
         status_message(),
     ), 'report_caption')
     cell('B4', display(
@@ -145,7 +155,7 @@ def configure(put, display_dollars, price_index_at, future_view):
         cell(f'{col}6', display(f'"{name}"'), 'report_caption')
         cell(f'{col}7', display(result(rate)), 'report_percent_amount')
         cell(f'{col}8', display(
-            f'TEXT({success_count(rate)},"#,##0")&" of "&TEXT({result("AF5")},"#,##0")&" paths paid all costs"'
+            f'{success_fraction(rate)}&" simulated paths paid modeled costs on time"'
         ), 'report_caption')
 
     cell('B10', 'Funding in three market paths', 'report_section')
