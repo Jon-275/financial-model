@@ -3,7 +3,7 @@
 from argparse import ArgumentParser
 from collections import defaultdict
 from functools import cache
-from hashlib import file_digest
+from hashlib import file_digest, sha256
 from os import link
 from pathlib import Path
 import re
@@ -19,7 +19,7 @@ from native_funding_witness_formulas import FIRST_YEAR, LAST_YEAR, witness_formu
 from xlsx_values import X, _read_xml_part, sheet_parts
 
 
-PINNED_INPUT_SHA256 = '2626763f5abdfdbdcb2f72b79c9439955e4e78ac02dce21ba2f72c26515788d1'
+PINNED_INPUT_CONTENT_SHA256 = '91c4e1f7dc761baa67466164af45810bcf431f1b57367dac2cecb82d3fe6074b'
 SHEET = 'Trial_Checks'
 OFFSET = 52
 BANK = (53, FIRST_YEAR, 94, LAST_YEAR)
@@ -112,13 +112,28 @@ def _install(root: etree._Element) -> bytes:
     return etree.tostring(root, encoding='UTF-8', xml_declaration=True, standalone=True)
 
 
+def package_content_sha256(path: Path) -> str:
+    """Hash sorted, length-framed member names and every decompressed payload."""
+    digest = sha256(b'FundingProofPackageParts/v1\0')
+    with ZipFile(path) as archive:
+        names = archive.namelist()
+        if len(names) != len(set(names)):
+            raise ValueError('The proof source has duplicate package members.')
+        for member in sorted(names):
+            name = member.encode('utf-8')
+            digest.update(len(name).to_bytes(4, 'big'))
+            digest.update(name)
+            with archive.open(member) as stream:
+                digest.update(file_digest(stream, 'sha256').digest())
+    return digest.hexdigest()
+
+
 def _require_source(source: Path) -> None:
-    """Limit this disposable overlay to the reviewed 100-pair input bytes."""
+    """Limit this overlay to the reviewed 100-pair package content."""
     if source.is_symlink() or not source.is_file() or source.suffix.lower() != '.xlsm':
         raise ValueError('Use the pinned fictional 100-pair full-range workbook.')
-    with source.open('rb') as stream:
-        if file_digest(stream, 'sha256').hexdigest() != PINNED_INPUT_SHA256:
-            raise ValueError('Use the pinned fictional 100-pair full-range workbook.')
+    if package_content_sha256(source) != PINNED_INPUT_CONTENT_SHA256:
+        raise ValueError('Use the pinned fictional 100-pair full-range workbook.')
 
 
 def verify_package(source: Path, candidate: Path) -> Path:

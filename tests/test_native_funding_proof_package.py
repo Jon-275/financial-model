@@ -5,11 +5,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
-from zipfile import ZipFile
+from zipfile import ZIP_STORED, ZipFile, ZipInfo
 
 from openpyxl import Workbook
 
-from native_funding_proof_package import bank_formulas, prepare_package, shift_formula, verify_package
+from native_funding_proof_package import (
+    bank_formulas, package_content_sha256, prepare_package, shift_formula, verify_package,
+)
 from xlsx_values import X, _read_xml_part, sheet_parts
 
 
@@ -29,7 +31,7 @@ def fixture(path: Path, *, overlap: bool = False) -> str:
     workbook.save(path)
     with ZipFile(path, 'a') as archive:
         archive.writestr('xl/vbaProject.bin', b'unchanged VBA sentinel')
-    return sha256(path.read_bytes()).hexdigest()
+    return package_content_sha256(path)
 
 
 class NativeFundingProofPackageTests(unittest.TestCase):
@@ -68,7 +70,8 @@ class NativeFundingProofPackageTests(unittest.TestCase):
         with TemporaryDirectory() as folder:
             source, destination = (Path(folder) / name for name in ('source.xlsm', 'proof.xlsm'))
             pinned = fixture(source)
-            with patch('native_funding_proof_package.PINNED_INPUT_SHA256', pinned):
+            source_file = sha256(source.read_bytes()).hexdigest()
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
                 self.assertEqual(prepare_package(source, destination), destination)
                 self.assertEqual(verify_package(source, destination), destination)
                 with self.assertRaises(FileExistsError):
@@ -83,7 +86,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
                     self.assertEqual(formulas['Y126'], '1+1')
                     self.assertEqual(formulas['BZ126'], bank_formulas()['BZ126'][1:])
                     self.assertIsNone(sheet.find(f'.//{X}c[@r="BZ126"]/{X}v'))
-            self.assertEqual(sha256(source.read_bytes()).hexdigest(), pinned)
+            self.assertEqual(sha256(source.read_bytes()).hexdigest(), source_file)
 
     def test_unpinned_source_and_overlaps_leave_no_output(self) -> None:
         """Refuse a different workbook and reserved cells that already overlap."""
@@ -92,7 +95,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
             pinned = fixture(source, overlap=True)
             with self.assertRaisesRegex(ValueError, 'pinned fictional'):
                 prepare_package(source, destination)
-            with patch('native_funding_proof_package.PINNED_INPUT_SHA256', pinned):
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
                 with self.assertRaisesRegex(ValueError, 'overlap'):
                     prepare_package(source, destination)
             self.assertFalse(destination.exists())
@@ -102,7 +105,7 @@ class NativeFundingProofPackageTests(unittest.TestCase):
         with TemporaryDirectory() as folder:
             source, destination, modified = (Path(folder) / name for name in ('source.xlsm', 'proof.xlsm', 'edited.xlsm'))
             pinned = fixture(source)
-            with patch('native_funding_proof_package.PINNED_INPUT_SHA256', pinned):
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
                 prepare_package(source, destination)
                 with ZipFile(destination) as before, ZipFile(modified, 'x') as after:
                     for info in before.infolist():
@@ -110,3 +113,50 @@ class NativeFundingProofPackageTests(unittest.TestCase):
                         after.writestr(info, data)
                 with self.assertRaisesRegex(ValueError, 'unrelated part: xl/vbaProject.bin'):
                     verify_package(source, modified)
+
+    def test_fresh_zip_metadata_cannot_change_the_workbook_identity(self) -> None:
+        """Accept the same OOXML and VBA with fresh timestamps, ordering and compression."""
+        with TemporaryDirectory() as folder:
+            source, fresh, destination = (Path(folder) / name for name in ('old.xlsm', 'fresh.xlsm', 'proof.xlsm'))
+            pinned = fixture(source)
+            with ZipFile(source) as before, ZipFile(fresh, 'x') as rewritten:
+                for member in reversed(before.namelist()):
+                    fresh_member = ZipInfo(member, date_time=(2026, 11, 26, 8, 0, 0))
+                    rewritten.writestr(fresh_member, before.read(member), compress_type=ZIP_STORED)
+            self.assertNotEqual(sha256(fresh.read_bytes()).digest(), sha256(source.read_bytes()).digest())
+            self.assertEqual(package_content_sha256(fresh), pinned)
+            with patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned):
+                self.assertEqual(prepare_package(fresh, destination), destination)
+
+    def test_pin_rejects_changed_payloads_names_and_duplicate_members(self) -> None:
+        """Bind the original VBA and every worksheet to an unambiguous name."""
+        with TemporaryDirectory() as folder:
+            directory = Path(folder)
+            source = directory / 'source.xlsm'
+            pinned = fixture(source)
+            with ZipFile(source) as original:
+                checks = sheet_parts(original)['Trial_Checks']
+                vba = 'xl/vbaProject.bin'
+                for member, updated_name, payload in (
+                    (vba, vba, b'different VBA'), (checks, checks, b'different worksheet'),
+                    (vba, 'xl/renamedVba.bin', original.read(vba)),
+                ):
+                    with self.subTest(member=member, name=updated_name):
+                        modified = directory / 'modified.xlsm'
+                        with ZipFile(modified, 'w') as changed:
+                            for part in original.namelist():
+                                if part == member:
+                                    changed.writestr(updated_name, payload)
+                                else:
+                                    changed.writestr(part, original.read(part))
+                        with (patch('native_funding_proof_package.PINNED_INPUT_CONTENT_SHA256', pinned),
+                              self.assertRaisesRegex(ValueError, 'pinned fictional')):
+                            prepare_package(modified, directory / 'bank.xlsm')
+            duplicate = directory / 'duplicate.xlsm'
+            with ZipFile(duplicate, 'x') as ambiguous:
+                ambiguous.writestr(vba, b'original')
+                with self.assertWarns(UserWarning):
+                    ambiguous.writestr(vba, b'other')
+            with self.assertRaisesRegex(ValueError, 'duplicate package members'):
+                package_content_sha256(duplicate)
+            self.assertFalse((directory / 'bank.xlsm').exists())

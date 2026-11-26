@@ -318,7 +318,20 @@ Fill columns A, B and C with the claimed funding status, gross draw request and 
 
 Refresh and verify the current trial's annual sources before calculating D and G, then the breakpoints AM:AO, then the candidate economics H:AL and the result AP. Read the repriced margin in Z. The Mac canaries first priced both requests using the original solver range, then independently repriced the generated row 126. The generated lower quote gave a $0.00872003 deficit for the recovered draw and a $200,440.85428905 surplus for the stale draw. It also exercised zero draw, unsupported conversion mode and the unfunded disposition. The prior batch was preserved after cancellation. The generated-row capture SHA-256 is `d4b334b80f0f76bd00569ee44baf3d73bc67288a07f097be6c209ab3c6c7f6c9`. [Formula generator](../../tests/native_funding_witness_formulas.py) · [Structure tests](../../tests/test_native_funding_witness_formulas.py)
 
-For a disposable full-span bank, run `PYTHONPATH=tools python tests/native_funding_proof_package.py DESKTOP-INPUT.xlsm NEW-BANK.xlsm`. The builder requires the pinned fictional full-0-125, 100-pair input. It changes only `Trial_Checks` worksheet XML and leaves the VBA project byte-identical. Repeat with `--check` to compare a bank-only output against the exact generated formulas and all original package parts. Layer the separate diagnostic VBA only after this check. [Package builder](../../tests/native_funding_proof_package.py)
+Prepare and verify a disposable full-span bank from the repository root.
+
+```sh
+proof_work=$(mktemp -d)
+python tests/desktop_benchmark.py prepare workbook/retirement-model.xlsm "$proof_work/fixture" \
+  --revision v1.0.0 --sha256 f5faea8318773c911800462d43488c5063dc20b9363f1121151454d5e8007af4 \
+  --fixture full-0-125 --pairs 100
+PYTHONPATH=tools python tests/native_funding_proof_package.py \
+  "$proof_work/fixture/desktop-input.xlsm" "$proof_work/proof-bank.xlsm"
+PYTHONPATH=tools python tests/native_funding_proof_package.py \
+  "$proof_work/fixture/desktop-input.xlsm" "$proof_work/proof-bank.xlsm" --check
+```
+
+The builder pins the names and decompressed bytes of every package part, including the original VBA. ZIP timestamps, compression and member ordering may differ. It changes only `Trial_Checks` worksheet XML. The check verifies the exact generated formulas and all original package parts before the separate diagnostic VBA is layered in. [Package builder](../../tests/native_funding_proof_package.py)
 
 The bank spans BA6:CP130. BA and BB read the selected solver status in AC and gross request in D. BC certifies numeric zero only when the current annual inputs preclude conversion, such as a zero request or an ineligible year. Unresolved years stay inconclusive. Calculate BA:BC, BD:BG, CM:CO, BH:CL and CP in that order after confirming the source year is current. BZ holds the independent margin. At projection row 126 the selected solver row is 14884. The generated worksheet still needs a combined native capture, recovery and full-batch comparison.
 
