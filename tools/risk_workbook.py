@@ -18,7 +18,7 @@ import investment_results
 from risk_engine.scenario import (
     ASSET_ROWS, CACHED_INPUT_ROWS, CORRELATION_HEADER_ROW, CORRELATION_ROWS, HSA_RETURN_ROWS,
     ONE_TIME_EXPENSE_ROWS, RISK_CONTROL_ROWS, RISK_RETURN_BASIS_ROW, RISK_STRESS_ROWS,
-    SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW, asset_profile_start,
+    SCENARIO_INPUT_ROWS, TAX_TABLE_LAST_ROW, asset_profile_start, workbook_has_explicit_state_policy,
 )
 
 SHEET = DATA_SHEET
@@ -168,6 +168,8 @@ def _worksheet(source, *, calculated=False):
         version = sheet[SCHEMA_CELL].value
         if version != SCHEMA or sheet[ENGINE_CELL].value != __version__:
             raise ValueError('Use the workbook and risk runner from the same release.')
+        if workbook_has_explicit_state_policy(book):
+            raise ValueError('The workbook risk snapshot format does not track explicit state tax inputs. Use JSON output.')
         return book, sheet
     except BaseException:
         book.close()

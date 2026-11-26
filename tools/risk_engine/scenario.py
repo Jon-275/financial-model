@@ -5,20 +5,25 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from types import MappingProxyType
-from typing import Mapping
+from typing import Mapping, NoReturn
 from xml.etree.ElementTree import ParseError
 from zipfile import BadZipFile
 
 import investment_results
-from openpyxl import load_workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.exceptions import InvalidFileException
 
-from state_policy import CALIFORNIA_POLICY, StatePolicy
+from state_policy import (
+    CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
+    WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA, WORKBOOK_STATE_POLICY_SCHEMA_CELL,
+    StatePolicy, resolve_state_policy,
+)
 
 
 Cell = int | float | str | None
@@ -104,7 +109,7 @@ class Scenario:
                 self.inputs.get(HSA_RETURN_ROWS[offset], roth))
 
 
-def _invalid(location: str, reason: str) -> None:
+def _invalid(location: str, reason: str) -> NoReturn:
     raise ScenarioError(f'{location}: {reason}.')
 
 
@@ -139,6 +144,55 @@ def _cell(cell, location: str) -> Cell:
     if type(value) is float and not math.isfinite(value):
         _invalid(location, 'expected a finite number')
     return value
+
+
+def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
+    """Recognize both a complete state schema and a partially removed one."""
+    if not {'Inputs', 'Tax_Tables'} <= set(raw.sheetnames):
+        return False
+    inputs, tax_tables = raw['Inputs'], raw['Tax_Tables']
+    row = WORKBOOK_JURISDICTION_ROW
+    tax_check = inputs['B129'].value
+    references_jurisdiction = (isinstance(tax_check, str)
+                               and re.search(rf'\b[B-F]{row}\b', tax_check.upper().replace('$', '')) is not None)
+    return (references_jurisdiction or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF')
+            or any(tax_tables[address].value is not None for address in (
+                WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_CA_POLICY_VERSION_CELL,
+            )))
+
+
+def _workbook_state_policy(raw: Workbook, cached: Workbook, *, selected: int) -> StatePolicy | None:
+    """Read explicit state inputs or recognize the known legacy California layout."""
+    if not workbook_has_explicit_state_policy(raw):
+        for sheet, cell, expected in (
+            ('Inputs', 'A128', 'Opening California capital loss carryforward'),
+            ('Projection', 'BY4', 'California capital loss carryforward'),
+        ):
+            if raw[sheet][cell].value != expected:
+                _invalid(f'{sheet}!{cell}', 'cannot identify the legacy California tax layout')
+        return None
+
+    inputs, tax_tables = raw['Inputs'], raw['Tax_Tables']
+    row = WORKBOOK_JURISDICTION_ROW
+    label, active = f'A{row}', f'B{row}'
+    schema, version = WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_CA_POLICY_VERSION_CELL
+    if _cell(tax_tables[schema], f'Tax_Tables!{schema}') != WORKBOOK_STATE_POLICY_SCHEMA:
+        _invalid(f'Tax_Tables!{schema}', 'unsupported or missing state tax workbook schema')
+    if inputs[label].value != WORKBOOK_JURISDICTION_LABEL:
+        _invalid(f'Inputs!{label}', 'missing state tax jurisdiction label')
+    if inputs[active].data_type != 'f':
+        _invalid(f'Inputs!{active}', 'expected the active state jurisdiction formula')
+    policy_version = _cell(tax_tables[version], f'Tax_Tables!{version}')
+    if policy_version != CALIFORNIA_POLICY.version:
+        _invalid(f'Tax_Tables!{version}', 'unsupported or missing California policy version')
+    address = f'{get_column_letter(selected + 3)}{row}'
+    jurisdiction = _cell(inputs[address], f'Inputs!{address}')
+    try:
+        policy = resolve_state_policy(jurisdiction, policy_version)
+    except ValueError:
+        _invalid(f'Inputs!{address}', 'unsupported or missing state tax jurisdiction')
+    _matches(_cell(cached['Inputs'][active], f'Inputs!{active}'), policy.jurisdiction, f'Inputs!{active}')
+    return policy
 
 
 def _grid(sheet, min_row: int, max_row: int, max_column: int) -> dict[int, dict[str, Cell]]:
@@ -520,7 +574,8 @@ def _risk_inputs(raw) -> tuple[dict[int, float], tuple[float, ...], int]:
     return sequence, stress_returns, _integer(basis, f'{basis_sheet.title}!B{basis_row}', 1, 2)
 
 
-def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_basis, *, real_wage_growth, benefit_floor, retained_basis) -> str:
+def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_basis, *,
+            real_wage_growth, benefit_floor, retained_basis, explicit_policy: StatePolicy | None = None) -> str:
     # Numeric cells are canonicalized across engines that distinguish 1 and 1.0.
     payload = {
         'schema': 'risk-scenario-v1',
@@ -541,6 +596,12 @@ def _digest(inputs, one_offs, tax, allocation, sequence, stress_returns, return_
         payload['social_security_deflation_floor'] = True
     if retained_basis:
         payload['basis_on_retained_investments'] = True
+    if explicit_policy is not None:
+        payload['schema'] = 'risk-scenario-v2'
+        payload['state_policy'] = {
+            'schema': WORKBOOK_STATE_POLICY_SCHEMA, 'jurisdiction': explicit_policy.jurisdiction,
+            'version': explicit_policy.version,
+        }
     canonical = json.dumps(payload, sort_keys=True, separators=(',', ':'), allow_nan=False)
     return hashlib.sha256(canonical.encode('utf-8')).hexdigest()
 
@@ -577,19 +638,12 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     ):
         if raw[sheet][cell].value != expected:
             _invalid(f'{sheet}!{cell}', 'workbook layout is incompatible with this risk engine')
-    # The legacy workbook has no jurisdiction field. Require both sides of its
-    # California carryforward ledger before interpreting the fixed tax table.
-    for sheet, cell, expected in (
-        ('Inputs', 'A128', 'Opening California capital loss carryforward'),
-        ('Projection', 'BY4', 'California capital loss carryforward'),
-    ):
-        if raw[sheet][cell].value != expected:
-            _invalid(f'{sheet}!{cell}', 'cannot identify the legacy California tax layout')
     basis_header = raw['Projection']['CF4'].value
     if basis_header not in ('Taxable basis added', 'Basis added to retained investments'):
         _invalid('Projection!CF4', 'unknown taxable basis treatment')
     retained_basis = basis_header == 'Basis added to retained investments'
     selected, inputs, one_offs = _inputs(raw, cached)
+    explicit_policy = _workbook_state_policy(raw, cached, selected=selected)
     wage_label = raw['Inputs']['A13'].value
     if wage_label not in ('Real wage growth', 'Annual wage growth'):
         _invalid('Inputs!A13', 'unknown wage growth convention')
@@ -609,5 +663,6 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
                     MappingProxyType(sequence), stress_returns, return_basis,
                     opening.projection, opening.cash, opening.health, opening.roth, tuple(years),
                     _digest(inputs, one_offs, tax_source, allocation, sequence, stress_returns, return_basis,
-                            real_wage_growth=real_wage_growth, benefit_floor=benefit_floor, retained_basis=retained_basis),
-                    workbook_sha256, retained_basis, state_policy=CALIFORNIA_POLICY)
+                            real_wage_growth=real_wage_growth, benefit_floor=benefit_floor, retained_basis=retained_basis,
+                            explicit_policy=explicit_policy),
+                    workbook_sha256, retained_basis, state_policy=explicit_policy or CALIFORNIA_POLICY)

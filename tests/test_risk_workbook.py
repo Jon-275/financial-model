@@ -70,6 +70,20 @@ class RiskWorkbookTests(unittest.TestCase):
             finally:
                 written.close()
 
+    def test_legacy_snapshot_format_rejects_explicit_state_inputs(self) -> None:
+        """The old freshness manifest cannot publish an explicit-state snapshot."""
+        with TemporaryDirectory() as root:
+            source = Path(root) / 'explicit-policy.xlsx'
+            book = Workbook()
+            book.active.title = 'Inputs'
+            book.create_sheet('Tax_Tables')['B266'] = 'workbook-state-policy-v1'
+            book.create_sheet(risk_workbook.SHEET)
+            risk_workbook.configure_freshness(
+                lambda name, address, value, *_: book[name].__setitem__(address, value))
+            book.save(source)
+            with self.assertRaisesRegex(ValueError, 'does not track explicit state tax inputs'):
+                risk_workbook.validate_source(source)
+
     def test_publish_does_not_replace_output(self):
         with TemporaryDirectory() as root:
             output = Path(root) / 'report.xlsx'
