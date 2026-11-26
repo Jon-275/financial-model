@@ -18,6 +18,8 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.exceptions import InvalidFileException
 
+from state_policy import CALIFORNIA_POLICY, StatePolicy
+
 
 Cell = int | float | str | None
 Cells = Mapping[str, Cell]
@@ -87,6 +89,7 @@ class Scenario:
     digest: str
     workbook_sha256: str
     retained_investment_basis: bool = False
+    state_policy: StatePolicy = CALIFORNIA_POLICY
 
     @property
     def tax_tables(self) -> Cells:
@@ -574,6 +577,14 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
     ):
         if raw[sheet][cell].value != expected:
             _invalid(f'{sheet}!{cell}', 'workbook layout is incompatible with this risk engine')
+    # The legacy workbook has no jurisdiction field. Require both sides of its
+    # California carryforward ledger before interpreting the fixed tax table.
+    for sheet, cell, expected in (
+        ('Inputs', 'A128', 'Opening California capital loss carryforward'),
+        ('Projection', 'BY4', 'California capital loss carryforward'),
+    ):
+        if raw[sheet][cell].value != expected:
+            _invalid(f'{sheet}!{cell}', 'cannot identify the legacy California tax layout')
     basis_header = raw['Projection']['CF4'].value
     if basis_header not in ('Taxable basis added', 'Basis added to retained investments'):
         _invalid('Projection!CF4', 'unknown taxable basis treatment')
@@ -599,4 +610,4 @@ def _read(raw, cached, workbook_sha256: str) -> Scenario:
                     opening.projection, opening.cash, opening.health, opening.roth, tuple(years),
                     _digest(inputs, one_offs, tax_source, allocation, sequence, stress_returns, return_basis,
                             real_wage_growth=real_wage_growth, benefit_floor=benefit_floor, retained_basis=retained_basis),
-                    workbook_sha256, retained_basis)
+                    workbook_sha256, retained_basis, state_policy=CALIFORNIA_POLICY)

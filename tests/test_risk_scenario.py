@@ -11,12 +11,18 @@ from xml.etree import ElementTree
 from zipfile import ZipFile
 
 from risk_engine.scenario import ScenarioError, load_scenario
+from state_policy import CALIFORNIA_POLICY
 from workbook_recalc import RecalculationError, clear_formula_results
 from xlsx_read import q, sheet_parts
+from xlsx_values import write_values
 
 
 _WORKBOOK = Path(os.environ.get('RISK_TEST_WORKBOOK',
                                 Path(__file__).resolve().parents[1] / 'workbook' / 'retirement-model.xlsm'))
+_LEGACY_RELEASES = {
+    '37e2c8d564b5512a1bad26e402c2cad18393fe3a439652ba1dd1c8bc79940ef3',  # v0.1.0
+    'f5faea8318773c911800462d43488c5063dc20b9363f1121151454d5e8007af4',  # v1.0.0
+}
 
 
 def _replace_saved_number(source: Path, destination: Path, sheet: str, coordinate: str, value: float) -> None:
@@ -44,6 +50,24 @@ class ScenarioWorkbookTests(unittest.TestCase):
         self.assertEqual(s.years[-1].projection['C'], s.inputs[53])
         self.assertEqual(s.workbook_sha256, hashlib.sha256(_WORKBOOK.read_bytes()).hexdigest())
         self.assertAlmostEqual(sum(s.allocation.working[0]), 1.0)
+
+    def test_legacy_california_policy_preserves_the_release_digest(self) -> None:
+        """Recognize published legacy California workbooks without changing their identity."""
+        self.assertIs(self.scenario.state_policy, CALIFORNIA_POLICY)
+        if self.scenario.workbook_sha256 in _LEGACY_RELEASES:
+            self.assertEqual(
+                self.scenario.digest, '5a5388fd511c3da3fa227945e9cfa531ad04e0a310d334c1cc35b13a0d9cee5a'
+            )
+
+    def test_workbook_without_california_layout_fails_closed(self) -> None:
+        """Missing legacy policy evidence cannot silently select California."""
+        with TemporaryDirectory() as folder:
+            changed = Path(folder) / 'unidentified-tax-layout.xlsx'
+            write_values(_WORKBOOK, changed, {'Projection': {'BY4': None}})
+            with self.assertRaisesRegex(
+                ScenarioError, 'Projection!BY4: cannot identify the legacy California tax layout'
+            ):
+                load_scenario(changed)
 
     def test_changed_active_scenario_literal_invalidates_its_cache(self):
         s = self.scenario

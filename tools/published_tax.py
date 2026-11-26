@@ -1,5 +1,7 @@
 """Published federal, California, and payroll values used before forecast indexing."""
 
+from state_policy import CALIFORNIA_POLICY
+
 FEDERAL = {
     6: (0, 25600, 104050, 218250, 416650, 529100, 793650),
     17: (0, 102100, 633600),
@@ -39,7 +41,7 @@ def configure(m):
     m.put(s,'A219','Use published tax-year values', 'label')
     m.put(s,'B219',1,'input')
     m.put(s,'D219','1 = published values followed by modeled inflation. 0 = original baseline for controlled comparisons.','note')
-    for source,base in [(FEDERAL,2027),(CALIFORNIA,2026)]:
+    for source,base in [(FEDERAL,2027),(CALIFORNIA,CALIFORNIA_POLICY.published_income_year)]:
         for start,values in source.items():
             m.put(s,f'E{start-1}',f'{base} bracket floor','header')
             for r,value in enumerate(values,start): m.put(s,f'E{r}',value,'money')
@@ -51,8 +53,8 @@ def configure(m):
     m.put(s,'A247','Social Security: SSA Contribution and Benefit Base','note')
     m.put(s,'A248','https://www.ssa.gov/oact/cola/cbb.html','note')
     m.put(s,'A249','California: FTB October 2026 indexed rates and credits','note')
-    m.put(s,'A250','https://www.ftb.ca.gov/about-ftb/newsroom/tax-news/2026/10.html','note')
-    m.put(s,'A251','2027 California disability insurance rate','label')
+    m.put(s,'A250',CALIFORNIA_POLICY.income_source,'note')
+    m.put(s,'A251',f'{CALIFORNIA_POLICY.published_sdi_year} California disability insurance rate','label')
     m.put(s,'B251',0.014,'percent_active')
     m.put(s,'D251','Future projections use this rate until a new rate is entered.','note')
-    m.put(s,'A252','https://edd.ca.gov/en/Payroll_Taxes/Rates_and_Withholding/','note')
+    m.put(s,'A252',CALIFORNIA_POLICY.sdi_source,'note')

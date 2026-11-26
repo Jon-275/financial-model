@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from math import floor, isfinite
 from typing import cast
 
+from state_policy import CALIFORNIA_POLICY, StatePolicy, resolve_state_policy
+
 
 @dataclass(frozen=True, slots=True)
 class TaxInputs:
@@ -255,10 +257,22 @@ class TaxTables:
     """Read the same assumptions used by the saved Tax_Tables sheet."""
 
     _cells: Mapping[str, object]
+    state_policy: StatePolicy = CALIFORNIA_POLICY
+
+    def __post_init__(self) -> None:
+        """Protect the policy version from a conflicting metadata record."""
+        if not isinstance(self.state_policy, StatePolicy):
+            raise ValueError('State tax policy metadata is invalid.')
+        supported = resolve_state_policy(self.state_policy.jurisdiction, self.state_policy.version)
+        if self.state_policy != supported:
+            raise ValueError('State tax policy metadata does not match its version.')
 
     @classmethod
-    def from_cells(cls, cells: Mapping[str, object]) -> "TaxTables":
-        return cls(dict(cells))
+    def from_cells(
+        cls, cells: Mapping[str, object], *, state_policy: StatePolicy = CALIFORNIA_POLICY
+    ) -> "TaxTables":
+        """Copy the worksheet values and associate the validated state policy."""
+        return cls(dict(cells), state_policy)
 
     def for_year(
         self, year: int, inflation: float, tax_index: float, single: bool, primary_age: int, spouse_age: int
@@ -274,8 +288,8 @@ class TaxTables:
 
         published = b(219) == 1
         fed_published = published and year >= 2027
-        ca_published = published and year >= 2026
-        sdi_published = published and year >= 2027 and 'B251' in self._cells
+        ca_published = published and year >= self.state_policy.published_income_year
+        sdi_published = published and year >= self.state_policy.published_sdi_year and 'B251' in self._cells
         fed_factor = tax_index / (1 + inflation) if fed_published else tax_index
 
         def fed(old: int, new: int) -> float:

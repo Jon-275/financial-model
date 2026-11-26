@@ -116,7 +116,7 @@ class AnnualModel:
         self.scenario = scenario
         inputs, tax = scenario.inputs, scenario.tax
         self.inputs = inputs
-        self.tables = TaxTables.from_cells(tax)
+        self.tables = TaxTables.from_cells(tax, state_policy=scenario.state_policy)
         self.owner = int(inputs[97]) - 1
         self.detailed_health = inputs[101] == 1
         self.retirement_age = int(inputs[10])
