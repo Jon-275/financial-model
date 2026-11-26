@@ -105,6 +105,24 @@ class WorkbookStatePolicyTests(unittest.TestCase):
         with self.assertRaisesRegex(ScenarioError, 'Tax_Tables!B266'):
             _workbook_state_policy(self.raw, self.cached, selected=1)
 
+    def test_current_input_note_prevents_fallback(self) -> None:
+        """Keep the exact authoring note as a signal if other fields are lost."""
+        self.raw['Inputs']['G136'] = 'Use CA for a full-year California household.'
+        with self.assertRaisesRegex(ScenarioError, 'Tax_Tables!B266'):
+            _workbook_state_policy(self.raw, self.cached, selected=1)
+        self.raw['Inputs']['G136'] = 'Review household figures'
+        self.assertIsNone(_workbook_state_policy(self.raw, self.cached, selected=1))
+
+    def test_native_version_prevents_fallback_when_other_markers_are_removed(self) -> None:
+        """A surviving v2 native schema is enough to reject a stripped policy layout."""
+        schema = self.raw.create_sheet('Risk_Data')['Z2']
+        schema.value = 'retirement-risk-native-v1'
+        self.assertIsNone(_workbook_state_policy(self.raw, self.cached, selected=1))
+        schema.value = 'retirement-risk-native-v2'
+        self.assertTrue(workbook_has_explicit_state_policy(self.raw))
+        with self.assertRaisesRegex(ScenarioError, 'Tax_Tables!B266'):
+            _workbook_state_policy(self.raw, self.cached, selected=1)
+
     def test_current_table_labels_prevent_fallback_when_state_values_are_removed(self) -> None:
         """Each surviving state policy label identifies a damaged explicit workbook."""
         for cell, label in (

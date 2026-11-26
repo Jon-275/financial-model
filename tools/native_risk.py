@@ -347,5 +347,5 @@ def configure(m, baseline, *, with_state_policy: bool = False):
     m.put(TRIAL,'A4','Each pair has two saved rows. Random path 1 pairs with 1001 (add 1,000). Early-loss tests 2001–2013 pair with 2101–2113 (add 100). Tests 2201–2207 use fixed spending.','report_caption')
     native_capture.configure(m,baseline,with_state_policy=with_state_policy)
     native_funding_paths.configure(m)
-    native_results.configure(m)
+    native_results.configure(m,with_state_policy=with_state_policy)
     m.MODULES.extend((*NATIVE_SHEETS,*MODEL_SHEETS.values()))

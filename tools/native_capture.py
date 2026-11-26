@@ -9,7 +9,7 @@ import investment_results
 from risk_engine.scenario import SCENARIO_INPUT_ROWS, ASSET_ROWS, TAX_TABLE_LAST_ROW
 from state_policy import (
     WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL, WORKBOOK_JURISDICTION_ROW,
-    WORKBOOK_STATE_POLICY_SCHEMA_CELL,
+    WORKBOOK_STATE_POLICY_NATIVE_CONTEXT, WORKBOOK_STATE_POLICY_SCHEMA_CELL,
 )
 
 SHEET='Risk_Trials'
@@ -29,6 +29,7 @@ COLUMN_STYLES = {
 RANK=L(SIGNATURE_COLUMN+1)
 FAILURE_RANK=L(SIGNATURE_COLUMN+2)
 CONTEXT=f'{MARKET}!$BB$3'
+CONTEXT_PREFIX='native-risk-v1|'
 
 FIELDS=(
     'Assumptions used','Calculation valid','Paid every year’s costs','First shortfall age',
@@ -98,7 +99,8 @@ def _context(m,baseline, *, with_state_policy: bool = False):
         put(f'BD{row}','='+'&'.join(f'BC{i}' for i in range(start,stop)))
         chunks.append(f'BD{row}')
     put('BA3','Current assumption record','label')
-    put('BB3','="native-risk-v1|"&'+'&'.join(chunks))
+    prefix = WORKBOOK_STATE_POLICY_NATIVE_CONTEXT if with_state_policy else CONTEXT_PREFIX
+    put('BB3', f'="{prefix}"&' + '&'.join(chunks))
     return len(refs)
 
 

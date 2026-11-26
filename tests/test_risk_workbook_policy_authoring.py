@@ -65,7 +65,7 @@ class WorkbookPolicyAuthoringTests(unittest.TestCase):
         self.assertEqual(raw['Tax_Tables']['A267'].value, 'California state tax policy version')
 
         # B129 by itself must still identify the new format after accidental stripping.
-        for name, addresses in [('Inputs', ('A136', 'B136', 'D136', 'E136', 'F136')),
+        for name, addresses in [('Inputs', ('A136', 'B136', 'D136', 'E136', 'F136', 'G136')),
                                 ('Tax_Tables', ('A266', 'B266', 'A267', 'B267'))]:
             for address in addresses:
                 raw[name][address] = None
@@ -76,9 +76,11 @@ class WorkbookPolicyAuthoringTests(unittest.TestCase):
         native_capture._context(self.model, self.baseline)
         legacy = dict(self.model.cells['Market_Paths'])
         self.assertFalse(any('state tax policy' in value.lower() for value in legacy.values()))
+        self.assertTrue(legacy['BB3'].startswith('="native-risk-v1|"&'))
 
         native_capture._context(self.model, self.baseline, with_state_policy=True)
         new = self.model.cells['Market_Paths']
+        self.assertTrue(new['BB3'].startswith('="native-risk-v2|"&'))
         for label, reference in (
             ('State tax jurisdiction', 'Inputs!$B$136'),
             ('State tax workbook schema', 'Tax_Tables!$B$266'),

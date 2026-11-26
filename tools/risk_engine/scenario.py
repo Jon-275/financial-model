@@ -20,9 +20,10 @@ from openpyxl.utils import get_column_letter
 from openpyxl.utils.exceptions import InvalidFileException
 
 from state_policy import (
-    CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
-    WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA, WORKBOOK_STATE_POLICY_SCHEMA_CELL,
-    WORKBOOK_STATE_POLICY_TABLE_LABELS, StatePolicy, resolve_state_policy,
+    CALIFORNIA_POLICY, LEGACY_CA_POLICY_HEADERS, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_LABEL,
+    WORKBOOK_JURISDICTION_NOTE, WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_NATIVE_SCHEMA,
+    WORKBOOK_STATE_POLICY_SCHEMA, WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_TABLE_LABELS,
+    StatePolicy, resolve_state_policy,
 )
 
 
@@ -149,13 +150,16 @@ def _cell(cell, location: str) -> Cell:
 def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
     """Recognize both a complete state schema and a partially removed one."""
     sheets = raw.sheetnames
+    if 'Risk_Data' in sheets and raw['Risk_Data']['Z2'].value == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA:
+        return True
     if 'Inputs' in sheets:
         inputs = raw['Inputs']
         row = WORKBOOK_JURISDICTION_ROW
         tax_check = inputs['B129'].value
         references_jurisdiction = (isinstance(tax_check, str)
                                    and re.search(rf'\b[B-F]{row}\b', tax_check.upper().replace('$', '')) is not None)
-        if references_jurisdiction or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF'):
+        if (references_jurisdiction or inputs[f'G{row}'].value == WORKBOOK_JURISDICTION_NOTE
+                or any(inputs[f'{column}{row}'].value is not None for column in 'ABDEF')):
             return True
     if 'Tax_Tables' not in sheets:
         return False
@@ -167,15 +171,33 @@ def workbook_has_explicit_state_policy(raw: Workbook) -> bool:
     )
 
 
+def _require_legacy_california_layout(raw: Workbook) -> None:
+    """Require both literal California ledger headings in a legacy workbook."""
+    for sheet, cell, expected in LEGACY_CA_POLICY_HEADERS:
+        if sheet not in raw.sheetnames or raw[sheet][cell].value != expected:
+            _invalid(f'{sheet}!{cell}', 'cannot identify the legacy California tax layout')
+
+
+def validate_native_state_policy_format(raw: Workbook, *, legacy_schema: str) -> bool:
+    """Enforce raw native schema agreement and return whether the policy is explicit."""
+    schema = raw['Risk_Data']['Z2'].value
+    if schema == WORKBOOK_STATE_POLICY_NATIVE_SCHEMA:
+        expected = (*WORKBOOK_STATE_POLICY_TABLE_LABELS,
+                    (WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_SCHEMA),
+                    (WORKBOOK_CA_POLICY_VERSION_CELL, CALIFORNIA_POLICY.version))
+        if 'Tax_Tables' not in raw.sheetnames or any(raw['Tax_Tables'][cell].value != value for cell, value in expected):
+            raise ScenarioError('The v2 draft needs complete state tax schema and policy markers.')
+        return True
+    if schema != legacy_schema or workbook_has_explicit_state_policy(raw):
+        raise ScenarioError('Use a supported native schema for this workbook layout.')
+    _require_legacy_california_layout(raw)
+    return False
+
+
 def _workbook_state_policy(raw: Workbook, cached: Workbook, *, selected: int) -> StatePolicy | None:
     """Read explicit state inputs or recognize the known legacy California layout."""
     if not workbook_has_explicit_state_policy(raw):
-        for sheet, cell, expected in (
-            ('Inputs', 'A128', 'Opening California capital loss carryforward'),
-            ('Projection', 'BY4', 'California capital loss carryforward'),
-        ):
-            if raw[sheet][cell].value != expected:
-                _invalid(f'{sheet}!{cell}', 'cannot identify the legacy California tax layout')
+        _require_legacy_california_layout(raw)
         return None
 
     inputs, tax_tables = raw['Inputs'], raw['Tax_Tables']

@@ -13,7 +13,7 @@ from openpyxl.utils.cell import absolute_coordinate
 import published_tax
 from state_policy import (
     CALIFORNIA_POLICY, WORKBOOK_CA_POLICY_VERSION_CELL, WORKBOOK_JURISDICTION_ERROR,
-    WORKBOOK_JURISDICTION_LABEL, WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA,
+    WORKBOOK_JURISDICTION_LABEL, WORKBOOK_JURISDICTION_NOTE, WORKBOOK_JURISDICTION_ROW, WORKBOOK_STATE_POLICY_SCHEMA,
     WORKBOOK_STATE_POLICY_SCHEMA_CELL, WORKBOOK_STATE_POLICY_TABLE_LABELS,
 )
 
@@ -185,7 +185,7 @@ def configure_workbook_state_policy(put: Callable[[str, str, str, str], None]) -
     put('Inputs', f'B{row}', f'=IFERROR(IF(ISBLANK({selected}),"",{selected}),"")', 'input_active')
     for column in 'DEF':
         put('Inputs', f'{column}{row}', code, 'input')
-    put('Inputs', f'G{row}', 'Use CA for a full-year California household.', 'note')
+    put('Inputs', f'G{row}', WORKBOOK_JURISDICTION_NOTE, 'note')
 
     schema_ref = f'Tax_Tables!{absolute_coordinate(WORKBOOK_STATE_POLICY_SCHEMA_CELL)}'
     version_ref = f'Tax_Tables!{absolute_coordinate(WORKBOOK_CA_POLICY_VERSION_CELL)}'
