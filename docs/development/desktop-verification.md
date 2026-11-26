@@ -95,7 +95,7 @@ Instrument preflight/snapshot, trial preparation, recalculation, verified captur
 Prepare a pinned fictional fixture and its independent reference using the commands in D1. The profiling tool derives a second `.xlsm` in that directory and replaces only its VBA project. It checks every other package part against the original. Use a separate working copy of `desktop-profile-input.xlsm` for Excel. Keep this diagnostic workbook local to the benchmark environment.
 
 ```sh
-python3 tests/desktop_stage_profile.py prepare "$fixture"
+python3 tests/desktop_stage_profile.py prepare "$fixture_dir"
 ```
 
 1. Open the working copy of the diagnostic workbook as the only workbook in desktop Excel. Measure the synchronous `RunMarketRisk` invocation from dispatch through return with an independent monotonic clock. Use the run timing metadata from D1 and record the diagnostic distribution.
@@ -103,9 +103,9 @@ python3 tests/desktop_stage_profile.py prepare "$fixture"
 3. Record and replay the evidence. Keep the original diagnostic input untouched. Use a distinct capture, timing file, text payload and evidence name for each repeat.
 
 ```sh
-python3 tests/desktop_stage_profile.py record "$fixture" capture-cold-01.xlsm \
-  "$fixture/timing.json" "$fixture/profile.txt" --output profile-evidence-cold-01.json
-python3 tests/desktop_stage_profile.py check "$fixture"/profile-evidence-*.json
+python3 tests/desktop_stage_profile.py record "$fixture_dir" capture-cold-01.xlsm \
+  "$fixture_dir/timing.json" "$fixture_dir/profile.txt" --output profile-evidence-cold-01.json
+python3 tests/desktop_stage_profile.py check "$fixture_dir"/profile-evidence-*.json
 ```
 
 Each transition assigns elapsed time to one stage. Preflight covers input checks and snapshotting Excel settings and protections. Preparation covers trial selection and staging trial arrays. Primary calculation times the full Excel calculation and its existing wait. Verified capture covers the source-range calculation, reads and reconciliations. Ordered calculation covers the retry caused by a balance check or an unexpectedly repeated ending. Ranking covers sorting, selection and staging of the three ranked ledgers. Their calculations and capture use the same timing stages as other trials. Reuse verification covers the fixed-path proof calculation and its paired-flexible checks. Progress covers status-bar updates and the existing cancellation yield. Publish covers the prior-batch backups, guarded writes and workbook verification. Restore includes returning to the inspection selection, cleanup and rollback where applicable.
