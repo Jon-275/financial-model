@@ -219,6 +219,17 @@ Both arms used the pinned fictional `full-0-125` workbook with 100 pairs and see
 
 Each run independently reconciled 233 outcomes and 80,454 fields. Each smart-first run attempted 190 smart calculations and retained 46 verified reuses. These are initial paired observations. A production decision still requires repeated runs, the 1,000-pair workload, checks for internally consistent stale captures, and cancellation and publication recovery on the candidate. Windows remains unverified.
 
+For a replicated warm comparison, start each arm in its own fresh Excel process and keep its one diagnostic workbook open for one cold run and three warm repeats. Save and independently reconcile each run before dispatching its successor. Alongside each evidence file, save a timing receipt named `raw-cold-01.json` or `raw-warm-01.json` through `raw-warm-03.json`. Record the Excel process ID as a decimal string in `excel_pid`, the SHA-256 of the open workbook's saved file before the macro in `starting_sha256`, the original run metadata in `timing`, and the native profile and fallback payloads in `profile` and `counts`. Use an empty string for the control's fallback payload.
+
+```sh
+python3 tests/desktop_guarded_calculation.py compare-warm \
+  --control "$control"/profile-evidence-{cold-01,warm-01,warm-02,warm-03}.json \
+  --candidate "$candidate"/guarded-evidence-{cold-01,warm-01,warm-02,warm-03}.json \
+  --output "$scratch/matched-warm.json"
+```
+
+The comparison replays all eight saves, checks each warm run against the preceding capture in its arm, and calculates medians from the three warm runs. Keep the separate recovery canary as part of the release evidence.
+
 The separate canary rejected both injected captures on the first trial, reached the ordered retry, and independently reconciled the fresh saved batch across the same 233 outcomes and 80,454 fields. It recorded two injected mismatches, two full fallbacks overall, and one ordered balance retry. Its timing is excluded from the paired comparison.
 
 Earlier full-first probes on this same fictional fixture observed brokerage closing mismatches at ages 112 and 118. At age 118 in trial 20, the live closing value exceeded the recomputation from opening balance, withdrawal, deposit and return by $102,062,082.42. Ordered recalculation recovered. An intentional cancellation after that trial preserved the previous 595,814 stored result fields. A large failed reconciliation requires calculation-order investigation. Keep the comparison and ordered retry in place while tracing the first stage at which the live closing and its operands disagree.

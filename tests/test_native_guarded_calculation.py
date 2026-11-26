@@ -4,7 +4,8 @@ from pathlib import Path
 import unittest
 
 from desktop_guarded_calculation import (ENVIRONMENT, GUARDED_BRANCH, GUARDED_PROFILE, MACRO_WALL_TIME,
-                                         MACRO_WALL_TIME_LABELS, matched_results, overlay, read_profile)
+                                         MACRO_WALL_TIME_LABELS, matched_results, matched_warm_results,
+                                         overlay, read_profile)
 from desktop_stage_profile import STAGES, instrument
 
 
@@ -90,6 +91,58 @@ class GuardedCalculationTests(unittest.TestCase):
         natural[1]['profile']['batch_serial'] = controls[0]['profile']['batch_serial']
         with self.assertRaisesRegex(ValueError, 'reused a saved capture or batch timestamp'):
             matched_results(controls, natural, canary)
+
+    def test_warm_medians_require_three_distinct_replays_in_each_original_session(self) -> None:
+        """Require exact timing, the preceding capture and the original Excel session."""
+        def arm(name: str, pid: str, start: int, times: list[int]) -> list[tuple[dict, dict]]:
+            """Create evidence and timing receipts for a fictional Excel process."""
+            result = []
+            prior = f'{name}-input'
+            for index, seconds in enumerate(times):
+                timing = dict.fromkeys(ENVIRONMENT, 'same') | {
+                    'platform': 'mac', 'excel_bitness': 64, 'phase': 'warm' if index else 'cold',
+                    'repeat': index or 1, 'seconds': seconds, 'timing_method': MACRO_WALL_TIME,
+                    'distribution': 'test fixture',
+                }
+                capture = f'{name}-capture-{index}'
+                evidence = {
+                    'fixture': 'full-0-125', 'pairs': 1000, 'fixture_sha256': 'fixture',
+                    'source_sha256': 'source', 'reference_sha256': 'reference',
+                    'candidate_sha256': f'{name}-input', 'capture_sha256': capture,
+                    'comparison': 'PASS', 'profile': {'batch_serial': start + index}, 'run': timing,
+                }
+                if name == 'control':
+                    evidence['payload'] = 'control profile'
+                else:
+                    evidence.update(mode='natural', profile_text='candidate profile', count_text='fallback count')
+                receipt = {
+                    'excel_pid': pid, 'starting_sha256': prior, 'timing': dict(timing),
+                    'profile': evidence.get('payload') or evidence['profile_text'],
+                    'counts': evidence.get('count_text', ''),
+                }
+                result.append((evidence, receipt))
+                prior = capture
+            return result
+
+        control = arm('control', '110', 46200, [1000, 120, 98, 100])
+        candidate = arm('candidate', '210', 46210, [999, 75, 86, 72])
+        result = matched_warm_results(control, candidate)
+        self.assertEqual(result['warm_median_seconds'], {'control': 100, 'guarded': 75})
+        self.assertEqual(result['warm_improvement_percent'], 25)
+        self.assertEqual(result['windows_status'], 'unverified')
+        with self.assertRaisesRegex(ValueError, 'three warm'):
+            matched_warm_results(control[:-1], candidate)
+        candidate[2][1]['excel_pid'] = '211'
+        with self.assertRaisesRegex(ValueError, 'same Excel process'):
+            matched_warm_results(control, candidate)
+        candidate[2][1]['excel_pid'] = '210'
+        candidate[2][1]['starting_sha256'] = candidate[0][0]['capture_sha256']
+        with self.assertRaisesRegex(ValueError, 'preceding saved capture'):
+            matched_warm_results(control, candidate)
+        candidate[2][1]['starting_sha256'] = candidate[1][0]['capture_sha256']
+        candidate[2][1]['timing']['seconds'] = 70
+        with self.assertRaisesRegex(ValueError, 'timing receipt'):
+            matched_warm_results(control, candidate)
 
 
 if __name__ == '__main__':
