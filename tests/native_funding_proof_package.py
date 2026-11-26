@@ -19,7 +19,10 @@ from native_funding_witness_formulas import FIRST_YEAR, LAST_YEAR, witness_formu
 from xlsx_values import X, _read_xml_part, sheet_parts
 
 
-PINNED_INPUT_CONTENT_SHA256 = '91c4e1f7dc761baa67466164af45810bcf431f1b57367dac2cecb82d3fe6074b'
+PINNED_INPUT_CONTENT_SHA256S = frozenset({
+    '91c4e1f7dc761baa67466164af45810bcf431f1b57367dac2cecb82d3fe6074b',  # 100 pairs
+    '436ad05e2183840d54cf5f5347610e1886a6656133e414b2b7aea1ca373b5f2d',  # 1,000 pairs
+})
 SHEET = 'Trial_Checks'
 OFFSET = 52
 BANK = (53, FIRST_YEAR, 94, LAST_YEAR)
@@ -129,11 +132,10 @@ def package_content_sha256(path: Path) -> str:
 
 
 def _require_source(source: Path) -> None:
-    """Limit this overlay to the reviewed 100-pair package content."""
-    if source.is_symlink() or not source.is_file() or source.suffix.lower() != '.xlsm':
-        raise ValueError('Use the pinned fictional 100-pair full-range workbook.')
-    if package_content_sha256(source) != PINNED_INPUT_CONTENT_SHA256:
-        raise ValueError('Use the pinned fictional 100-pair full-range workbook.')
+    """Limit this overlay to the reviewed full-range package content."""
+    if (source.is_symlink() or not source.is_file() or source.suffix.lower() != '.xlsm'
+            or package_content_sha256(source) not in PINNED_INPUT_CONTENT_SHA256S):
+        raise ValueError('Use a pinned fictional full-range workbook with 100 or 1,000 pairs.')
 
 
 def verify_package(source: Path, candidate: Path) -> Path:
