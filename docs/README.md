@@ -26,16 +26,13 @@ Use desktop Excel for Mac. Keep a private `.xlsm` copy and use fictional figures
 
 ## Look up a detail
 
+- [Terms and acronyms](glossary.md)
 - [Calculation rules and assumptions](model-methods.md)
 - [How the Monte Carlo simulation works](model-methods.md#how-the-monte-carlo-simulation-works)
 - [What the model leaves out](model-guide.md#items-to-estimate-separately)
 - [Optional portfolio notes](portfolio-management.md): decisions outside the workbook workflow
 - [Get help or report a problem](https://github.com/Jon-275/financial-model/issues/new/choose)
 
-## Maintain the project
+## Development
 
-- [Build, test and release the workbook](../tests/README.md)
-- [Review annual tax data](annual-tax-review.md)
-- [Understand the VBA runner](macro-runner.md)
-- [Maintain the website and downloads](publishing.md)
-- [Implement and track planner enhancements](development/enhancement-plan.md)
+For maintainers, see the [build, tax review and release guide](../tests/README.md).
