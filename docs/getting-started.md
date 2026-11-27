@@ -2,11 +2,11 @@
 
 Open the fictional plan and compare retirement at age 60 and 65. Both base plans cover spending and taxes through age 95 under the example assumptions. You can see the comparison before running market risk.
 
-[Download v1.0.0 for Excel for Mac](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-model.xlsm) · [View the v1.0.0 example report](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-plan-example.pdf)
+[Download v1.0.1 for Excel for Mac](https://github.com/Jon-275/financial-model/releases/download/v1.0.1/retirement-model.xlsm) · [View the v1.0.1 example report](https://github.com/Jon-275/financial-model/releases/download/v1.0.1/retirement-plan-example.pdf)
 
 ## Start Here: save a copy
 
-Open the workbook in desktop Excel for Mac and save a private copy in `.xlsm` format. Keep calculation set to **Automatic**. Release v1.0.0 was verified on desktop Excel for Mac 16.115. Windows is unverified.
+Open the workbook in desktop Excel for Mac and save a private copy in `.xlsm` format. Keep calculation set to **Automatic**. Release v1.0.1 was verified on desktop Excel for Mac 16.115.2. Windows is unverified.
 
 On **Start Here**, choose **Open Inputs**. You can also select the **Inputs** sheet tab directly.
 
@@ -46,7 +46,7 @@ Follow the message below the Summary result and check the selected scenario on *
 
 ### Risk is out of date
 
-Finish editing and start a fresh run if you want updated results. For a failed run, check the message in **Risk_Settings!A44**. To stop a run, choose **Cancel** and wait for confirmation.
+Finish editing and start a fresh run if you want updated results. For a failed run, check the message in **Risk_Settings!A44**. If **Summary** blanks while the status bar shows progress, allow the run time to finish. [Market risk and recovery](risk-analysis.md#run-the-analysis)
 
 ### Printing
 

@@ -16,10 +16,10 @@ from workbook_privacy import audit_fixture, audit_package
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE = 'workbook/retirement-model.xlsm'
-RELEASE_SHA256 = 'f5faea8318773c911800462d43488c5063dc20b9363f1121151454d5e8007af4'
+RELEASE_SHA256 = '5fd56b2259bac7afe740b1b8cf789aebd919e45d3443f588a1e6261d5db24d45'
 TEMPLATE = 'workbook/build-template.xlsx'
 TEMPLATE_SHA256 = 'fdf966bd8556733b946ce6c1ee36b812c8a1b1abe901c17fc94bb76b90e45221'
-EXAMPLE_RISK_SHA256 = '01a4f878657073b8814a6a5ce2df6c66127f3bc7f0f83f46523f6c7a31579894'
+EXAMPLE_RISK_SHA256 = 'f021badb93e9187aa75c34539e1534e56e6f70869bfa219457f4672def5ed214'
 SPREADSHEET_EXTENSIONS = {'.xlsx', '.xls', '.xlsb', '.xlsm', '.ods'}
 sys.path.insert(0, str(ROOT / 'tests'))
 

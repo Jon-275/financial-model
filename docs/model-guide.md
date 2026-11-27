@@ -10,7 +10,7 @@ Follow the tabs from left to right. Use **Inputs** to enter figures and **Summar
 
 Save a private copy of the workbook in `.xlsm` format. Open it in desktop Excel for Mac and keep calculation set to **Automatic**. Choose **Open Inputs**, or select the **Inputs** tab directly.
 
-Macros are needed for **Run market risk**. Follow your organization's macro policy. Excel for the web can show saved results but cannot run the analysis. Release v1.0.0 was verified on desktop Excel for Mac 16.115. Windows is unverified.
+Macros are needed for **Run market risk**. Follow your organization's macro policy. Excel for the web can show saved results but cannot run the analysis. Release v1.0.1 was verified on desktop Excel for Mac 16.115.2. Windows is unverified.
 
 <a id="enter-income-spending-and-savings"></a>
 <a id="enter-retirement-account-details"></a>
@@ -95,7 +95,7 @@ The display limit controls the range shown in Conversion Detail and the charts b
 
 Review the spending-cut rule, number of paired paths, seed and inflation settings. Use **100 pairs** while comparing changes or **1,000 pairs** for a final report. Keep the seed unchanged when comparing plans.
 
-Finish reviewing the assumptions, including **Tax_Tables**, then close other workbooks and return to **Summary**. Choose **Run market risk**. Progress appears in Excel's status bar. Wait for **Risk results are current** before reading or printing simulated results. Use **Cancel** to stop a run and wait for confirmation.
+Finish reviewing the assumptions, including **Tax_Tables**, then close other workbooks and return to **Summary**. Choose **Run market risk**. Progress appears in Excel's status bar. Wait for **Risk results are current** before reading or printing simulated results. [Market risk and recovery](risk-analysis.md#run-the-analysis)
 
 The runner recalculates all open workbooks. Keeping only your plan open avoids extra work during each trial.
 

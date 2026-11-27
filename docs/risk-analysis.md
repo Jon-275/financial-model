@@ -32,7 +32,7 @@ Use a cut you could sustain. Read the number of paths and years needing cuts alo
 2. On **Summary**, choose **Run market risk** with macros permitted in desktop Excel. Follow your organization's macro policy.
 3. Watch the status bar. Wait for **Risk results are current** before reading or printing the results.
 
-Use **Cancel** to stop a run and wait for confirmation.
+On Excel for Mac 16.115.2, **Summary** can blank while the status bar shows progress. The **Cancel** button can be unavailable in that state. Save your work before starting a run and allow it time to finish.
 
 If a run fails, read **Risk_Settings A44**, correct the issue and rerun. Editing plan assumptions makes old results out of date. A failed, cancelled or incomplete run does not provide current results. Changing the dollar view does not require a new run.
 
