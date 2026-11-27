@@ -6,7 +6,7 @@ For maintainers. [Documentation index](README.md) · [Workbook checks](../tests/
 
 The [public website](https://jon-275.github.io/financial-model/) uses plain HTML and CSS in `site/`. It has no JavaScript, external fonts or analytics. It links to the workbook guides and packages the approved workbook, example PDF and license as downloads.
 
-Build and preview it locally:
+Use Python 3.11 or later to build and preview the site locally.
 
 ```sh
 python3 tools/build_site.py
