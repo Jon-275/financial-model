@@ -13,5 +13,3 @@ Use the maintainer guide at `tests/README.md` from the repository root. It lists
 4. Wait for the configured GitHub reviews on the latest commit. Address all findings, run the checks again, commit the fixes, and recheck the committed size before pushing the review round together. Reply with `accepted:` and evidence or `rejected:` and the reason, then resolve the threads. Merge through the PR once the required checks and thread resolution pass.
 
 For a stack, put shared behavior and its tests first. Use merge commits, retarget the dependent PR before deleting its predecessor branch, then check size against `origin/main`. Verify fresh required checks against `main`. If retargeting does not trigger them, merge the updated `main` into the dependent branch and push once to start the checks. For a release, use `docs/publishing.md` and the workbook checks in the maintainer guide.
-
-Temporary drift for the D4 workflow rehearsal.
