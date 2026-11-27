@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import patch
 
 import build_site
+import check_public_release
 
 
 class SiteReleaseManifestTests(unittest.TestCase):
@@ -165,6 +166,24 @@ class SiteReleaseManifestTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "quoted guide link"):
             build_site.build(self.output)
 
+    def test_checks_forward_same_page_fragments(self) -> None:
+        """Resolve local fragments and accept anchors after the link."""
+        self.create_file(
+            "site/index.html",
+            '<a href="#sections">Sections</a><a href="./#details">Details</a>'
+            '<a href="index.html#details">Inline details</a>'
+            '<main id="sections"><p id="details">Content</p></main>',
+        )
+        build_site.build(self.output)
+
+    def test_rejects_missing_same_page_fragments(self) -> None:
+        """Reject stale local fragments, including explicit routes to this page."""
+        for value in ("#absent", "./#absent", "index.html#absent"):
+            with self.subTest(value=value):
+                self.create_file("site/index.html", f'<a href="{value}">Details</a>')
+                with self.assertRaisesRegex(ValueError, "Missing site fragment: #absent"):
+                    build_site.build(self.output)
+
     def test_rejects_incomplete_mac_evidence(self) -> None:
         """Mac support requires an observed build and fully reconciled recorded runs."""
         evidence = self.manifest["compatibility"]["mac"]["evidence"]
@@ -192,6 +211,53 @@ class SiteReleaseManifestTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "SHA-256 mismatch"):
                 build_site.build(self.output)
         self.assertFalse((self.output / "downloads/SHA256SUMS.txt").exists())
+
+    def test_public_smoke_checks_versioned_release_then_optional_pages(self) -> None:
+        """Compare release assets and each public site file with the staged build."""
+        build_site.build(self.output)
+        release = "https://github.com/Jon-275/financial-model/releases/download/v1.0.0"
+        pages = "https://jon-275.github.io/financial-model"
+        with patch.object(check_public_release, "verify_public_file") as verify:
+            check_public_release.check(self.output, pages=False)
+            self.assertEqual(
+                {call.args[0] for call in verify.call_args_list},
+                {f"{release}/{name}" for name in (*self.downloads, "SHA256SUMS.txt")},
+            )
+            verify.reset_mock()
+            check_public_release.check(self.output, pages=True)
+            urls = {call.args[0] for call in verify.call_args_list}
+            self.assertIn(f"{release}/SHA256SUMS.txt", urls)
+            self.assertIn(f"{pages}/downloads/SHA256SUMS.txt", urls)
+            self.assertIn(f"{pages}/downloads/release-manifest.json", urls)
+            self.assertIn(f"{pages}/", urls)
+            self.assertIn(f"{pages}/assets/summary.png", urls)
+
+    def test_public_smoke_rejects_unapproved_local_checksums(self) -> None:
+        """Confirm the staged checksums against the manifest before fetching anything."""
+        build_site.build(self.output)
+        (self.output / "downloads/SHA256SUMS.txt").write_bytes(b"changed")
+        with patch.object(check_public_release, "verify_public_file") as verify:
+            with self.assertRaisesRegex(ValueError, "staged checksum"):
+                check_public_release.check(self.output, pages=True)
+        verify.assert_not_called()
+
+    def test_public_smoke_bounds_https_and_rejects_remote_byte_drift(self) -> None:
+        """Reject an altered HTTP response and require bounded HTTPS transfers."""
+        local = self.root / "site/index.html"
+
+        def write_remote(command: list[str], *, check: bool, timeout: int) -> None:
+            """Return different bytes with the same size as the local file."""
+            self.assertTrue(check)
+            self.assertLessEqual(timeout, 35)
+            self.assertEqual(command[command.index("--proto") + 1], "=https")
+            self.assertEqual(command[command.index("--proto-redir") + 1], "=https")
+            self.assertLessEqual(int(command[command.index("--max-time") + 1]), 30)
+            target = Path(command[command.index("--output") + 1])
+            target.write_bytes(b"x" * local.stat().st_size)
+
+        with patch.object(check_public_release.subprocess, "run", side_effect=write_remote):
+            with self.assertRaisesRegex(ValueError, "Publication mismatch"):
+                check_public_release.verify_public_file("https://example.com/file", local)
 
 
 if __name__ == "__main__":

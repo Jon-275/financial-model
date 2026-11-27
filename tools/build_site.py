@@ -19,8 +19,8 @@ GUIDE_REPO = "https://github.com/Jon-275/financial-model/blob/"
 GUIDE_PLACEHOLDER = f"{GUIDE_REPO}main/docs/"
 
 
-def read_manifest(manifest_bytes: bytes) -> tuple[str, dict[str, str], dict[str, str]]:
-    """Validate release metadata and return the approved guides revision and digests."""
+def read_manifest(manifest_bytes: bytes) -> tuple[str, str, dict[str, str], dict[str, str]]:
+    """Validate release metadata and return the version, guides revision and digests."""
     manifest = json.loads(manifest_bytes)
     if not isinstance(manifest, dict):
         raise ValueError("Invalid release manifest object")
@@ -65,7 +65,12 @@ def read_manifest(manifest_bytes: bytes) -> tuple[str, dict[str, str], dict[str,
         for name, digest in digests.items():
             if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
                 raise ValueError(f"Invalid SHA-256 in release manifest {field}: {name}")
-    return manifest["guides_revision"], manifest["downloads"], manifest["previews"]
+    return manifest["version"], manifest["guides_revision"], manifest["downloads"], manifest["previews"]
+
+
+def checksum_bytes(download_digests: dict[str, str]) -> bytes:
+    """Format the public SHA-256 list in stable filename order."""
+    return "".join(f"{digest}  {name}\n" for name, digest in sorted(download_digests.items())).encode("ascii")
 
 
 def verify_digest(path: Path, expected: str) -> None:
@@ -85,7 +90,7 @@ def build(output: Path) -> None:
             raise ValueError("Choose an empty directory or an existing generated site directory")
 
     manifest_bytes = (ROOT / "site/release-manifest.json").read_bytes()
-    guides_revision, download_digests, preview_digests = read_manifest(manifest_bytes)
+    _, guides_revision, download_digests, preview_digests = read_manifest(manifest_bytes)
     artifacts = {
         **{f"downloads/{name}": (ROOT / source, download_digests[name]) for name, source in DOWNLOAD_SOURCES.items()},
         **{f"assets/{name}": (ROOT / "docs/images" / name, digest) for name, digest in preview_digests.items()},
@@ -116,25 +121,40 @@ def build(output: Path) -> None:
         verify_digest(output / target, digest)
 
     (downloads / "release-manifest.json").write_bytes(manifest_bytes)
-    checksums = "".join(f"{digest}  {name}\n" for name, digest in sorted(download_digests.items()))
-    (downloads / "SHA256SUMS.txt").write_bytes(checksums.encode("ascii"))
+    (downloads / "SHA256SUMS.txt").write_bytes(checksum_bytes(download_digests))
     (output / ".nojekyll").touch()
 
     class Links(HTMLParser):
+        def __init__(self) -> None:
+            """Collect same-page link fragments and IDs for a complete-document check."""
+            super().__init__()
+            self.ids: set[str] = set()
+            self.fragments: set[str] = set()
+
         def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-            """Check each local file referenced by a link or media source."""
+            """Check local paths and collect same-page link fragments."""
             for key, value in attrs:
+                if key == "id" and value:
+                    self.ids.add(value)
                 if key not in ("href", "src") or not value:
                     continue
                 if key == "href" and value.lower().startswith(GUIDE_PLACEHOLDER.lower()):
                     raise ValueError(f"Use a quoted guide link so it can be pinned: {value}")
                 url = urlsplit(value)
-                if url.scheme or url.netloc or not url.path:
+                if url.scheme or url.netloc:
                     continue
                 target = (output / unquote(url.path)).resolve()
                 if not target.is_relative_to(output) or not target.exists():
                     raise ValueError(f"Missing or unsafe site target: {value}")
-    Links().feed(index)
+                if key == "href" and url.fragment and target in (output, output / "index.html"):
+                    self.fragments.add(unquote(url.fragment))
+
+    links = Links()
+    links.feed(index)
+    links.close()
+    missing = sorted(links.fragments - links.ids)
+    if missing:
+        raise ValueError("Missing site fragment: " + ", ".join(f"#{fragment}" for fragment in missing))
     print(f"Built site and verified local links and release artifact hashes: {output}")
 
 

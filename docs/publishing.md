@@ -13,7 +13,7 @@ python3 tools/build_site.py
 python3 -m http.server 8000 --directory scratch/site
 ```
 
-Open `http://localhost:8000`. The builder checks local file links and verifies the downloads and report previews against the [public release manifest](../site/release-manifest.json) before packaging and again on the packaged files. The build publishes the manifest and a matching `SHA256SUMS.txt` in `downloads/`. The checksums are sorted by filename and use the same format as the GitHub release.
+Open `http://localhost:8000`. The builder checks local file links and same-page anchors. It verifies downloads and report previews against the [public release manifest](../site/release-manifest.json) before packaging and again on the packaged files. The build publishes the manifest and a matching `SHA256SUMS.txt` in `downloads/`. The checksums are sorted by filename and use the same format as the GitHub release.
 
 In `site/index.html`, use a quoted GitHub link under `/blob/main/docs/` for each public product guide. The builder pins these links in the generated site to the manifest's `guides_revision` and preserves their page anchors. Keep that revision on the reviewed version of the guides. It can differ from the source commit for the released workbook.
 
@@ -49,6 +49,13 @@ Inspect each image. Use fictional figures and label report pages clearly; they a
 4. Review the draft GitHub release for that exact commit. Attach `retirement-model.xlsm`, `retirement-plan-example.pdf`, `LICENSE.txt` and `SHA256SUMS.txt` from the reviewed site build. Record changes, limits, checks performed, Excel version and checks still open.
 5. Publish the reviewed release and verify that its tag resolves to the manifest's source commit. Download the files from the versioned release and verify their checksums and the checksum file against the reviewed site build. Activate the version on Pages through the reviewed PR after this check passes.
 6. After Pages deploys, download the public files from both channels into separate directories and verify each with its checksum file. Compare both checksum files to the reviewed build. Compare the Pages previews with the manifest and smoke-test the download and guide links from the live site.
+
+Run the publication smoke check from the same worktree as the reviewed site build. It uses `curl` to compare the versioned release downloads with the staged files. Add `--pages` after deployment to compare the published HTML, styles, release metadata, downloads and previews. Open the live guide links separately to confirm the pinned pages and headings.
+
+```sh
+python3 tools/check_public_release.py
+python3 tools/check_public_release.py --pages
+```
 
 If activation needs to be reversed, restore the last verified manifest, matching artifacts, preview images and public guide links through a PR. Keep the original release tag and checksum record intact. Publish corrected files under a new version.
 

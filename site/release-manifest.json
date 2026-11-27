@@ -2,7 +2,7 @@
   "schema_version": 1,
   "version": "v1.0.0",
   "source_commit": "6573e1e4bd86eb99bbce6678c6fdf9f575c2b681",
-  "guides_revision": "e0eb4e6ab904512a7293f6196148b3538bc5990e",
+  "guides_revision": "5f7d270710ae5458fa4c329bc1e576b3df43e4c6",
   "compatibility": {
     "mac": {
       "status": "supported",

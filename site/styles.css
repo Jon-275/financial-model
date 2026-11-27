@@ -169,7 +169,9 @@ p {
   font-size:.94rem;
 }
 .checksum {
-  display:block;
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px 16px;
   margin-top:8px;
 }
 .hero-report {
