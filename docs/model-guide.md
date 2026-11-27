@@ -43,9 +43,13 @@ Read the report in page order:
 | 5. Input decisions | Check the ages, income, savings and account-access assumptions used in the report. |
 | 6. Spending decisions | Check the spending, healthcare and account choices recorded with the plan. |
 
-A **shortfall** means at least one cent of spending or tax was unpaid when due. Later repayment does not remove that shortfall. A positive ending balance does not prove that every year's bills were paid; some savings may have been unavailable. Summary lists workplace Roth savings that remain unavailable at the end.
-
 Market results are separate from the base projection. Read them only when the status says **Risk results are current**. See [what the market results mean](risk-analysis.md#read-the-summary).
+
+### First shortfall
+
+A **shortfall** means at least one cent of spending or tax was unpaid when due. Read the first shortfall age and year on Summary, then open **Annual Detail** to compare income, savings used and unpaid costs in that year. Summary also lists workplace Roth savings that remain unavailable at the end.
+
+In a separate fictional test, $100 of spending first goes unpaid at age 55 in 2027. Later cash repays it, and the plan ends with $1,300. The first shortfall records when a cost went unpaid. The ending portfolio records what was left at the end of the plan.
 
 ### Print your plan
 
@@ -54,9 +58,11 @@ Choose a **Dollar view** on Summary:
 - **Today's dollars:** amounts at opening-year prices, for comparison with your current budget.
 - **Future dollars:** amounts at each projected year's prices.
 
-Check the scenario, opening year, dollar view and risk status. Select only **Summary**, then choose **File → Print → Active Sheets** to print or save all six pages as a PDF. Print **Annual Detail** separately for the full timeline.
+Check the scenario, opening year, dollar view and risk status. For a report with simulation results, wait for **Risk results are current**. You can print the base projection while market results need updating. The report will show the risk status.
 
-To compare plans, save a report before changing an input. Run market risk again before saving the next report. Each completed run replaces the previous one.
+Select only **Summary**, then choose **File → Print → Active Sheets**. Check all six pages before printing or saving a PDF. Print **Annual Detail** separately for the full timeline. The input decision pages keep their original opening-year amounts in either dollar view.
+
+To compare plans, save a report before changing an input. Run market risk for each scenario if you want to compare simulated results. Each completed run replaces the previous one.
 
 ## Planning Metrics
 
@@ -89,7 +95,7 @@ The display limit controls the range shown in Conversion Detail and the charts b
 
 Review the spending-cut rule, number of paired paths, seed and inflation settings. Use **100 pairs** while comparing changes or **1,000 pairs** for a final report. Keep the seed unchanged when comparing plans.
 
-Finish reviewing the assumptions, including **Tax_Tables**, then close other workbooks and return to **Summary**. Choose **Run market risk**. Progress appears in Excel's status bar. Wait for **Risk results are current** before printing. Use **Cancel** to stop a run and wait for confirmation.
+Finish reviewing the assumptions, including **Tax_Tables**, then close other workbooks and return to **Summary**. Choose **Run market risk**. Progress appears in Excel's status bar. Wait for **Risk results are current** before reading or printing simulated results. Use **Cancel** to stop a run and wait for confirmation.
 
 The runner recalculates all open workbooks. Keeping only your plan open avoids extra work during each trial.
 

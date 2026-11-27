@@ -1,48 +1,59 @@
 # Try the example
 
-Use fictional figures for your first run. You do not need Python or a copy of the source code.
+Open the fictional plan and compare retirement at age 60 and 65. Both base plans cover spending and taxes through age 95 under the example assumptions. You can see the comparison before running market risk.
 
 [Download v1.0.0 for Excel for Mac](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-model.xlsm) · [View the v1.0.0 example report](https://github.com/Jon-275/financial-model/releases/download/v1.0.0/retirement-plan-example.pdf)
 
 ## Start Here: save a copy
 
-Open the workbook in desktop Excel for Mac and save a private copy in `.xlsm` format. Keep calculation set to **Automatic**. Macros are required to run market risk; follow your organization's policy.
+Open the workbook in desktop Excel for Mac and save a private copy in `.xlsm` format. Keep calculation set to **Automatic**. Release v1.0.0 was verified on desktop Excel for Mac 16.115. Windows is unverified.
 
-Choose **Open Inputs**. If a navigation button does not work, select the sheet tab directly. Excel for the web can show saved results but cannot run the analysis. Release v1.0.0 was verified on desktop Excel for Mac 16.115. Windows is unverified.
+On **Start Here**, choose **Open Inputs**. You can also select the **Inputs** sheet tab directly.
 
 ## Inputs: choose a scenario
 
-Select the example in **B4** and keep its fictional figures. Column D holds the example, E compares later retirement and F compares spending 10% less in retirement. Edit only the shaded input cells for the selected scenario.
+In **Scenario to edit (1–3)** at **B4**, select **1** and confirm **Example plan**. Keep the fictional figures and choose **Open Summary** or the **Summary** tab.
 
 ## Summary: read and compare
 
-Read whether the base plan covers spending and taxes through the end age. If not, find the first shortfall age and year.
+1. On **Summary**, find the retirement age, the end age and the base result under those ages. **Example plan** retires at 60 and covers spending and taxes through 95.
+2. Return to **Inputs**, select **2** in **B4** and confirm **Retire at 65**. Open **Summary** again. This plan retires at 65 and also covers spending and taxes through 95.
+3. Check the risk status. **Choose Run market risk to update the results** means the previous market run is out of date for this scenario. The base result has already updated.
 
-Return to **Inputs**, select the later-retirement or lower-spending scenario, then compare **Summary**. A positive ending balance does not mean every year's bills were paid. Check when income starts and savings become available.
+If a plan shows a shortfall, read the first unpaid cost and the age and year it occurs. A positive ending balance can coexist with an earlier unpaid bill. [Read the first-shortfall example](model-guide.md#first-shortfall)
 
 ## Asset_Allocation and Risk_Settings: review and run
 
-Review the investment mix on **Asset_Allocation**. On **Risk_Settings**, choose **100 paired paths** for a first run. Keep the seed unchanged when comparing plans.
+When you want to test market outcomes, review the investment mix on **Asset_Allocation**. On **Risk_Settings**, enter **100** in **Paired market paths** (**B29**) for exploration. For comparisons, keep the seed, pair count, return convention and inflation settings consistent across plans.
 
-Close other workbooks, then return to **Summary** and choose **Run market risk**. Watch Excel's status bar and wait for **Risk results are current**. [Settings and result definitions](risk-analysis.md)
+If your organization permits macros, close other workbooks, return to **Summary** and choose **Run market risk**. Watch Excel's status bar and wait for **Risk results are current**. [Settings and result definitions](risk-analysis.md)
 
 Use 1,000 pairs for a final report. Runtime depends on your Mac and plan. [Measured runtimes](risk-analysis.md#measured-runtime)
 
 ## Summary: save the report
 
-Choose today's or future dollars. Select only **Summary**, then **File → Print → Active Sheets** to print or save all six pages as a PDF.
+On **Summary**, choose **Dollar view**. **Today's dollars** use opening-year prices. **Future dollars** use projected prices in each year. To include market results, confirm **Risk results are current**. You can still share the base projection while market results need updating.
+
+Select only the **Summary** sheet. Choose **File → Print → Active Sheets** and check that the preview has six pages before printing or saving a PDF.
 
 For your own plan, save another private copy and follow the [workbook guide](model-guide.md). Review all inputs before relying on the results. Save a report before changing a plan; a new market run replaces the old results.
 
 ## If something does not work
 
-| Problem | What to do |
-| --- | --- |
-| A button does nothing | Select the sheet tab directly. Check your macro policy before running market risk. |
-| Results do not update | Set Excel calculation to Automatic. |
-| Summary asks you to review an input | Follow the note beneath the status and correct the input. |
-| Risk results are out of date | Finish editing, then run market risk again. |
-| A run fails | Read the message in **Risk_Settings A44**, correct the issue and rerun. |
-| You need to stop a run | Choose **Cancel** and wait for confirmation. |
+### Inputs need attention
+
+Follow the message below the Summary result and check the selected scenario on **Inputs**. If results are slow to update, confirm calculation is set to **Automatic**.
+
+### Risk is out of date
+
+Finish editing and start a fresh run if you want updated results. For a failed run, check the message in **Risk_Settings!A44**. To stop a run, choose **Cancel** and wait for confirmation.
+
+### Printing
+
+If you see more or fewer than six pages, select only **Summary** and check **Active Sheets** in the print dialog. [Print your plan](model-guide.md#print-your-plan)
+
+### Macros are blocked
+
+Keep your existing macro policy. Use **Inputs** and **Summary** directly for the base projection. Excel for the web can show saved results. Running market risk requires desktop Excel with macros permitted.
 
 [Ask for help](https://github.com/Jon-275/financial-model/issues/new/choose) with the planner version or download date, Excel and macOS versions, steps and exact message. Use fictional figures. Do not attach a personal workbook or report.

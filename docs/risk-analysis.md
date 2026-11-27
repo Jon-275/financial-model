@@ -15,7 +15,7 @@ Review the investment mix on **Asset_Allocation**, then set the following on **R
 | Spending-cut trigger, B6 | Compares the year's opening portfolio with the base plan's opening balance for that year. |
 | Cut, B7, and flexible share, B8 | Set how much of non-mortgage living costs can be cut. B10 shows the combined effect. |
 | Paired market paths, B29 | Use **100** for comparisons or **1,000** for a final report. Each pair uses the same markets for fixed and flexible spending. |
-| Seed, B30 | Keep it unchanged when comparing plans under the same sampled markets. |
+| Seed, B30 | Keep it unchanged when comparing plans under the same sampled markets. Keep the pair count, return convention and inflation settings consistent too. |
 | Return and inflation settings | Review the return convention and whether inflation varies by year. [How these assumptions work](model-methods.md#market-returns-and-inflation) |
 
 You can choose 1–1,000 pairs. Each run also includes 33 stress outcomes: 100 pairs give 233 outcomes; 1,000 give 2,033.
@@ -48,17 +48,19 @@ These are the median times from three warm repeats on the released v1.0.0 workbo
 
 ## Read the Summary
 
-Read pages 1, 3 and 4 together:
+Begin with the base result on page 1. When the saved run is current, read its market results on pages 1, 3 and 4 together.
 
 | Result | Meaning |
 | --- | --- |
-| Success rate | The share of random fixed-spending paths that paid every bill and tax on time through the end age. Even one cent unpaid counts as a shortfall, including a bill repaid later. Flexible spending and stress tests are separate. |
-| Middle 80% of balances | At each age, about 10% of balances fall below the band and 10% above it. Different paths can set its edges at different ages. The line is the median. Balances are before estimated tax on traditional savings. |
+| Success rate | Read the count with the percentage. The fictional example shows 999 of 1,000 random fixed-spending paths paying every bill and tax on time through age 95 under the example assumptions. Even one cent unpaid counts as a shortfall. Flexible spending and the separate stresses have their own results. |
+| Middle 80% of balances | At each age, about 10% of balances fall below the chart band and 10% above it. Different paths can set its edges at different ages. The solid line is the simulated median. The dashed line is the base projection. Balances are before estimated tax on traditional savings. |
 | Low, median and high paths | Three complete fixed-spending paths near the 10th, 50th and 90th percentiles of ending balances in today's dollars. Their identities stay the same in either dollar view. |
 | First shortfall | The age and unpaid amount in the first year bills or taxes were not paid on time. A positive ending portfolio can still have an earlier shortfall. |
-| Fixed and flexible spending | Results under the same markets, with and without the spending-cut rule. Check how often cuts were needed and how long they lasted. |
+| Fixed and flexible spending | Results under the same markets, with and without the spending-cut rule. In the fictional example, 487 of 1,000 flexible paths needed cuts. Across all 1,000 paths, the median was zero years because most paths needed no cuts. |
 
-Results depend on the model's assumptions. More paths reduce sampling variation; they do not correct unrealistic assumptions. Keep the workbook version, inputs, settings, path count and seed the same to repeat a comparison.
+The fictional chart shows a simulated median of **$2,955,035** at age 95. The representative middle path on page 3 ends at **$2,961,962**. The chart takes the median across paths at a given age. Page 3 follows one complete path selected by its ending balance. For chart values by age in your workbook, open **Risk Results** and find **Fixed-spending balances by age**.
+
+More paths reduce sampling variation. The results still depend on the plan's assumptions. To repeat a run, keep the workbook version, inputs, settings, path count and seed the same.
 
 ## Inflation, longevity and medical tests
 
