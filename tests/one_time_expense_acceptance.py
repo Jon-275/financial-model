@@ -5,6 +5,7 @@ import sys
 from tempfile import TemporaryDirectory
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
+from dashboard_acceptance import validate_fixed_headline
 from fixtures import COMMON
 from native_bootstrap import bootstrap
 import native_capture
@@ -88,7 +89,7 @@ def check_funding_change(entered, saved, root, office):
         for book, probability in ((before, 1), (after, 0)):
             if book['Risk_Data']['Z1'].value != 'current':
                 raise AssertionError('Both independently populated reports must show current results.')
-            close(book['Summary']['F12'].value, probability, 'Summary success rate')
+            validate_fixed_headline(book['Summary'], probability, book['Risk_Data']['BB5'].value)
             for row in (8, 9):
                 close(book['Risk_Trials'][f'D{row}'].value, probability, 'Fixed or flexible stored success')
         if not after['Summary']['B8'].value.startswith('First shortfall at age 55'):

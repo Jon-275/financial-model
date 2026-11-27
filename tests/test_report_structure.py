@@ -8,6 +8,7 @@ import sys
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 from zipfile import ZipFile
 
 from lxml import etree
@@ -17,12 +18,14 @@ from openpyxl.utils.cell import get_column_letter, range_boundaries
 from openpyxl.utils.datetime import CALENDAR_MAC_1904, CALENDAR_WINDOWS_1900
 
 import input_record
+import model_plan
 import native_package
 import native_results
 import native_funding_paths
 import plan_report
 import report_layout
 import risk_presentation
+import start_here
 from xlsx_values import X, sheet_parts
 
 
@@ -51,6 +54,59 @@ class ReportStructureTests(unittest.TestCase):
         self.assertIn('D36:F36',summary['E169'])
         self.assertIn('Access unconfirmed',summary['E156'])
         self.assertIn('Access unconfirmed',summary['I156'])
+
+    def test_first_use_opens_the_fictional_comparison_before_market_risk(self) -> None:
+        """Keep the shortest route available through ordinary sheet links."""
+        self.assertEqual(start_here.CONTENT['B7'][0], 'Try the example')
+        self.assertIn('Example plan', start_here.CONTENT['B8'][0])
+        self.assertIn('choose 2 (Retire at 65) in Inputs B4', start_here.CONTENT['B11'][0])
+        self.assertIn('100 paired paths', start_here.CONTENT['B15'][0])
+        self.assertIn('macro policy', start_here.CONTENT['B15'][0])
+        self.assertIn('Print the base plan', start_here.CONTENT['B15'][0])
+        self.assertIn('.xlsm', start_here.CONTENT['B19'][0])
+        self.assertIn('sheet tabs', start_here.CONTENT['B19'][0])
+        self.assertEqual(start_here.LINKS['B12'], 'Inputs!A1')
+        self.assertEqual(start_here.LINKS['B16'], 'Summary!B3')
+        with patch.object(model_plan, 'put') as put, patch.object(model_plan, 'styles', defaultdict(dict)):
+            model_plan.guidance(Workbook().active)
+        inputs = {call.args[1]: call.args[2] for call in put.call_args_list if call.args[0] == 'Inputs'}
+        self.assertIn('Example plan', inputs['A2'])
+        self.assertIn('B71<>"OK",B71', inputs['A3'])
+        self.assertIn("'Planning Metrics'!$B$25", inputs['A3'])
+        self.assertIn('choose 2 in B4', inputs['A3'])
+        self.assertEqual(inputs['G4'], 'Open Summary')
+
+    def test_summary_prints_the_risk_status_and_uses_completed_counts(self) -> None:
+        """Author a count-first result and also explain when there is no current batch."""
+        summary = self.cells['Summary']
+        self.assertIn('Base plan covers spending and taxes through age', summary['B8'])
+        self.assertIn('US federal and California taxes', summary['B6'])
+        for address in ('F12', 'F13', 'B30', 'B31', 'B77', 'B78'):
+            self.assertIn(risk_presentation.CURRENT, summary[address])
+        self.assertIn('ROUND(Risk_Data!BB8*Risk_Data!BB5,0)', summary['F12'])
+        self.assertIn('Paid all modeled costs on time', summary['F13'])
+        self.assertIn('Its edges can come from different paths', summary['B30'])
+        self.assertIn('Risk results are out of date', summary['B31'])
+        self.assertIn('Risk results are current.', summary['B31'])
+        self.assertIn('B31:I31', report_layout.summary_merges())
+        self.assertIn('ROUND(Risk_Data!BB9*Risk_Data!BB5,0)', summary['B77'])
+        self.assertIn('The median was zero years', summary['B78'])
+        self.assertIn('Annual balance data', summary['K20'])
+        self.assertIn('LEFT(Inputs!$B$7,31)', summary['B5'])
+        for address in ('B33', 'B65', 'B97', 'B129', 'B161'):
+            self.assertIn('LEFT(Inputs!', summary[address])
+
+    def test_chart_retains_distinct_series_and_quieter_age_labels(self) -> None:
+        """Keep the chart data contract while making the visible key easier to read."""
+        chart = etree.parse(str(Path(__file__).resolve().parents[1] / 'tools/dashboard.xml'))
+        ns = {'c': 'http://schemas.openxmlformats.org/drawingml/2006/chart',
+              'a': 'http://schemas.openxmlformats.org/drawingml/2006/main'}
+        self.assertEqual(chart.xpath('//c:catAx/c:tickLblSkip/@val', namespaces=ns), ['15'])
+        self.assertEqual(chart.xpath('//c:catAx/c:txPr/a:bodyPr/@rot', namespaces=ns), ['0'])
+        self.assertEqual(chart.xpath('//c:legend//a:defRPr/@sz', namespaces=ns), ['900'])
+        self.assertEqual(chart.xpath('//c:lineChart/c:ser//a:prstDash/@val', namespaces=ns), ['dash', 'solid'])
+        self.assertEqual(len(chart.xpath('//c:lineChart/c:ser', namespaces=ns)), 2)
+        self.assertEqual(len(chart.xpath('//c:areaChart/c:ser', namespaces=ns)), 2)
 
     def test_merges_never_overlap_or_discard_populated_report_cells(self):
         covered={}
@@ -137,7 +193,7 @@ class ReportStructureTests(unittest.TestCase):
         self.assertIn('Risk_Data!P29',summary['H114'])
         self.assertIn('Risk_Data!$AZ$5',summary['E71'])
         self.assertIn('Risk_Data!$AY$5',summary['H71'])
-        self.assertEqual(summary['K20'],'')
+        self.assertEqual(summary['K20'], 'Annual balance data')
         self.assertNotIn('K21',summary)
 
     def test_authored_formulas_fit_excel_limits_and_tokenize(self):

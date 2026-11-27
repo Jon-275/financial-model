@@ -2,6 +2,8 @@
 
 from openpyxl.formula.tokenizer import Tokenizer
 
+from risk_presentation import short_scenario_name
+
 FIRST_ROW = 129
 SECOND_ROW = 161
 LAST_ROW = 189
@@ -53,14 +55,15 @@ def configure(put):
         put('Summary', address, value, style)
 
     valid = 'IF(ISNUMBER(B4),AND(B4>=1,B4<=3,B4=INT(B4)),FALSE())'
+    scenario = short_scenario_name('B7')
     for start, kicker, title in (
         (FIRST_ROW, '5 / Input decisions', 'Input decisions'),
         (SECOND_ROW, '6 / Spending decisions', 'Spending and account decisions'),
     ):
-        display(f'B{start}', _on_inputs(f'IF({valid},"{kicker}   •   "&B7,"{kicker}")'), 'report_kicker')
+        display(f'B{start}', _on_inputs(f'IF({valid},"{kicker}   •   "&{scenario},"{kicker}")'), 'report_kicker')
         display(f'B{start + 1}', title, 'report_title')
         display(f'B{start + 3}', _on_inputs(
-            f'IF({valid},"Opening year "&B130&"   •   "&B7,"Choose a scenario on Inputs.")'
+            f'IF({valid},"Opening year "&B130&"   •   "&{scenario},"Choose a scenario on Inputs.")'
         ), 'report_caption')
     display(f'B{FIRST_ROW + 5}', 'These are your input amounts. Dollars use the opening year’s prices.', 'report_caption')
     display(f'B{SECOND_ROW + 5}', 'Input amounts use opening-year prices. See Inputs for detailed healthcare settings.', 'report_caption')

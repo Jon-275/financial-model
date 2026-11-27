@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from hashlib import sha256
 from pathlib import Path, PurePosixPath
 import re
 from typing import Iterator
@@ -106,6 +107,19 @@ class Workbook:
 
     def close(self) -> None:
         self._archive.close()
+
+    def package_sha256(self) -> str:
+        """Hash the same archive stream used to read the workbook's cells."""
+        stream = self._archive.fp
+        offset = stream.tell()
+        digest = sha256()
+        try:
+            stream.seek(0)
+            for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+                digest.update(chunk)
+        finally:
+            stream.seek(offset)
+        return digest.hexdigest()
 
     def __iter__(self) -> Iterator[Sheet]:
         for name in self.parts:

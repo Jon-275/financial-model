@@ -54,6 +54,41 @@ def add_income_timing_cases(source):
     return expected
 
 
+def add_published_risk_state_cases(source: Path) -> dict[str, str]:
+    """Build small actual report formulas for each risk state and a long scenario name."""
+    addresses = ('B5', 'F12', 'F13', 'B31', 'B78')
+    formulas = {}
+
+    def collect(sheet: str, address: str, value: str, _style: str) -> None:
+        if sheet == 'Summary' and address in addresses:
+            formulas[address] = value
+
+    plan_report.configure(collect)
+    statuses = {
+        'current': 'Risk results are current. Run 2026-11-26 12:00 • Conditional on these assumptions.',
+        'stale': 'Risk results are out of date. Run market risk to update them.',
+        'missing': 'Market risk has not been run. Run market risk to include results.',
+        'invalid': 'Risk results are unavailable. Review the plan and risk assumptions.',
+        'running': 'Market risk is running. Wait for the completed run.',
+        'cancelled': 'Run cancelled. Choose Run market risk to try again.',
+        'failed': 'Run failed. Review the message on Risk Settings.',
+        'incomplete': 'The risk run is incomplete. Run it again.',
+    }
+    for status in statuses:
+        book = Workbook()
+        book.active.title = 'Summary'
+        for address, formula in formulas.items():
+            book['Summary'][address] = formula
+        book.create_sheet('Report_Data')['Q2'] = 61
+        inputs = book.create_sheet('Inputs')
+        inputs['B7'], inputs['B130'] = 'W' * 100, 2026
+        data = book.create_sheet('Risk_Data')
+        data['Z1'], data['BB2'], data['BB5'] = status, '2026-11-26 12:00', 1000
+        data['BB8'], data['BB10'], data['BB11'] = .999, 487, 0
+        book.save(source / f'publication-{status}.xlsx')
+    return statuses
+
+
 def verify(executable):
     with tempfile.TemporaryDirectory(prefix='retirement-report-') as folder:
         root=Path(folder);source=root/'source';output=root/'calculated'
@@ -83,6 +118,7 @@ def verify(executable):
                     [400*1.331,20*1.21,105,230,350,10*1.21,15*1.1025] if native else
                     [400*1.02**3,20*1.02**2,100*1.02**2,200*1.02**2,300*1.02**2,10*1.02**2,15*1.02**2])
         timing_cases = add_income_timing_cases(source)
+        risk_states = add_published_risk_state_cases(source)
         next_steps = {}
         def collect_next_step(sheet, address, value, style=None):
             if sheet == 'Summary' and address == 'B87':
@@ -91,7 +127,7 @@ def verify(executable):
         decisions = (
             (61, 0, 'current', 'Save this Summary as a PDF.', 'compare the reports.'),
             (61, 2, 'current', 'Save this Summary as a PDF.', 'compare the first shortfall.'),
-            (61, 0, 'stale', 'Run market risk', 'before changing another assumption.'),
+            (61, 0, 'stale', 'Save the base report now', 'before changing another assumption.'),
             (1, 0, 'incomplete', 'Extend the plan on Inputs', 'before testing market risk.'),
             (0, 0, 'invalid', 'Resolve the item on page 1', 'before comparing scenarios.'),
         )
@@ -118,12 +154,27 @@ def verify(executable):
             actual = tuple(book['Summary'][address].value or None for address in ('B58', 'B59'))
             book.close()
             assert actual == pair, (name, actual, pair)
+        for status, expected in risk_states.items():
+            with open(output / f'publication-{status}.xlsx', 'rb') as stream:
+                book = load_workbook(stream, read_only=True, data_only=True)
+                summary = book['Summary']
+                assert summary['B31'].value == expected, status
+                assert summary['B5'].value == f'Scenario: {"W" * 31}…   •   Opening year: 2026', status
+                if status == 'current':
+                    assert summary['F12'].value == '999 of 1,000 paths'
+                    assert summary['F13'].value == 'Paid all modeled costs on time (99.90%).'
+                    assert summary['B78'].value == ('487 of 1,000 flexible paths needed cuts. '
+                                                    'The median was zero years because most needed none.')
+                else:
+                    assert not summary['F12'].value and not summary['B78'].value, status
+                book.close()
         for n, (_, _, _, first, last) in enumerate(decisions):
             book = load_workbook(output / f'decision-{n}.xlsx', read_only=True, data_only=True)
             message = book['Summary']['B87'].value
             book.close()
             assert message.startswith(first) and message.endswith(last), (n, message)
-        print('PASS: 28 report amounts, eight income and survivor timing checks, and five comparison prompts.')
+        print('PASS: 28 report amounts, eight income and survivor timing checks, five comparison prompts, '
+              'and eight printable risk states with a long scenario name.')
 
 
 if __name__=='__main__':
