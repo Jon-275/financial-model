@@ -1,6 +1,7 @@
 """Reject private content even when a workbook's checksum is approved."""
 
 from pathlib import Path
+from hashlib import sha256
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -9,6 +10,7 @@ from io import StringIO
 from xml.etree import ElementTree as E
 from zipfile import ZipFile
 
+import workbook_privacy
 from workbook_privacy import audit_fixture, audit_package, audit_start_here
 from check_workbook_commit import check_native_package, check_sample_workbook, main as check_index
 from start_here import CONTENT
@@ -125,6 +127,31 @@ class WorkbookPrivacyTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, f'Start Here!{address}'):
                     audit_start_here(sheet)
 
+    def introduction_with(self, source_path, content):
+        with ZipFile(source_path) as source:
+            part = sheet_parts(source)['Start Here']
+            sheet = E.fromstring(source.read(part))
+        for address, text in content.items():
+            cell = sheet.find(f".//{X}c[@r='{address}']")
+            cell.clear()
+            cell.attrib.update(r=address, t='inlineStr')
+            E.SubElement(E.SubElement(cell, X + 'is'), X + 't').text = text
+        return {part: E.tostring(sheet)}
+
+    def test_historical_introduction_requires_its_exact_package_bytes(self):
+        release = ROOT / 'workbook/retirement-model.xlsm'
+        changes = self.introduction_with(release, workbook_privacy._V1_0_0_START_HERE)
+        with TemporaryDirectory() as directory:
+            path = self.copy_with(directory, changes, release)
+            digest = sha256(path.read_bytes()).hexdigest()
+            with patch('workbook_privacy._V1_0_0_WORKBOOK_SHA256', digest):
+                with Workbook(path) as workbook:
+                    audit_fixture(workbook)
+                with ZipFile(path, 'a') as archive:
+                    archive.comment = b'The introduction is identical but the package changed.'
+                with Workbook(path) as workbook, self.assertRaisesRegex(ValueError, 'Start Here!B5'):
+                    audit_fixture(workbook)
+
     def test_unused_shared_string_is_rejected(self):
         with ZipFile(TEMPLATE) as source:
             root = E.fromstring(source.read('xl/sharedStrings.xml'))
@@ -170,8 +197,10 @@ class WorkbookPrivacyTests(unittest.TestCase):
         row = root.find(X + 'sheetData').find(X + 'row')
         cell = E.SubElement(row, X + 'c', r='M1', t='inlineStr')
         E.SubElement(E.SubElement(cell, X + 'is'), X + 't').text = 'Additional private note'
+        changes = self.introduction_with(release, {address: text for address, (text, _) in CONTENT.items()})
+        changes[part] = E.tostring(root)
         with TemporaryDirectory() as directory:
-            path = self.copy_with(directory, {part: E.tostring(root)}, source_path=release)
+            path = self.copy_with(directory, changes, source_path=release)
             with self.assertRaisesRegex(ValueError, 'approved synthetic artifact'):
                 check_sample_workbook(path)
 
