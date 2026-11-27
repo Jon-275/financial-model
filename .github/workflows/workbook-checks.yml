@@ -61,10 +61,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_workbook_protection.py'
           python tests/workbook_protection_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Install LibreOffice Calc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libreoffice-calc
-          soffice --version
+        run: bash .github/scripts/install-calc.sh
       - name: Verify survivor income and medical costs
         run: python tests/survivor_floor_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Verify market results and report formulas
@@ -90,10 +87,7 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install -r tools/requirements.txt
       - name: Install LibreOffice Calc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libreoffice-calc
-          soffice --version
+        run: bash .github/scripts/install-calc.sh
       - name: Check input validation in Calc
         run: |
           python tests/input_validation_acceptance.py
@@ -115,10 +109,7 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install -r tools/requirements.txt
       - name: Install LibreOffice Calc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libreoffice-calc
-          soffice --version
+        run: bash .github/scripts/install-calc.sh
       - name: Verify one-time expenses in market trials
         run: python tests/one_time_expense_acceptance.py "$RISK_TEST_WORKBOOK"
 
@@ -136,10 +127,7 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install -r tools/requirements.txt
       - name: Install LibreOffice Calc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libreoffice-calc
-          soffice --version
+        run: bash .github/scripts/install-calc.sh
       - name: Recalculate representative scenarios
         run: |
           python tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase2-fixtures.json --compact --ledger \
