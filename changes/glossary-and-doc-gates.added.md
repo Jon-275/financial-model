@@ -1,0 +1,1 @@
+Add a plain-language retirement and tax glossary (`docs/glossary.md`), move maintainer links from `docs/README.md` into `tests/README.md`, exclude binary artifacts in `devloop.toml`, and enforce relative link, anchor and acronym coverage in `tests/test_docs_and_glossary.py`.

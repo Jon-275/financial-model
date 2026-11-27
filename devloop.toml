@@ -3,6 +3,7 @@ version = "0.11"
 
 [pr]
 max_lines = 800
+exclude = ["workbook/*.xlsm", "workbook/*.xlsx", "docs/examples/*.pdf", "changes/*.*.md", "CHANGELOG.md"]
 
 [agents]
 tools = ["codex"]
