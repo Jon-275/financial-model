@@ -100,6 +100,8 @@ python3 tests/example_pdf_acceptance.py "$workbook" docs/examples/retirement-pla
 
 Use the completed fictional workbook as `workbook` and the source checkout that produced it. The temporary print workbook keeps the saved preparation date with only **Summary** visible. For Calc, the projection verifies and encodes duplicate saved assumption records. It uses the cached chart values and sets sparse age labels on the temporary chart. LibreOffice exports the projection offline with tagged content. The final pass preserves the page streams, adds section bookmarks, headings, column headers and a chart description, and checks the printed values, age labels and vectors against the saved workbook.
 
+Save the desired **Dollar view** on **Summary** before preparing a Calc export. Calc export uses the saved chart values in that view. Use the **Annual Detail** and dollar-view override options for native Excel previews that can recalculate the chart.
+
 ```sh
 scratch=$(mktemp -d)
 profile=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).as_uri())' "$scratch/calc")

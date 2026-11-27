@@ -39,6 +39,8 @@ def report_context(source: Path) -> tuple[str, str]:
 def project(source: Path, output: Path, title: str, paper: str,
             dollar_view: str | None, fictional_footer: bool, *, calc_export: bool = False) -> None:
     """Keep the original data, chart and print ranges in an isolated workbook copy."""
+    if calc_export and (title != 'Summary' or dollar_view is not None):
+        raise ValueError('Calc export requires Summary and the saved dollar view. Save the desired view before exporting.')
     if source.suffix.lower() != '.xlsm' or output.suffix.lower() != '.xlsx' or output.exists() or output.is_symlink():
         raise ValueError('Use a fictional macro-enabled source and a new .xlsx output path.')
     audit_sample_workbook(source)
@@ -83,7 +85,7 @@ def project(source: Path, output: Path, title: str, paper: str,
                 sheet = etree.fromstring(original.read(part), reader)
                 if apply_view(sheet, name, title, paper, dollar_view, context):
                     replacements[part] = sheet
-            if calc_export and title == 'Summary':
+            if calc_export:
                 chart = etree.fromstring(original.read(PORTFOLIO_CHART), reader)
                 sparse_age_labels(chart)
                 replacements[PORTFOLIO_CHART] = chart
@@ -191,7 +193,8 @@ if __name__ == '__main__':
     parser.add_argument('output', type=Path)
     parser.add_argument('--sheet', choices=('Summary', 'Annual Detail'), default='Summary')
     parser.add_argument('--paper', choices=tuple(PAPER_SIZES), default='letter')
-    parser.add_argument('--dollar-view', choices=tuple(DOLLAR_VIEWS), help='Override the selector for a recalculated preview')
+    parser.add_argument('--dollar-view', choices=tuple(DOLLAR_VIEWS),
+                        help='Override the selector for a recalculated native Excel preview')
     parser.add_argument('--fictional-footer', action='store_true', help='Show the saved example preparation date in print')
     parser.add_argument('--calc-export', action='store_true', help='Encode verified repeated records for a Calc print copy')
     args = parser.parse_args()
