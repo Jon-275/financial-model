@@ -297,9 +297,16 @@ def apply(name, root, styles, numbers, shared_strings=()):
 
 
 def conversion_charts(drawing):
-    """Stack native charts below the comparison instead of off the right edge."""
+    """Stack the conversion charts below the comparison and describe their data."""
     d = '{http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing}'
-    for index, anchor in enumerate(drawing):
+    descriptions = (
+        'Effective marginal rate by Roth conversion amount. The line shows the additional tax and '
+        'healthcare cost per additional dollar converted. Open Conversion Detail for the values.',
+        'Annual costs by Roth conversion amount. One line shows income tax and net healthcare '
+        'together. The other shows net healthcare alone. Open Conversion Detail for the values.',
+    )
+    for index, (anchor, description) in enumerate(zip(drawing, descriptions, strict=True)):
+        anchor.find(f'{d}graphicFrame/{d}nvGraphicFramePr/{d}cNvPr').set('descr', description)
         for endpoint, row in (('from', 43 + index * 22), ('to', 63 + index * 22)):
             node = anchor.find(d + endpoint)
             if node is None:

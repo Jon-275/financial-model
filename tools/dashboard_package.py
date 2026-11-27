@@ -185,6 +185,9 @@ def install_dashboard(src, authored, workbook, changes, summary_part, authored_s
     props = frame.find(".//" + D + "cNvPr")
     props.set("id", str(max((int(node.get("id")) for node in drawing.iter(D + "cNvPr")), default=0) + 1))
     props.set("name", "Projected portfolio by age")
+    props.set("descr", "Portfolio balances by age. The dashed line shows the base projection. "
+              "When risk results are current, the solid line shows the simulated median and the band "
+              "shows the middle 80 percent at each age. Open Risk Results for values by age.")
     drawing.append(frame)
     relationships.append(old_rel)
     changes[drawing_part] = _pack(drawing)

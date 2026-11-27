@@ -32,6 +32,16 @@ Desktop Excel exported the first candidate's macro-free print projections on Let
 
 The review workbook differs from the first candidate in one Start Here instruction and six refreshed timestamp fields. The model, chart, saved financial values and VBA match. The tagged example used a separate Calc export of a disposable workbook projection. It verified 4,072 repeated assumption records before using the temporary Calc encoding. The exported PDF kept its vector content, human-readable age ticks, six bookmarks and headings, scoped data-table headers and a chart alternative. The workbook-to-PDF check matched six Letter pages, 335 printed cells and 244 chart values, with a maximum difference of 0.033 points. PNG previews came from pages 1, 3 and 5 of that tagged PDF.
 
+## Mac release verification follow-up
+
+Excel for Mac 16.115.2 exported the review workbook’s four Summary variants on Letter and A4 in both dollar views. All four contained six pages and matched 335 Summary cells per export. The vector chart comparisons had a maximum difference of 0.847 PDF points. Both Annual Detail exports contained two pages and covered ages 35 through 95.
+
+The Excel Accessibility Checker found three charts without alternative text and 31 merged-cell navigation warnings in the review workbook. Keyboard testing reached the scenario selector with **Control+G**, entered scenario 2 in **Inputs B4**, and reached the base funding answer in **Summary B8**. The presentation source now describes all three charts and gives the **Open Summary** link in **Inputs G4** its own cell. The remaining merged layouts need review on the rebuilt workbook. [Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
+
+The rebuilt fictional workbook has SHA-256 `5fd56b2259bac7afe740b1b8cf789aebd919e45d3443f588a1e6261d5db24d45`. Its matching tagged PDF has SHA-256 `e3ab7ae134edae2775dbbfd71b94e9bb41a0de7a50b1519cc3f01e0130edb581`. The PDF matched 335 Summary cells and 244 chart values. The workbook privacy and embedded macro checks passed. The saved trial, funding ledger, chart data, and base projection and cash flow worksheets matched the prior candidate. The newer hash needs its own native run, print, and accessibility evidence.
+
+The facilitator materials include the checksum-verified frozen v1.0.0 site, shortfall fixture and coded forms for baseline and candidate sessions. Participant scheduling and coded observations are pending.
+
 ## Promotion gate
 
 The following evidence remains open. Keep the public downloads tied to v1.0.0 until the candidate qualifies.

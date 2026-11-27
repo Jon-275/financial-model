@@ -34,6 +34,21 @@ class LayoutStyles(dict):
 
 
 class DecisionLayoutTests(unittest.TestCase):
+    def test_conversion_charts_describe_their_data_and_table(self):
+        namespace = '{http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing}'
+        drawing = E.Element(namespace + 'wsDr')
+        properties = []
+        for index in range(2):
+            anchor = E.SubElement(drawing, namespace + 'twoCellAnchor')
+            frame = E.SubElement(anchor, namespace + 'graphicFrame')
+            metadata = E.SubElement(frame, namespace + 'nvGraphicFramePr')
+            properties.append(E.SubElement(metadata, namespace + 'cNvPr', id=str(index + 1)))
+        decision_layout.conversion_charts(drawing)
+        self.assertIn('additional tax and healthcare cost', properties[0].get('descr'))
+        self.assertIn('net healthcare alone', properties[1].get('descr'))
+        for chart in properties:
+            self.assertIn('Conversion Detail', chart.get('descr'))
+
     def test_tax_navigation_caption_has_room_in_the_builder_and_saved_workbook(self):
         from zipfile import ZipFile
         from xlsx_read import sheet_parts
