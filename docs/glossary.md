@@ -38,7 +38,7 @@ Jump to: [Accounts and withdrawals](#accounts-and-withdrawals) · [Taxes and hea
 | <a id="cpi"></a>**CPI** | Consumer Price Index: a measure of inflation used to adjust spending, tax brackets and real-dollar views. |
 | <a id="cola"></a>**COLA** | Cost-of-Living Adjustment: an annual inflation update applied to Social Security or pension benefits. |
 | <a id="tips"></a>**TIPS** | Treasury Inflation-Protected Securities: US government bonds whose principal adjusts with inflation. |
-| <a id="paired-paths"></a>**Paired paths** | Antithetic Monte Carlo return paths (each random draw paired with its mirror) to reduce sampling noise across comparisons. |
+| <a id="paired-paths"></a>**Paired paths** | Two runs of the plan under the same markets: one with fixed spending and one with the spending-cut rule. |
 | <a id="sequence-of-returns"></a>**Sequence of returns** | How early market losses during withdrawals can deplete a portfolio even when long-run average returns look adequate. |
 
 ## Workbook terms
