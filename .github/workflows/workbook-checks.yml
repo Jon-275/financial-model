@@ -58,6 +58,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_report_structure.py'
           python -m unittest discover -s tests -p 'test_prepare_example_pdf.py'
           python -m unittest discover -s tests -p 'test_decision_layout.py'
+          python -m unittest discover -s tests -p 'test_docs_and_glossary.py'
           python -m unittest discover -s tests -p 'test_workbook_protection.py'
           python tests/workbook_protection_acceptance.py "$RISK_TEST_WORKBOOK"
       - name: Install LibreOffice Calc

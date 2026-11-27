@@ -113,3 +113,11 @@ python3 tests/prepare_example_pdf.py "$workbook" "$scratch/summary.pdf" "$scratc
 ```
 
 Inspect all six pages and the reading order. Use the verified PDF to generate the website previews. Keep the workbook and PDF hashes together in the release record. Verify native Excel display, printing and save and reopen separately. [Report preview commands](../docs/publishing.md#report-previews)
+
+## Maintainer references
+
+- [Review annual tax data](../docs/annual-tax-review.md)
+- [Understand the VBA runner](../docs/macro-runner.md)
+- [Maintain the website and downloads](../docs/publishing.md)
+- [Model contracts](../docs/development/model-contracts.md)
+- [Implement and track planner enhancements](../docs/development/enhancement-plan.md)
