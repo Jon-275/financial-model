@@ -6,7 +6,7 @@ CONTENT = {
     'B7': ('Try the example', 'report_section'),
     'B8': ('In desktop Excel for Mac, keep Example plan selected on Inputs. Open Summary to find the base result for retirement at 60.', 'report_body'),
     'B10': ('Compare retirement at 65', 'report_section'),
-    'B11': ('Read the saved market result first. Then choose Retire at 65 in Inputs B4. Summary updates the base plan and marks the saved risk result out of date.', 'report_body'),
+    'B11': ('Read the saved market result first. Then choose 2 (Retire at 65) in Inputs B4. Summary updates the base plan and marks the saved risk result out of date.', 'report_body'),
     'B12': ('Open Inputs', 'report_link'),
     'B14': ('Run market risk or print', 'report_section'),
     'B15': ('Use 100 paired paths to explore or 1,000 for a larger sample. Follow your macro policy when you run market risk. Print the base plan with its risk status anytime.', 'report_body'),

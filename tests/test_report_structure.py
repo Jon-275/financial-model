@@ -59,7 +59,7 @@ class ReportStructureTests(unittest.TestCase):
         """Keep the shortest route available through ordinary sheet links."""
         self.assertEqual(start_here.CONTENT['B7'][0], 'Try the example')
         self.assertIn('Example plan', start_here.CONTENT['B8'][0])
-        self.assertIn('Retire at 65', start_here.CONTENT['B11'][0])
+        self.assertIn('choose 2 (Retire at 65) in Inputs B4', start_here.CONTENT['B11'][0])
         self.assertIn('100 paired paths', start_here.CONTENT['B15'][0])
         self.assertIn('macro policy', start_here.CONTENT['B15'][0])
         self.assertIn('Print the base plan', start_here.CONTENT['B15'][0])
