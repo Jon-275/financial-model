@@ -38,16 +38,32 @@ Excel for Mac 16.115.2 exported the review workbook’s four Summary variants on
 
 The Excel Accessibility Checker found three charts without alternative text and 31 merged-cell navigation warnings in the review workbook. Keyboard testing reached the scenario selector with **Control+G**, entered scenario 2 in **Inputs B4**, and reached the base funding answer in **Summary B8**. The presentation source now describes all three charts and gives the **Open Summary** link in **Inputs G4** its own cell. The remaining merged layouts need review on the rebuilt workbook. [Excel keyboard shortcuts](https://support.microsoft.com/en-us/accessibility/excel/keyboard-shortcuts-in-excel)
 
-The rebuilt fictional workbook has SHA-256 `5fd56b2259bac7afe740b1b8cf789aebd919e45d3443f588a1e6261d5db24d45`. Its matching tagged PDF has SHA-256 `e3ab7ae134edae2775dbbfd71b94e9bb41a0de7a50b1519cc3f01e0130edb581`. The PDF matched 335 Summary cells and 244 chart values. The workbook privacy and embedded macro checks passed. The saved trial, funding ledger, chart data, and base projection and cash flow worksheets matched the prior candidate. The newer hash needs its own native run, print, and accessibility evidence.
+The rebuilt fictional workbook has SHA-256 `5fd56b2259bac7afe740b1b8cf789aebd919e45d3443f588a1e6261d5db24d45`. Its matching tagged PDF has SHA-256 `e3ab7ae134edae2775dbbfd71b94e9bb41a0de7a50b1519cc3f01e0130edb581`. The PDF matched 335 Summary cells and 244 chart values. The workbook privacy and embedded macro checks passed. The saved trial, funding ledger, chart data, and base projection and cash flow worksheets matched the prior candidate. Native and accessibility checks are tracked by exact workbook hash.
 
 The facilitator materials include the checksum-verified frozen v1.0.0 site, shortfall fixture and coded forms for baseline and candidate sessions. Participant scheduling and coded observations are pending.
+
+### Saved native risk run
+
+On November 26, 2026, Excel for Mac 16.115.2 (16.115.26112215) on macOS 26.7.3 (25G342) ran the rebuilt workbook in isolation with 1,000 pairs and seed 2026. The exact starting workbook was `5fd56b2259bac7afe740b1b8cf789aebd919e45d3443f588a1e6261d5db24d45`. The fresh saved capture was `5ab69cd3c864918a7d0baeac2d6bc8fc9dddb8f9d7c33d992c563416768f3f9d`. The capture stayed local as verification evidence.
+
+The independent comparison reconciled all 2,033 outcomes and 588,054 fields, including all three ranked funding ledgers. The completed batch reports 515 verified flexible path reuses. The saved Summary reads **999 of 1,000 paths** and displays current risk, with a November 26 run time of 21:13. The saved file reopened in desktop Excel with the same SHA-256, batch timestamp, complete state, 1,000-pair count and visible result.
+
+A separate 100-pair Mac run reconciled 233 outcomes and 80,454 fields, including the three ranked funding ledgers. The Cancel command timed out while Excel was calculating. The short run saved a completed batch, so cancellation and recovery still need separate evidence.
+
+The exact rebuilt workbook also supplied all six Mac print projections. Each Summary export contained six pages in the expected dollar view and paper size, with 335 matching printed cells. The desktop band, median and dashed base line matched within 0.847 PDF points. Both Annual Detail outputs contained two pages and all ages 35–95.
+
+### Release packaging and accessibility
+
+A local rehearsal rejected the rebuilt workbook under the existing v1.0.0 manifest, verified the candidate workbook, PDF and all previews together under their own digests, then restored the approved v1.0.0 files and verified their digests. The rehearsal ran in a temporary staging directory.
+
+The rebuilt PDF has one main heading, five section headings, six bookmarks, four data tables, 22 scoped column headers and a description for the chart. macOS PDFKit read the six titles and the funding, simulation count and freshness text. The earlier Excel checker’s merged-cell flags remaining after the source fix cover section headings, captions and notes, including the first-shortfall explanation on Summary. Hands-on VoiceOver verification remains open.
 
 ## Promotion gate
 
 The following evidence remains open. Keep the public downloads tied to v1.0.0 until the candidate qualifies.
 
 - D2 staffed walkthrough, eligible consented baseline sessions and the follow-up study on the candidate.
-- Native save and reopen of the candidate with a fresh reconciled market batch, and the desktop cancellation and recovery check. The first Mac candidate opened and recalculated. Save attempts produced no verifiable saved bytes. Repeat the native print matrix for the final workbook hash.
+- Complete the native cancellation and recovery check. The rebuilt candidate passed the 1,000-pair save and reopen and the six-export Mac print matrix.
 - Hands-on Excel keyboard and VoiceOver checks and assistive-technology reading of the tagged PDF.
 - The cross-format release rehearsal for the candidate, including published workbook, PDF, guide and preview identity and rollback verification.
 
