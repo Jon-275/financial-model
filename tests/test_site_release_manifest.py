@@ -53,6 +53,7 @@ class SiteReleaseManifestTests(unittest.TestCase):
         }
         self.create_file("site/styles.css")
         self.create_file("site/favicon.svg")
+        self.create_file("docs/images/undeclared.png")
         self.create_file(
             "site/index.html",
             '<a href="downloads/retirement-model.xlsm">Download</a>'
@@ -93,6 +94,7 @@ class SiteReleaseManifestTests(unittest.TestCase):
                 (self.output / "assets" / name).read_bytes(),
                 (self.root / "docs/images" / name).read_bytes(),
             )
+        self.assertFalse((self.output / "assets/undeclared.png").exists())
 
     def test_rejects_drift_before_removing_last_build(self) -> None:
         """Reject a different workbook, PDF, license or public preview before rebuilding."""

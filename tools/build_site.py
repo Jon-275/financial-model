@@ -108,14 +108,11 @@ def build(output: Path) -> None:
     shutil.copy2(ROOT / "site/styles.css", output / "styles.css")
     assets = output / "assets"
     assets.mkdir(exist_ok=True)
-    for path in (ROOT / "docs/images").glob("*.png"):
-        shutil.copy2(path, assets / path.name)
     shutil.copy2(ROOT / "site/favicon.svg", assets / "favicon.svg")
     downloads = output / "downloads"
     downloads.mkdir(exist_ok=True)
-    for name, source in DOWNLOAD_SOURCES.items():
-        shutil.copy2(ROOT / source, downloads / name)
-    for target, (_, digest) in artifacts.items():
+    for target, (source, digest) in artifacts.items():
+        shutil.copy2(source, output / target)
         verify_digest(output / target, digest)
 
     (downloads / "release-manifest.json").write_bytes(manifest_bytes)
