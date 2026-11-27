@@ -374,7 +374,7 @@ def _style_inputs(root, styles, number_formats, active_fill):
             if style:
                 cell.set('s', styles[style])
     _collapse_empty_return_rows(root)
-    _merges(root, ['A2:G2', 'A3:G3', 'C4:F4', 'G4:H4'])
+    _merges(root, ['A2:G2', 'A3:G3', 'C4:F4'])
     _link(root, {
         'G4': "'Summary'!B3", 'J5': 'Inputs!A8', 'J6': 'Inputs!A25',
         'J7': 'Inputs!A36', 'J8': 'Inputs!A44', 'J9': 'Inputs!A53',
