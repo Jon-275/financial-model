@@ -16,16 +16,6 @@ concurrency:
 
 jobs:
   drift:
-    # Label events belong to PR hygiene. A skipped run must not replace this verdict.
-    name: Repository drift check
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
-        with:
-          python-version: '3.12'
-      - name: Check generated repository files
-        run: uvx --from git+https://github.com/Jon-275/dev-loop@017bc7c1e3bee10ee79461345dd20d30f9495f30 devloop doctor --check
+    uses: Jon-275/dev-loop/.github/workflows/drift-check.yml@59714a76d9919c544151806e15c3cae6854a9a79
+    with:
+      devloop: git+https://github.com/Jon-275/dev-loop@59714a76d9919c544151806e15c3cae6854a9a79
