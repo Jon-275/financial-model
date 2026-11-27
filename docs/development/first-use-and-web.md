@@ -18,7 +18,7 @@ python3 tests/xlsx_acceptance.py workbook/retirement-model.xlsm tests/phase2-fix
 
 Moderator introduction. “We’re testing this workbook. It uses fictional figures. Tell me what you’re looking for as you go. Use any help you find in the workbook or its guides. Please don’t enter any of your own information.”
 
-Start an acquisition timer on the product page and a separate primary timer when Excel finishes opening the file. Read the prompts as written and log any hints. Score the unaided outcome at five minutes. Continue to eight minutes for diagnosis when useful. Record security prompts as observed friction and preserve the participant's macro settings. Distinguish actions they performed from steps they described.
+Start an acquisition timer on the frozen baseline product page and a separate primary timer when Excel finishes opening the file. Read the prompts as written and log any hints. Score the unaided outcome at five minutes. Continue to eight minutes for diagnosis when useful. Record security prompts as observed friction and preserve the participant's macro settings. Distinguish actions they performed from steps they described.
 
 | Exercise | Prompt | Verified v1.0.0 answer key |
 | --- | --- | --- |
@@ -33,7 +33,37 @@ Use the same stopping point in the staff walkthrough and all five sessions. Ask 
 
 On November 25, 2026, Excel for Mac 16.115.26112215 reproduced both retirement answers and marked the saved risk stale after switching scenarios. The separate fixture showed the $100 spending shortfall at age 55 in 2027 and an ending portfolio of $1,300. Repeat the answer-key check during the native staff walkthrough and after each workbook or fixture change. Windows remains unverified.
 
-The moderator tabletop rehearsal tested a pass at the five-minute cutoff and an assisted completion during the eight-minute follow-up. On November 26, 2026, the product page's **Download for Excel for Mac** link returned the workbook published in the v1.0.0 release, verified against its SHA-256 checksum. Use the tagged release as the checksum-pinned fallback if the product page is unavailable during staff preparation. [Product page](https://jon-275.github.io/financial-model/) · [Release and checksums](https://github.com/Jon-275/financial-model/releases/tag/v1.0.0)
+The moderator tabletop rehearsal tested a pass at the five-minute cutoff and an assisted completion during the eight-minute follow-up. On November 26, 2026, the live product page linked to the workbook published in the v1.0.0 release. The download matched the release checksum. [Public product page](https://jon-275.github.io/financial-model/) · [Release and checksums](https://github.com/Jon-275/financial-model/releases/tag/v1.0.0)
+
+### Freeze the acquisition route
+
+Use the archived v1.0.0 product page and its pinned guides for all baseline sessions. These commands check out the exact released source and build the landing page. Guide links use the fixed v1.0.0-compatible revision whose downloads point to the v1.0.0 release. Leave the test site running on the participant's Mac for the session.
+
+```sh
+git worktree add --detach scratch/first-use-v1.0.0 6573e1e4bd86eb99bbce6678c6fdf9f575c2b681
+python3 scratch/first-use-v1.0.0/tools/build_site.py --output scratch/first-use-site
+python3 - <<'PYTHON'
+from pathlib import Path
+
+page = Path("scratch/first-use-site/index.html")
+repo = "https://github.com/Jon-275/financial-model"
+guide_revision = "e0eb4e6ab904512a7293f6196148b3538bc5990e"
+html = page.read_text(encoding="utf-8")
+html = html.replace(f"{repo}/blob/main/docs/", f"{repo}/blob/{guide_revision}/docs/")
+html = html.replace(f'{repo}/releases"', f'{repo}/releases/tag/v1.0.0"')
+page.write_text(html, encoding="utf-8")
+PYTHON
+(
+  cd scratch/first-use-site/downloads
+  printf '%s  %s\n' \
+    f5faea8318773c911800462d43488c5063dc20b9363f1121151454d5e8007af4 retirement-model.xlsm \
+    fb8a904de653e36f3b966f815a38087c81946889db56521ded3c87f517e1a2d9 retirement-plan-example.pdf \
+    | shasum -a 256 -c -
+)
+python3 -m http.server 8000 --bind 127.0.0.1 --directory scratch/first-use-site
+```
+
+Open `http://127.0.0.1:8000` for the baseline acquisition task. Stop setup if either checksum fails. Record that acquisition used a local snapshot. Check the live public URL separately and record any download failure or version difference. If the local route is unavailable, use the tagged release for the workbook tasks and mark the acquisition timing unavailable.
 
 Nominations are available. The native staff walkthrough needs a moderator, note taker and stand-in outside the participant cohort for one 20-minute slot on a Mac with desktop Excel. Screen the cohort, run the walkthrough with the acquisition and task timers, then obtain consent and conduct the five sessions. Track recruitment counts separately from coded session notes.
 
