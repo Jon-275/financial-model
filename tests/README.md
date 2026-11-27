@@ -95,3 +95,19 @@ Print the sample PDF from the same workbook and compare it with the saved Summar
 python3 -m pip install pypdf==6.21.4 pdfplumber==0.11.9
 python3 tests/example_pdf_acceptance.py "$workbook" docs/examples/retirement-plan-example.pdf
 ```
+
+### Prepare a tagged fictional example PDF
+
+Use the completed fictional workbook as `workbook` and the source checkout that produced it. The temporary print workbook keeps the saved preparation date with only **Summary** visible. For Calc, the projection verifies and encodes duplicate saved assumption records. It uses the cached chart values and sets sparse age labels on the temporary chart. LibreOffice exports the projection offline with tagged content. The final pass preserves the page streams, adds section bookmarks, headings, column headers and a chart description, and checks the printed values, age labels and vectors against the saved workbook.
+
+```sh
+scratch=$(mktemp -d)
+profile=$(python3 -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).as_uri())' "$scratch/calc")
+python3 tests/prepare_report_print.py "$workbook" "$scratch/summary.xlsx" --fictional-footer --calc-export
+soffice "-env:UserInstallation=$profile" --headless \
+  --convert-to 'pdf:calc_pdf_Export:{"UseTaggedPDF":{"type":"boolean","value":"true"},"ExportBookmarks":{"type":"boolean","value":"true"}}' \
+  --outdir "$scratch" "$scratch/summary.xlsx"
+python3 tests/prepare_example_pdf.py "$workbook" "$scratch/summary.pdf" "$scratch/retirement-plan-example.pdf"
+```
+
+Inspect all six pages and the reading order. Use the verified PDF to generate the website previews. Keep the workbook and PDF hashes together in the release record. Verify native Excel display, printing and save and reopen separately. [Report preview commands](../docs/publishing.md#report-previews)
