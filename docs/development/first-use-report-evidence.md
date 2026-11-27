@@ -1,6 +1,6 @@
 # First-use documentation and report evidence
 
-This record covers the November 26, 2026 documentation rollout. The public download is v1.0.0. The workbook and PDF candidates use the fictional Example plan. Windows remains unverified.
+This record covers the November 26–27, 2026 verification for the v1.0.1 workbook and report. The fictional Example plan is used throughout. The frozen study baseline is v1.0.0. Windows remains unverified.
 
 ## Published release controls
 
@@ -48,7 +48,7 @@ On November 26, 2026, Excel for Mac 16.115.2 (16.115.26112215) on macOS 26.7.3 (
 
 The independent comparison reconciled all 2,033 outcomes and 588,054 fields, including all three ranked funding ledgers. The completed batch reports 515 verified flexible path reuses. The saved Summary reads **999 of 1,000 paths** and displays current risk, with a November 26 run time of 21:13. The saved file reopened in desktop Excel with the same SHA-256, batch timestamp, complete state, 1,000-pair count and visible result.
 
-A separate 100-pair Mac run reconciled 233 outcomes and 80,454 fields, including the three ranked funding ledgers. The Cancel command timed out while Excel was calculating. The short run saved a completed batch, so cancellation and recovery still need separate evidence.
+A separate 100-pair Mac run reconciled 233 outcomes and 80,454 fields, including the three ranked funding ledgers. The Cancel command timed out while Excel was calculating. On November 27, a run started from the Summary button reached 8 of 236 checks in the Excel status bar. The sheet body was blank at that point, including the Cancel control. The button and keyboard attempts ended with a completed 100-pair batch. The saved button-test result independently reconciled all 233 outcomes and 80,454 fields. The retained-batch and retry checks require an observed cancellation. The v1.0.0 and v1.0.1 workbooks have byte-identical embedded VBA projects. Track the Mac interruption limitation and its native recovery test in D3.
 
 The exact rebuilt workbook also supplied all six Mac print projections. Each Summary export contained six pages in the expected dollar view and paper size, with 335 matching printed cells. The desktop band, median and dashed base line matched within 0.847 PDF points. Both Annual Detail outputs contained two pages and all ages 35–95.
 
@@ -56,15 +56,12 @@ The exact rebuilt workbook also supplied all six Mac print projections. Each Sum
 
 A local rehearsal rejected the rebuilt workbook under the existing v1.0.0 manifest, verified the candidate workbook, PDF and all previews together under their own digests, then restored the approved v1.0.0 files and verified their digests. The rehearsal ran in a temporary staging directory.
 
-The rebuilt PDF has one main heading, five section headings, six bookmarks, four data tables, 22 scoped column headers and a description for the chart. macOS PDFKit read the six titles and the funding, simulation count and freshness text. The earlier Excel checker’s merged-cell flags remaining after the source fix cover section headings, captions and notes, including the first-shortfall explanation on Summary. Hands-on VoiceOver verification remains open.
+The rebuilt PDF has one main heading, five section headings, six bookmarks, four data tables, 22 scoped column headers and a description for the chart. macOS PDFKit read the six titles and the funding, simulation count and freshness text. The earlier Excel checker’s merged-cell flags remaining after the source fix cover section headings, captions and notes, including the first-shortfall explanation on Summary. On November 27, the project owner scoped this release’s accessibility evidence to the documented keyboard, Excel Accessibility Checker and tagged PDF checks. VoiceOver was outside the release gate.
 
-## Promotion gate
+## Release and follow-up
 
-The following evidence remains open. Keep the public downloads tied to v1.0.0 until the candidate qualifies.
+The v1.0.1 presentation release uses the reconciled Mac run, save and reopen, print matrix, workbook and PDF accessibility checks described above, and an exact-byte publication and rollback check. The release notes and risk guide disclose the Mac cancellation limitation. D3 carries the cancellation fix and recovery proof for the native runner.
 
-- D2 staffed walkthrough, eligible consented baseline sessions and the follow-up study on the candidate.
-- Complete the native cancellation and recovery check. The rebuilt candidate passed the 1,000-pair save and reopen and the six-export Mac print matrix.
-- Hands-on Excel keyboard and VoiceOver checks and assistive-technology reading of the tagged PDF.
-- The cross-format release rehearsal for the candidate, including published workbook, PDF, guide and preview identity and rollback verification.
+D2 runs in parallel with the release. Use the frozen v1.0.0 files for the staffed walkthrough and consented baseline sessions. Use the verified v1.0.1 files for the follow-up. Feed the coded observations into U1.
 
 Windows remains unverified. Windows desktop Excel was unavailable for testing.
