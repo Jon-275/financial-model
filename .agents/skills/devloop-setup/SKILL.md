@@ -30,5 +30,3 @@ copy: change the source and re-render.
 
 - To change what a skill says: edit its source folder, then run `devloop sync`.
 - To silence a doctor finding: fix the cause; CI runs the same check.
-
-Temporary change for the hosted drift rehearsal.
