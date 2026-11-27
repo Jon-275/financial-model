@@ -12,7 +12,7 @@ from tempfile import TemporaryDirectory
 from xml.etree import ElementTree as E
 from zipfile import ZipFile
 
-from dashboard_acceptance import validate_dashboard
+from dashboard_acceptance import validate_dashboard, validate_fixed_headline
 from xlsx_acceptance import prepare_xlsx, recalculate
 from xlsx_read import Workbook, sheet_parts
 
@@ -62,6 +62,7 @@ def check_refresh(workbook, office, timeout):
             risk, projection = book[RISK], book['Projection']
             assert risk['BB4'].value == 125
             assert risk['BB5'].value == 3
+            validate_fixed_headline(book['Summary'], risk['BB8'].value, risk['BB5'].value)
             assert risk['BB19'].value == sha256(original).hexdigest()
             assert risk['B5'].value == projection['C5'].value
             end_row = 5 + 125 - risk['B5'].value
