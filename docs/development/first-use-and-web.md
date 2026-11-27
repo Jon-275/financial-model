@@ -37,7 +37,7 @@ The moderator tabletop rehearsal tested a pass at the five-minute cutoff and an 
 
 ### Freeze the acquisition route
 
-Use the archived v1.0.0 product page and guides for all baseline sessions. These commands check out the exact released source, build the landing page, bind its guide and release links to the same revision, and check the served workbook and report. Leave the test site running on the participant's Mac for the session.
+Use the archived v1.0.0 product page and its pinned guides for all baseline sessions. These commands check out the exact released source and build the landing page. Guide links use the fixed v1.0.0-compatible revision whose downloads point to the v1.0.0 release. Leave the test site running on the participant's Mac for the session.
 
 ```sh
 git worktree add --detach scratch/first-use-v1.0.0 6573e1e4bd86eb99bbce6678c6fdf9f575c2b681
@@ -47,9 +47,9 @@ from pathlib import Path
 
 page = Path("scratch/first-use-site/index.html")
 repo = "https://github.com/Jon-275/financial-model"
-revision = "6573e1e4bd86eb99bbce6678c6fdf9f575c2b681"
+guide_revision = "e0eb4e6ab904512a7293f6196148b3538bc5990e"
 html = page.read_text(encoding="utf-8")
-html = html.replace(f"{repo}/blob/main/docs/", f"{repo}/blob/{revision}/docs/")
+html = html.replace(f"{repo}/blob/main/docs/", f"{repo}/blob/{guide_revision}/docs/")
 html = html.replace(f'{repo}/releases"', f'{repo}/releases/tag/v1.0.0"')
 page.write_text(html, encoding="utf-8")
 PYTHON
